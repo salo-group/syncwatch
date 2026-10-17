@@ -7,7 +7,7 @@
       "clientRunId": "run-7",
       "mediaGeneration": 3,
       "status": "ready",
-      "positionMs": 140500,
+      "positionMs": -1,
       "durationMs": 7200000,
       "paused": true,
       "rate": 1,
