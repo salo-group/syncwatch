@@ -10,6 +10,7 @@ import sys
 
 
 def main():
+    raise RuntimeError("Intentional dependency build failure probe")
     sources = Path(os.environ["SYNCWATCH_DEPENDENCY_SOURCES"])
     output = Path(os.environ["SYNCWATCH_DEPENDENCY_OUTPUT"])
     flags = json.loads(os.environ["SYNCWATCH_DEPENDENCY_FLAGS"])
