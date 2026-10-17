@@ -17,6 +17,8 @@ Style Dictionary is a build tool. The native UI does not require a JavaScript ru
 
 The contract checker imports fastjsonschema directly from its submodule and verifies its revision, Git index pin, and source version. Its runtime graph has no third-party dependencies. Python 3.12 or newer is a developer/CI toolchain requirement. No pip packages are installed. The upstream nested JSON-Schema-Test-Suite submodule and development extras are unused by this checker. See the [tool manifest](../../tools/contracts/pyproject.toml) and [contract validation commands](contracts.md#reproducible-validation).
 
+The same pinned validator is registered as a dependency-free Python source-package build in the [component registry](../../tools/dependencies/components.json). It provides a real Linux/macOS/Windows exercise for the shared source/cache infrastructure. It copies runtime Python sources and the BSD notice without invoking upstream packaging tools or development extras. See [dependency builds](../dependency-builds.md); this registration does not resolve the pending product-engine graphs below.
+
 ## Complete source graph
 
 Every external library, including transitive dependencies, must have its source in a pinned submodule under `3rdparty/`. A top-level source checkout does not satisfy this rule for all of its dependencies. Registry packages and local caches do not replace source pins.
@@ -31,7 +33,7 @@ Before building a component:
 
 Compilers, platform SDKs, and system frameworks such as SwiftUI, AppKit, Foundation, WebKit, .NET, and WPF are build-platform requirements. This exception includes SDK-provided Swift Testing, compiler analyzers, formatting tools, and the .NET reference/runtime packs used by the dependency-free native shells. Toolchain versions and commands are declared in [native development](../native-development.md); no NuGet test framework or formatter package is installed. Google Meet is a remote service rather than a vendored source library.
 
-Python and Node.js are developer/runner toolchains. The CI artifact adapter is first-party code using only Node built-ins; its local JavaScript action runs with the runner-provided Node 24 runtime. Its tests require Node 22 or newer. It installs no npm packages or external Actions. The GitHub artifact service is remote infrastructure, with the supported interface and validation boundary described in [continuous integration](continuous-integration.md).
+Python and Node.js are developer/runner toolchains. The CI artifact and dependency-cache adapters are first-party code using only Node built-ins; their local JavaScript actions run with the runner-provided Node 24 runtime. Their tests require Node 22 or newer. They install no npm packages or external Actions. The GitHub artifact service is remote infrastructure, with the supported interface and validation boundary described in [continuous integration](continuous-integration.md).
 
 ## Dependency closure still required
 

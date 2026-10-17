@@ -184,21 +184,32 @@ def check_submodules(root: Path) -> None:
 
 def check_workflows(root: Path) -> None:
     paths = sorted((root / ".github/workflows").glob("*.y*ml"))
-    require(len(paths) == 1, "use one workflow with explicit repository and native lanes")
-    workflow = load_json(paths[0])
+    require({path.name for path in paths} == {"repository.yml", "dependency-build.yml"}, "use only declared repository and reusable dependency workflows")
+    workflow = load_json(root / ".github/workflows/repository.yml")
     require(isinstance(workflow, dict), "workflow must be a JSON-compatible YAML object")
-    require(workflow.get("permissions") == {"contents": "read"}, "CI must use read-only repository permissions")
+    require(workflow.get("permissions") == {"contents": "read", "actions": "read"}, "CI must use read-only repository permissions")
     events = workflow.get("on", {})
-    require(set(events) == {"pull_request", "push", "merge_group", "workflow_dispatch"}, "missing or unsafe workflow trigger")
+    require(set(events) == {"pull_request", "push", "merge_group", "workflow_dispatch", "schedule"}, "missing or unsafe workflow trigger")
     require(events["pull_request"] == {}, "pull request checks must not use path filters")
     require(events["push"] == {"branches": ["main"]}, "main pushes must run without path filters")
+    require(events["schedule"] == [{"cron": "23 4 * * 1"}], "keep the declared cold-build schedule")
+    require(events["workflow_dispatch"] == {"inputs": {"cold": {"description": "Rebuild dependencies without reading caches", "type": "boolean", "default": True}}}, "manual builds must support explicit cold validation")
     require(workflow.get("concurrency", {}).get("cancel-in-progress") is True, "superseded checks must cancel")
     jobs = workflow.get("jobs", {})
-    selected = ["repository", "tests", "contracts", "apple", "windows"]
+    selected = ["repository", "tests", "contracts", "apple", "windows", "dependency-plan", "dependencies"]
     require(set(jobs) == {*selected, "required"}, "unexpected repository job set")
-    runners = {name: "ubuntu-24.04" for name in ("repository", "tests", "contracts", "required")}
+    runners = {name: "ubuntu-24.04" for name in ("repository", "tests", "contracts", "required", "dependency-plan")}
     runners.update({"apple": "macos-15", "windows": "windows-2025"})
     for name, job in jobs.items():
+        if name == "dependencies":
+            require(job.get("uses") == "./.github/workflows/dependency-build.yml", "dependency jobs must use the repository-owned reusable workflow")
+            require(job.get("needs") == ["dependency-plan"] and job.get("strategy") == {
+                "fail-fast": False, "matrix": "${{ fromJSON(needs.dependency-plan.outputs.matrix) }}",
+            }, "dependency jobs must execute the complete selected matrix")
+            require(job.get("with") == {"component": "${{ matrix.component }}", "platform": "${{ matrix.platform }}", "cold": "${{ matrix.cold }}"}, "dependency jobs must preserve selected inputs")
+            require(job.get("if") == "${{ needs.dependency-plan.result == 'success' }}", "only a failed dependency plan may prevent matrix expansion")
+            require(not any(key in job for key in ("continue-on-error", "permissions", "secrets", "environment")), "dependency failures must propagate without privileged overrides")
+            continue
         require(job.get("runs-on") == runners[name], f"{name}: use the declared runner image")
         maximum = 30 if name in {"apple", "windows"} else 15
         require(type(job.get("timeout-minutes")) is int and 0 < job["timeout-minutes"] <= maximum, f"{name}: require a bounded timeout")
@@ -231,8 +242,27 @@ def check_workflows(root: Path) -> None:
         }, "native artifacts must identify platform, commit, run, and attempt")
     test_commands = {step.get("run") for step in jobs["tests"]["steps"]}
     require("node --test tools/ci/tests/artifact_upload.test.mjs" in test_commands, "artifact transport tests must execute")
+    require("python3 -m unittest discover -s tools/dependencies/tests -v\nnode --test tools/dependencies/tests/cache.test.mjs" in test_commands, "dependency infrastructure tests must execute")
+    planner = jobs["dependency-plan"]
+    require(any(step.get("id") == "plan" and step.get("run") == "python3 tools/dependencies/build.py plan" for step in planner["steps"]), "dependency planner must validate real source manifests")
+    require(planner.get("outputs") == {"matrix": "${{ steps.plan.outputs.matrix }}"}, "dependency matrix must come from the validated plan")
     action = load_json(root / ".github/actions/upload-native/action.yml")
     require(action.get("runs") == {"using": "node24", "main": "upload.mjs"}, "artifact action must use its declared runner runtime")
+    reusable = load_json(root / ".github/workflows/dependency-build.yml")
+    require(reusable.get("permissions") == workflow["permissions"], "dependency workflow must use read-only permissions")
+    require(reusable.get("on") == {"workflow_call": {"inputs": {"component": {"required": True, "type": "string"}, "platform": {"required": True, "type": "string"}, "cold": {"required": True, "type": "boolean"}}}}, "dependency workflow must have typed, unprivileged inputs")
+    require(set(reusable.get("jobs", {})) == {"build"}, "unexpected reusable dependency jobs")
+    dependency = reusable["jobs"]["build"]
+    require(dependency.get("runs-on") == "${{ fromJSON('{\"linux-x64\":\"ubuntu-24.04\",\"macos-arm64\":\"macos-15\",\"windows-x64\":\"windows-2025\"}')[inputs.platform] }}", "dependency runner map must be explicit")
+    require(type(dependency.get("timeout-minutes")) is int and 0 < dependency["timeout-minutes"] <= 270, "dependency job must have a bounded timeout")
+    require(not any(key in dependency for key in ("if", "continue-on-error", "permissions", "secrets", "environment")), "dependency failures must propagate without privileged overrides")
+    require(len(dependency.get("steps", [])) == 2 and dependency["steps"][0].get("env") == jobs["repository"]["steps"][0]["env"], "dependency workflow must check out the exact selected revision")
+    require(dependency["steps"][-1] == {
+        "name": "Verify source inputs, build, and retain artifacts", "uses": "./.github/actions/dependency-build",
+        "with": {"component": "${{ inputs.component }}", "platform": "${{ inputs.platform }}", "cold": "${{ inputs.cold }}", "cache-token": "${{ github.token }}"},
+    }, "dependency workflow must execute the declared build action")
+    action = load_json(root / ".github/actions/dependency-build/action.yml")
+    require(action.get("runs") == {"using": "node24", "main": "build.mjs"}, "dependency action must use its declared runner runtime")
     required = jobs["required"]
     require(required.get("name") == "ci/required", "required check name must remain stable")
     require(required.get("if") == "${{ always() }}", "aggregate must evaluate unsuccessful dependencies")
@@ -279,6 +309,10 @@ def check_repository(root: Path) -> None:
     check_submodules(root)
     check_workflows(root)
     check_native_manifests(root)
+    components = load_json(root / "tools/dependencies/components.json")["components"]
+    validator = components.get("fastjsonschema", {})
+    require(validator.get("status") == "ready" and validator.get("always") is True and set(validator.get("targets", {})) == {"linux-x64", "macos-arm64", "windows-x64"}, "the baseline validator dependency must remain selected on all supported platforms")
+    subprocess.run([sys.executable, "tools/dependencies/build.py", "check"], cwd=root, check=True)
 
 
 def main() -> int:

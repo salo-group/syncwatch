@@ -1,0 +1,10 @@
+[project]
+name = "syncwatch-dependency-builds"
+version = "1.0.0"
+description = "Source-pinned dependency build and cache infrastructure"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.syncwatch]
+test-command = "python3 -m unittest discover -s tools/dependencies/tests -v"
+plan-command = "python3 tools/dependencies/build.py plan"

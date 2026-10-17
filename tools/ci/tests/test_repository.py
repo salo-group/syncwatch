@@ -197,6 +197,11 @@ class WorkflowChecks(unittest.TestCase):
         action = self.root / ".github/actions/upload-native/action.yml"
         action.parent.mkdir(parents=True)
         action.write_text((REPOSITORY / ".github/actions/upload-native/action.yml").read_text())
+        reusable = self.root / ".github/workflows/dependency-build.yml"
+        reusable.write_text((REPOSITORY / ".github/workflows/dependency-build.yml").read_text())
+        action = self.root / ".github/actions/dependency-build/action.yml"
+        action.parent.mkdir(parents=True)
+        action.write_text((REPOSITORY / ".github/actions/dependency-build/action.yml").read_text())
 
     def validate(self, mutate):
         workflow = copy.deepcopy(self.workflow)
@@ -263,6 +268,34 @@ class WorkflowChecks(unittest.TestCase):
     def test_artifact_identity_cannot_omit_commit(self):
         with self.assertRaisesRegex(ValidationError, "identify platform"):
             self.validate(lambda data: data["jobs"]["windows"]["steps"][-1]["with"].update({"name": "latest-build"}))
+
+    def test_dependency_matrix_cannot_be_replaced_by_a_constant_subset(self):
+        with self.assertRaisesRegex(ValidationError, "complete selected matrix"):
+            self.validate(lambda data: data["jobs"]["dependencies"]["strategy"].update({"matrix": {"component": ["ignored"]}}))
+
+    def test_dependency_workflow_cannot_use_a_remote_reference(self):
+        with self.assertRaisesRegex(ValidationError, "repository-owned reusable"):
+            self.validate(lambda data: data["jobs"]["dependencies"].update({"uses": "other/repository/.github/workflows/build.yml@main"}))
+
+    def test_dependency_build_failures_cannot_be_masked(self):
+        with self.assertRaisesRegex(ValidationError, "failures must propagate"):
+            self.validate(lambda data: data["jobs"]["dependencies"].update({"continue-on-error": True}))
+
+    def test_dependency_matrix_cannot_use_a_change_filter_outside_the_validated_plan(self):
+        with self.assertRaisesRegex(ValidationError, "matrix expansion"):
+            self.validate(lambda data: data["jobs"]["dependencies"].update({"if": "false"}))
+
+    def test_dependency_planner_cannot_be_replaced_by_a_success_stub(self):
+        with self.assertRaisesRegex(ValidationError, "real source manifests"):
+            self.validate(lambda data: data["jobs"]["dependency-plan"]["steps"][-1].update({"run": "true"}))
+
+    def test_reusable_dependency_job_cannot_be_unbounded(self):
+        path = self.root / ".github/workflows/dependency-build.yml"
+        content = json.loads(path.read_text())
+        content["jobs"]["build"].pop("timeout-minutes")
+        path.write_text(json.dumps(content) + "\n")
+        with self.assertRaisesRegex(ValidationError, "bounded timeout"):
+            self.validate(lambda data: None)
 
 
 if __name__ == "__main__":

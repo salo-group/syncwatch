@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "components": {
+    "fastjsonschema": {
+      "status": "ready",
+      "always": true,
+      "roots": [
+        "3rdparty/fastjsonschema"
+      ],
+      "sources": {
+        "3rdparty/fastjsonschema": {
+          "revision": "4f1ed6d9c0462f3522a66f49c8f3dc482300101b",
+          "license": "BSD-3-Clause",
+          "notices": [
+            "LICENSE"
+          ],
+          "requires": [],
+          "unusedSubmodules": {
+            "JSON-Schema-Test-Suite": "Upstream development test corpus; not used by the runtime source package"
+          }
+        }
+      },
+      "inputs": [
+        "contracts",
+        "tools/contracts/pyproject.toml"
+      ],
+      "watch": [
+        "3rdparty/fastjsonschema",
+        "contracts",
+        "tools/contracts"
+      ],
+      "targets": {
+        "linux-x64": {
+          "toolchains": {
+            "python": {
+              "command": [
+                "{python}",
+                "--version"
+              ],
+              "pattern": "^Python 3\\.(?:1[2-9]|[2-9][0-9])\\.[0-9]+$"
+            }
+          },
+          "environment": {},
+          "flags": {
+            "format": "python-source-v1",
+            "version": "2.21.2"
+          },
+          "command": [
+            "{python}",
+            "tools/dependencies/components/fastjsonschema.py"
+          ],
+          "timeoutSeconds": 300
+        },
+        "macos-arm64": {
+          "toolchains": {
+            "python": {
+              "command": [
+                "{python}",
+                "--version"
+              ],
+              "pattern": "^Python 3\\.(?:1[2-9]|[2-9][0-9])\\.[0-9]+$"
+            }
+          },
+          "environment": {},
+          "flags": {
+            "format": "python-source-v1",
+            "version": "2.21.2"
+          },
+          "command": [
+            "{python}",
+            "tools/dependencies/components/fastjsonschema.py"
+          ],
+          "timeoutSeconds": 300
+        },
+        "windows-x64": {
+          "toolchains": {
+            "python": {
+              "command": [
+                "{python}",
+                "--version"
+              ],
+              "pattern": "^Python 3\\.(?:1[2-9]|[2-9][0-9])\\.[0-9]+$"
+            }
+          },
+          "environment": {},
+          "flags": {
+            "format": "python-source-v1",
+            "version": "2.21.2"
+          },
+          "command": [
+            "{python}",
+            "tools/dependencies/components/fastjsonschema.py"
+          ],
+          "timeoutSeconds": 300
+        }
+      }
+    },
+    "call-host": {
+      "status": "unavailable",
+      "reason": "CEF, CefSharp, Chromium and transitive sources are not resolved",
+      "plannedIn": "PR03"
+    },
+    "design-generator": {
+      "status": "unavailable",
+      "reason": "Style Dictionary transitive runtime sources are not resolved",
+      "plannedIn": "PR05"
+    },
+    "syncplay-runtime": {
+      "status": "unavailable",
+      "reason": "CPython, Twisted TLS and transitive sources are not resolved",
+      "plannedIn": "PR08"
+    },
+    "libvlc": {
+      "status": "unavailable",
+      "reason": "Selected VLC modules and contrib source graph are not resolved",
+      "plannedIn": "PR10"
+    }
+  }
+}

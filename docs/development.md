@@ -11,6 +11,9 @@ node --test tools/ci/tests/artifact_upload.test.mjs
 git submodule update --init --checkout --depth=1 -- 3rdparty/fastjsonschema
 python3 tools/contracts/check_contracts.py
 python3 -m unittest discover -s tools/contracts/tests -v
+python3 tools/dependencies/build.py check
+python3 -m unittest discover -s tools/dependencies/tests -v
+node --test tools/dependencies/tests/cache.test.mjs
 git diff --check
 ```
 
@@ -20,15 +23,17 @@ CI tooling uses standard-library `unittest` and Node's built-in test runner. Tes
 
 ## Repository workflow
 
-`.github/workflows/repository.yml` runs on pull requests, pushes to `main`, merge-group checks, and manual requests. It performs repository validation, CI tooling tests, shared contract checks/tests, macOS native checks, and Windows native checks as five independent jobs. The final `ci/required` job succeeds only when all five report `success`; missing, failed, canceled, skipped, or unknown results fail.
+`.github/workflows/repository.yml` runs on pull requests, pushes to `main`, merge-group checks, manual requests, and a weekly cold-build schedule. It performs repository validation, CI tooling tests, shared contract checks/tests, macOS native checks, Windows native checks, dependency planning, and the selected dependency build matrix. The final `ci/required` job succeeds only when every selected job reports `success`; missing, failed, canceled, skipped, or unknown results fail.
 
-The workflow uses JSON-compatible YAML, allowing strict validation with the Python standard library. Use that format when editing this workflow. Checkout uses the hosted runner's Git and shell to fetch the exact GitHub workflow revision from this public repository. Only the contract job initializes its required fastjsonschema source, without recursing into upstream development dependencies. After source initialization, contract validation runs offline. Repository jobs use Ubuntu 24.04; native jobs use the declared macOS/Windows images. Each job checks the Python runtime requirement. A repository-owned Node 24 action retains prepared native archives without installing external action packages.
+The workflows use JSON-compatible YAML, allowing strict validation with the Python standard library. Use that format when editing them. Checkout uses the hosted runner's Git and shell to fetch the exact GitHub workflow revision from this public repository. Contract and dependency jobs initialize their required pinned sources without recursively fetching unused upstream development dependencies. After source initialization, contract validation runs offline. Repository jobs use Ubuntu 24.04; native jobs use the declared macOS/Windows images. Each job checks the Python runtime requirement. Repository-owned Node 24 actions retain archives and verify trusted dependency caches without installing external action packages. The workflow grants only repository-content and Actions read permissions.
 
 Workflow policy fixes the current job set and required aggregation. Introducing additional workflows or component jobs includes a corresponding policy/test update so their actual results participate in merge checks. Physical media acceptance is added by later deliverables.
 
 Repository merge protection is a GitHub setting, separate from the workflow file. Require the actual `ci/required` status after it has run; preserve existing review and access rules when configuring it. Check a pull request's real merge eligibility and result for the selected revision rather than assuming the file alone enforces protection.
 
 See [native development](native-development.md) for the implemented Swift/macOS and C#/WPF shells, declared SDKs, formatting, build/test commands, retained artifacts, and interactive launch/close checks. Repository policy also verifies native SDK selection, framework targets, local project references, and empty registry sources. Provider integration and real movie/call acceptance remain planned.
+
+See [dependency builds](dependency-builds.md) for component manifests, exact source snapshots, cold-build commands, input keys, cache trust, and current unavailable graphs. The reusable dependency workflow runs the existing validator source-package build on Linux/macOS/Windows; later source-graph PRs register their own real builds.
 
 ## Pull request destination
 

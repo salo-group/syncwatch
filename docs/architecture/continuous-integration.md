@@ -1,6 +1,6 @@
 # Continuous integration
 
-GitHub Actions is the CI orchestrator for SyncWatch. Repository-owned scripts under `tools/ci/` run the same validation and build commands locally and on runners. The five CI deliverables below are part of the [pull request plan](pull-request-plan.md). CI01, CI02, shared contract checks, and regression tests are implemented; dependency, integration, and release jobs remain planned. See [development setup](../development.md) for executable commands. Repository merge enforcement is configured and verified separately in GitHub.
+GitHub Actions is the CI orchestrator for SyncWatch. Repository-owned scripts under `tools/ci/` and `tools/dependencies/` run the same validation and build commands locally and on runners. The five CI deliverables below are part of the [pull request plan](pull-request-plan.md). CI01-CI03, shared contract checks, and regression tests are implemented. The validator source package exercises dependency infrastructure; other component graphs, integration, and release jobs remain planned. See [development setup](../development.md) for executable commands. Repository merge enforcement is configured and verified separately in GitHub.
 
 ## Delivery order
 
@@ -31,7 +31,7 @@ If a merge queue is enabled, include its `merge_group` event in required automat
 
 Use a stable `ci/required` check for merge decisions. Its required-job set follows the components implemented for that revision and the actual change impact. An intentionally irrelevant job can be excluded from that set; a selected job that fails, is canceled, or is unexpectedly skipped cannot satisfy it. Runner allocation, provisioning, authentication, and dependency failures remain visible failures or incomplete work.
 
-The current workflow always requires repository validation, CI regression tests, shared contracts, macOS native checks, and Windows native checks. All five run for every workflow event; component-based selection is introduced with dependency infrastructure.
+The current workflow always requires repository validation, CI regression tests, shared contracts, macOS native checks, Windows native checks, dependency planning, and the selected dependency matrix. The validator source package remains a baseline on every event. Other ready components are selected from their declared inputs/watched paths; unavailable components are reported explicitly. Unknown comparison history selects all ready components. Scheduled and explicitly cold manual runs rebuild all ready components without cache reuse.
 
 Test aggregation with deliberately failing fixtures and documentation-only changes. Avoid workflow-level path filtering that prevents the required status from being emitted. Configure branch protection or a repository ruleset only after the real status exists, and verify enforcement where repository permissions and account features permit it. Workflow YAML alone does not enforce merge policy.
 
@@ -50,6 +50,8 @@ Read-only repository permissions are the default for pull-request jobs, and sign
 All library and build-tool sources follow the [submodule policy](dependencies.md), including transitive dependencies. Provision declared SDKs/tools, initialize exact source revisions, then run offline component build steps with implicit downloads disabled. Bootstrap checkout using runner Git/shell capabilities; source-based reusable actions or helpers must also follow the source policy, without floating remote references.
 
 Cache identity includes the full source graph, build flags, target architecture, toolchain/SDK versions, build-script version, and artifact schema. A cache hit does not prove reproducibility: execute clean scheduled/manual rebuilds and rebuild affected components after relevant input changes. Verify artifact inputs and digests before reuse, and isolate untrusted artifacts/caches from trusted signing jobs.
+
+The [dependency build infrastructure](../dependency-builds.md) implements exact-revision source initialization, Git archive SHA-256, input keys, bounded artifact verification, and reusable jobs. Only completed successful canonical main workflows can supply a shared artifact cache. Pull-request results cannot enter that trust scope. Every source-graph PR must add its real recipe, complete source inventory, download controls, and cache-free validation; the framework does not establish source closure for an unimplemented component.
 
 Store build artifacts, sanitized test reports, and relevant screenshots as CI artifacts with a bounded retention policy. Keep generated outputs and raw session data outside Git. Dependency artifacts carry their source/build manifests and notices; they are not substituted for source submodules.
 

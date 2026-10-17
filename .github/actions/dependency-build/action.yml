@@ -1,0 +1,11 @@
+{
+  "name": "Build a pinned dependency",
+  "description": "Verify inputs, restore trusted cache bytes, and run the repository build entry point",
+  "inputs": {
+    "component": {"description": "Registered component", "required": true},
+    "platform": {"description": "Registered OS and architecture", "required": true},
+    "cold": {"description": "Ignore caches", "default": "false"},
+    "cache-token": {"description": "Read-only Actions token for cache discovery", "required": true}
+  },
+  "runs": {"using": "node24", "main": "build.mjs"}
+}

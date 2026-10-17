@@ -1,0 +1,57 @@
+{
+  "name": "Pinned dependency build",
+  "on": {
+    "workflow_call": {
+      "inputs": {
+        "component": {
+          "required": true,
+          "type": "string"
+        },
+        "platform": {
+          "required": true,
+          "type": "string"
+        },
+        "cold": {
+          "required": true,
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "permissions": {
+    "contents": "read",
+    "actions": "read"
+  },
+  "defaults": {
+    "run": {
+      "shell": "bash"
+    }
+  },
+  "jobs": {
+    "build": {
+      "name": "Build and verify dependency",
+      "runs-on": "${{ fromJSON('{\"linux-x64\":\"ubuntu-24.04\",\"macos-arm64\":\"macos-15\",\"windows-x64\":\"windows-2025\"}')[inputs.platform] }}",
+      "timeout-minutes": 270,
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\n${{ inputs.platform == 'windows-x64' && 'python' || 'python3' }} -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Verify source inputs, build, and retain artifacts",
+          "uses": "./.github/actions/dependency-build",
+          "with": {
+            "component": "${{ inputs.component }}",
+            "platform": "${{ inputs.platform }}",
+            "cold": "${{ inputs.cold }}",
+            "cache-token": "${{ github.token }}"
+          }
+        }
+      ]
+    }
+  }
+}

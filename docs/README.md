@@ -6,6 +6,7 @@ SyncWatch lets people watch their local movie files together with synchronized p
 
 - [Development setup](development.md): repository checks, tooling requirements, and initial CI behavior.
 - [Native development](native-development.md): Swift/macOS and C#/WPF shells, SDK requirements, formatting, builds, tests, and launch commands.
+- [Dependency builds](dependency-builds.md): source manifests, reproducible entry points, cold builds, input keys, trusted caches, and currently unavailable components.
 - [Product requirements](architecture/product-requirements.md): library, playback, synchronization, calls, settings, and resource lifecycle.
 - [Application architecture](architecture/README.md): components, state ownership, native clients, and integration gates.
 - [Shared contracts](architecture/contracts.md): versioned schemas, wire units/bounds, ordering, IPC, and acceptance fixtures.

@@ -12,10 +12,24 @@
         "checks_requested"
       ]
     },
-    "workflow_dispatch": {}
+    "workflow_dispatch": {
+      "inputs": {
+        "cold": {
+          "description": "Rebuild dependencies without reading caches",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "schedule": [
+      {
+        "cron": "23 4 * * 1"
+      }
+    ]
   },
   "permissions": {
-    "contents": "read"
+    "contents": "read",
+    "actions": "read"
   },
   "concurrency": {
     "group": "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}",
@@ -66,6 +80,10 @@
         {
           "name": "Artifact transport regression tests",
           "run": "node --test tools/ci/tests/artifact_upload.test.mjs"
+        },
+        {
+          "name": "Dependency infrastructure tests",
+          "run": "python3 -m unittest discover -s tools/dependencies/tests -v\nnode --test tools/dependencies/tests/cache.test.mjs"
         }
       ]
     },
@@ -170,7 +188,9 @@
         "tests",
         "contracts",
         "apple",
-        "windows"
+        "windows",
+        "dependency-plan",
+        "dependencies"
       ],
       "steps": [
         {
@@ -186,9 +206,49 @@
           "env": {
             "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
           },
-          "run": "python3 tools/ci/required_status.py repository tests contracts apple windows"
+          "run": "python3 tools/ci/required_status.py repository tests contracts apple windows dependency-plan dependencies"
         }
       ]
+    },
+    "dependency-plan": {
+      "name": "Dependency manifests and selection",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 10,
+      "outputs": {
+        "matrix": "${{ steps.plan.outputs.matrix }}"
+      },
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Select registered dependency builds",
+          "id": "plan",
+          "run": "python3 tools/dependencies/build.py plan"
+        }
+      ]
+    },
+    "dependencies": {
+      "name": "Dependency ${{ matrix.component }} / ${{ matrix.platform }}",
+      "needs": [
+        "dependency-plan"
+      ],
+      "strategy": {
+        "fail-fast": false,
+        "matrix": "${{ fromJSON(needs.dependency-plan.outputs.matrix) }}"
+      },
+      "uses": "./.github/workflows/dependency-build.yml",
+      "with": {
+        "component": "${{ matrix.component }}",
+        "platform": "${{ matrix.platform }}",
+        "cold": "${{ matrix.cold }}"
+      },
+      "if": "${{ needs.dependency-plan.result == 'success' }}"
     }
   }
 }

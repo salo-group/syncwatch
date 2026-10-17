@@ -13,3 +13,5 @@ git submodule update --init --recursive
 ```
 
 The repository contains native shells in `apps/apple/` and `apps/windows/`, domain modules in `packages/apple-domain/` and `packages/windows-domain/`, the platform-neutral design package, shared contracts in `contracts/`, pinned dependency sources, and validation/build tooling under `tools/`. See [native development](docs/native-development.md) for toolchains, formatting, builds, tests, and launch commands; [development setup](docs/development.md) covers repository checks. Player, synchronization, call, and complete product UI integrations remain planned.
+
+[Dependency builds](docs/dependency-builds.md) describes source manifests and shared local/CI build commands, including cold builds and verified caches. Product-engine dependency graphs are registered by their own implementation changes before integration.
