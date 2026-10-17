@@ -31,6 +31,8 @@ Before building a component:
 
 Compilers, platform SDKs, and system frameworks such as SwiftUI, AppKit, Foundation, WebKit, .NET, and WPF are build-platform requirements. This exception includes SDK-provided Swift Testing, compiler analyzers, formatting tools, and the .NET reference/runtime packs used by the dependency-free native shells. Toolchain versions and commands are declared in [native development](../native-development.md); no NuGet test framework or formatter package is installed. Google Meet is a remote service rather than a vendored source library.
 
+Python and Node.js are developer/runner toolchains. The CI artifact adapter is first-party code using only Node built-ins; its local JavaScript action runs with the runner-provided Node 24 runtime. Its tests require Node 22 or newer. It installs no npm packages or external Actions. The GitHub artifact service is remote infrastructure, with the supported interface and validation boundary described in [continuous integration](continuous-integration.md).
+
 ## Dependency closure still required
 
 | Component | Required source graph | Status |

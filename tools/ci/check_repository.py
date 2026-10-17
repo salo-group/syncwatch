@@ -184,7 +184,7 @@ def check_submodules(root: Path) -> None:
 
 def check_workflows(root: Path) -> None:
     paths = sorted((root / ".github/workflows").glob("*.y*ml"))
-    require(len(paths) == 1, "use one repository workflow until native lanes are introduced")
+    require(len(paths) == 1, "use one workflow with explicit repository and native lanes")
     workflow = load_json(paths[0])
     require(isinstance(workflow, dict), "workflow must be a JSON-compatible YAML object")
     require(workflow.get("permissions") == {"contents": "read"}, "CI must use read-only repository permissions")
@@ -194,14 +194,19 @@ def check_workflows(root: Path) -> None:
     require(events["push"] == {"branches": ["main"]}, "main pushes must run without path filters")
     require(workflow.get("concurrency", {}).get("cancel-in-progress") is True, "superseded checks must cancel")
     jobs = workflow.get("jobs", {})
-    require(set(jobs) == {"repository", "tests", "contracts", "required"}, "unexpected repository job set")
+    selected = ["repository", "tests", "contracts", "apple", "windows"]
+    require(set(jobs) == {*selected, "required"}, "unexpected repository job set")
+    runners = {name: "ubuntu-24.04" for name in ("repository", "tests", "contracts", "required")}
+    runners.update({"apple": "macos-15", "windows": "windows-2025"})
     for name, job in jobs.items():
-        require(job.get("runs-on") == "ubuntu-24.04", f"{name}: use the declared runner image")
-        require(type(job.get("timeout-minutes")) is int and 0 < job["timeout-minutes"] <= 15, f"{name}: require a bounded timeout")
+        require(job.get("runs-on") == runners[name], f"{name}: use the declared runner image")
+        maximum = 30 if name in {"apple", "windows"} else 15
+        require(type(job.get("timeout-minutes")) is int and 0 < job["timeout-minutes"] <= maximum, f"{name}: require a bounded timeout")
         require(not job.get("continue-on-error"), f"{name}: failures must propagate")
         require("permissions" not in job and "secrets" not in job and "environment" not in job, f"{name}: no privileged job overrides")
         for step in job.get("steps", []):
-            require("uses" not in step, "use runner tools and repository-owned scripts")
+            if "uses" in step:
+                require(name in {"apple", "windows"} and step["uses"] == "./.github/actions/upload-native", "use only the declared repository-owned action")
             require(not step.get("continue-on-error"), "step failures must propagate")
     commands = {step.get("run") for step in jobs["contracts"].get("steps", [])}
     require(
@@ -212,12 +217,28 @@ def check_workflows(root: Path) -> None:
         }.issubset(commands),
         "contract job must initialize pinned sources and execute its checks and tests",
     )
+    for name, python in (("apple", "python3"), ("windows", "python")):
+        steps = jobs[name].get("steps", [])
+        require(any(step.get("run") == f"{python} tools/ci/native_job.py {name}" for step in steps), "native jobs must execute real native checks")
+        uploads = [step for step in steps if "uses" in step]
+        require(len(uploads) == 1, "native jobs must retain one validation artifact")
+        upload = uploads[0]
+        require(upload.get("if") == "${{ always() }}", "native failure reports must remain available")
+        require(upload.get("timeout-minutes") == 5, "native uploads must have a bounded timeout")
+        require(upload.get("with") == {
+            "archive": f"artifacts/native/{name}/artifact.zip",
+            "name": f"syncwatch-{name}-" + "${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+        }, "native artifacts must identify platform, commit, run, and attempt")
+    test_commands = {step.get("run") for step in jobs["tests"]["steps"]}
+    require("node --test tools/ci/tests/artifact_upload.test.mjs" in test_commands, "artifact transport tests must execute")
+    action = load_json(root / ".github/actions/upload-native/action.yml")
+    require(action.get("runs") == {"using": "node24", "main": "upload.mjs"}, "artifact action must use its declared runner runtime")
     required = jobs["required"]
     require(required.get("name") == "ci/required", "required check name must remain stable")
     require(required.get("if") == "${{ always() }}", "aggregate must evaluate unsuccessful dependencies")
-    require(required.get("needs") == ["repository", "tests", "contracts"], "aggregate must cover every check")
+    require(required.get("needs") == selected, "aggregate must cover every check")
     final = required["steps"][-1]
-    require(final.get("run") == "python3 tools/ci/required_status.py repository tests contracts", "aggregate must validate the selected results")
+    require(final.get("run") == "python3 tools/ci/required_status.py " + " ".join(selected), "aggregate must validate the selected results")
     require(final.get("env") == {"CI_NEEDS_JSON": "${{ toJSON(needs) }}"}, "aggregate must inspect actual job results")
 
 

@@ -1,0 +1,14 @@
+{
+  "name": "syncwatch-ci-artifacts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "test": "node --test tests/artifact_upload.test.mjs"
+  },
+  "dependencies": {}
+}

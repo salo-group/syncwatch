@@ -1,6 +1,6 @@
 # Continuous integration
 
-GitHub Actions is the CI orchestrator for SyncWatch. Repository-owned scripts under `tools/ci/` run the same validation and build commands locally and on runners. The five CI deliverables below are part of the [pull request plan](pull-request-plan.md). The CI01 repository workflow, shared contract job, and regression tests are implemented; native, dependency, integration, and release jobs remain planned. See [development setup](../development.md) for executable commands. Repository merge enforcement is configured and verified separately in GitHub.
+GitHub Actions is the CI orchestrator for SyncWatch. Repository-owned scripts under `tools/ci/` run the same validation and build commands locally and on runners. The five CI deliverables below are part of the [pull request plan](pull-request-plan.md). CI01, CI02, shared contract checks, and regression tests are implemented; dependency, integration, and release jobs remain planned. See [development setup](../development.md) for executable commands. Repository merge enforcement is configured and verified separately in GitHub.
 
 ## Delivery order
 
@@ -31,6 +31,8 @@ If a merge queue is enabled, include its `merge_group` event in required automat
 
 Use a stable `ci/required` check for merge decisions. Its required-job set follows the components implemented for that revision and the actual change impact. An intentionally irrelevant job can be excluded from that set; a selected job that fails, is canceled, or is unexpectedly skipped cannot satisfy it. Runner allocation, provisioning, authentication, and dependency failures remain visible failures or incomplete work.
 
+The current workflow always requires repository validation, CI regression tests, shared contracts, macOS native checks, and Windows native checks. All five run for every workflow event; component-based selection is introduced with dependency infrastructure.
+
 Test aggregation with deliberately failing fixtures and documentation-only changes. Avoid workflow-level path filtering that prevents the required status from being emitted. Configure branch protection or a repository ruleset only after the real status exists, and verify enforcement where repository permissions and account features permit it. Workflow YAML alone does not enforce merge policy.
 
 Automated integration and physical/provider acceptance have distinct results. Synthetic devices, mocked capabilities, hosted compilation, and a loaded Meet page cannot satisfy real-call or hardware requirements. Final acceptance identifies the tested commit and exact candidate artifact digests.
@@ -50,6 +52,10 @@ All library and build-tool sources follow the [submodule policy](dependencies.md
 Cache identity includes the full source graph, build flags, target architecture, toolchain/SDK versions, build-script version, and artifact schema. A cache hit does not prove reproducibility: execute clean scheduled/manual rebuilds and rebuild affected components after relevant input changes. Verify artifact inputs and digests before reuse, and isolate untrusted artifacts/caches from trusted signing jobs.
 
 Store build artifacts, sanitized test reports, and relevant screenshots as CI artifacts with a bounded retention policy. Keep generated outputs and raw session data outside Git. Dependency artifacts carry their source/build manifests and notices; they are not substituted for source submodules.
+
+Native archives use the first-party action in `.github/actions/upload-native/` and Node's built-in HTTPS, filesystem, and hashing APIs. It implements GitHub.com's [Results artifact service interface](https://github.com/actions/toolkit/blob/main/packages/artifact/src/generated/results/api/v1/artifact.ts): create an archive artifact, upload its bytes to signed storage, and finalize its size/digest. The runner supplies its job-scoped runtime identity. This adapter targets GitHub.com, with no GitHub Enterprise Server compatibility claim. Transport errors fail the job; credentials, signed URLs, and service response bodies are excluded from diagnostics. Regression tests cover transport failures and credential suppression; live upload/download checks are required when changing this adapter.
+
+The current retention limit is seven days, capped by the repository's limit. Each native archive includes a stage-level XML report and a manifest identifying the exact source and payload digests. See [native artifact contents and limitations](../native-development.md#native-ci-and-artifacts).
 
 ## Candidate builds and release acceptance
 

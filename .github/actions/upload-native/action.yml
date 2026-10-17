@@ -1,0 +1,18 @@
+{
+  "name": "Store native validation artifact",
+  "description": "Upload one prepared ZIP to the current workflow run without installed packages",
+  "inputs": {
+    "archive": {
+      "description": "Prepared ZIP inside the checked-out workspace",
+      "required": true
+    },
+    "name": {
+      "description": "Immutable platform, commit, run, and attempt identity",
+      "required": true
+    }
+  },
+  "runs": {
+    "using": "node24",
+    "main": "upload.mjs"
+  }
+}

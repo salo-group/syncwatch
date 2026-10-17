@@ -62,6 +62,10 @@
         {
           "name": "CI regression tests",
           "run": "python3 -m unittest discover -s tools/ci/tests -v"
+        },
+        {
+          "name": "Artifact transport regression tests",
+          "run": "node --test tools/ci/tests/artifact_upload.test.mjs"
         }
       ]
     },
@@ -92,6 +96,70 @@
         }
       ]
     },
+    "apple": {
+      "name": "Native macOS arm64",
+      "runs-on": "macos-15",
+      "timeout-minutes": 30,
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Validate and build the native application",
+          "env": {
+            "CI_HEAD_COMMIT": "${{ github.event.pull_request.head.sha || github.sha }}"
+          },
+          "run": "python3 tools/ci/native_job.py apple"
+        },
+        {
+          "name": "Retain candidate and validation reports",
+          "if": "${{ always() }}",
+          "timeout-minutes": 5,
+          "uses": "./.github/actions/upload-native",
+          "with": {
+            "archive": "artifacts/native/apple/artifact.zip",
+            "name": "syncwatch-apple-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
+        }
+      ]
+    },
+    "windows": {
+      "name": "Native Windows x64",
+      "runs-on": "windows-2025",
+      "timeout-minutes": 30,
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Validate and build the native application",
+          "env": {
+            "CI_HEAD_COMMIT": "${{ github.event.pull_request.head.sha || github.sha }}"
+          },
+          "run": "python tools/ci/native_job.py windows"
+        },
+        {
+          "name": "Retain candidate and validation reports",
+          "if": "${{ always() }}",
+          "timeout-minutes": 5,
+          "uses": "./.github/actions/upload-native",
+          "with": {
+            "archive": "artifacts/native/windows/artifact.zip",
+            "name": "syncwatch-windows-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
+        }
+      ]
+    },
     "required": {
       "name": "ci/required",
       "runs-on": "ubuntu-24.04",
@@ -100,7 +168,9 @@
       "needs": [
         "repository",
         "tests",
-        "contracts"
+        "contracts",
+        "apple",
+        "windows"
       ],
       "steps": [
         {
@@ -116,7 +186,7 @@
           "env": {
             "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
           },
-          "run": "python3 tools/ci/required_status.py repository tests contracts"
+          "run": "python3 tools/ci/required_status.py repository tests contracts apple windows"
         }
       ]
     }

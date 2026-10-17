@@ -194,6 +194,9 @@ class WorkflowChecks(unittest.TestCase):
         self.path = self.root / ".github/workflows/repository.yml"
         self.path.parent.mkdir(parents=True)
         self.workflow = json.loads((REPOSITORY / ".github/workflows/repository.yml").read_text())
+        action = self.root / ".github/actions/upload-native/action.yml"
+        action.parent.mkdir(parents=True)
+        action.write_text((REPOSITORY / ".github/actions/upload-native/action.yml").read_text())
 
     def validate(self, mutate):
         workflow = copy.deepcopy(self.workflow)
@@ -240,6 +243,26 @@ class WorkflowChecks(unittest.TestCase):
     def test_contract_job_cannot_omit_regression_tests(self):
         with self.assertRaisesRegex(ValidationError, "execute its checks"):
             self.validate(lambda data: data["jobs"]["contracts"]["steps"].pop(3))
+
+    def test_native_lanes_cannot_use_unspecified_runner_images(self):
+        with self.assertRaisesRegex(ValidationError, "declared runner"):
+            self.validate(lambda data: data["jobs"]["apple"].update({"runs-on": "macos-latest"}))
+
+    def test_native_checks_cannot_be_removed(self):
+        with self.assertRaisesRegex(ValidationError, "real native checks"):
+            self.validate(lambda data: data["jobs"]["windows"]["steps"].pop(1))
+
+    def test_remote_actions_cannot_replace_local_artifact_action(self):
+        with self.assertRaisesRegex(ValidationError, "repository-owned action"):
+            self.validate(lambda data: data["jobs"]["apple"]["steps"][-1].update({"uses": "external/action@main"}))
+
+    def test_failure_report_upload_cannot_be_success_only(self):
+        with self.assertRaisesRegex(ValidationError, "failure reports"):
+            self.validate(lambda data: data["jobs"]["apple"]["steps"][-1].pop("if"))
+
+    def test_artifact_identity_cannot_omit_commit(self):
+        with self.assertRaisesRegex(ValidationError, "identify platform"):
+            self.validate(lambda data: data["jobs"]["windows"]["steps"][-1]["with"].update({"name": "latest-build"}))
 
 
 if __name__ == "__main__":

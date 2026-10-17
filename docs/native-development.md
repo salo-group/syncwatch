@@ -63,4 +63,14 @@ Both domain implementations consume the same four run/generation ownership examp
 
 For interactive shell acceptance, open each built application in a logged-in desktop session, confirm a visible window titled SyncWatch, resize it, close the window, and quit the application if its platform retains the process. Verify there is no remaining owned application process after quitting. Capture the visible window for its implementation review. A successful background build or remote process start alone does not establish visible-window acceptance.
 
-Build outputs, SDKs, caches, and screenshots stay outside tracked sources. Native GitHub build/test lanes and unsigned artifact retention are introduced by CI02; current repository/contract CI does not substitute for running native checks.
+Build outputs, SDKs, caches, and screenshots stay outside tracked sources. Hosted checks do not establish interactive, media, or call acceptance.
+
+## Native CI and artifacts
+
+The required native jobs run on `macos-15` arm64 with Xcode 26.3 and `windows-2025` x64 with .NET SDK 10.0.402. The [toolchain manifest](../tools/native/toolchains.json) declares these selections. Runtime architecture checks reject an incompatible image. Runner image versions and actual toolchain versions are recorded because hosted images can change. CI selects the exact Xcode installation; local development can use a newer compatible Xcode.
+
+`python3 tools/ci/native_job.py apple` wraps the same Apple checker. On Windows, `python tools/ci/native_job.py windows` wraps the same PowerShell checker and provisions the exact SDK from its SHA-512-verified official archive if unavailable. The Windows wrapper uses `RUNNER_TEMP` for isolated SDK provisioning; set it to an untracked temporary directory when invoking this CI wrapper locally. Neither native build installs library packages.
+
+Each job retains a ZIP under a platform/commit/run/attempt-specific artifact name for at most seven days. A successful archive contains an unsigned development application, `build-manifest.json`, and `validation.xml`. The manifest identifies the tested commit/tree, pull-request head, runner, toolchains, run, result, and SHA-256 of every payload file. Pull-request checks build GitHub's merge revision. The Apple bundle is nested in `SyncWatch.app.tar` to preserve executable permissions; extract it before launching. Windows output is framework-dependent and needs a compatible .NET Desktop Runtime.
+
+The XML reports validation stages (architecture, toolchain, native checks, unchanged source), rather than individual native test cases. Native assertion output remains in the job's test output. A failed build or test returns failure and retains a report-only archive when preparation is possible. Upload failure also fails the job. Checkout failure, cancellation, or a hard timeout can prevent retention. Unsigned hosted artifacts are not release packages; their manifests identify inputs and bytes without claiming signing or bit-for-bit reproducibility.
