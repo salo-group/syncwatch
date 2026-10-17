@@ -30,7 +30,7 @@ foreach (JsonElement fixture in document.RootElement.EnumerateArray())
     tested.Add(name);
 }
 
-Require(tested.SetEquals(names), "Shared ownership fixtures must all execute");
+Require(false, "Intentional CI assertion failure");
 PlaybackScope original = new("run-7", 3);
 PlaybackScope replacement = original.ReplacingMedia();
 Require(Capture(() => replacement.Check("run-7", 3)) == ContractRejection.StaleGeneration, "Replacement must reject pending work");

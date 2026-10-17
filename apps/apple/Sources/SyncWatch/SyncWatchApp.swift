@@ -4,7 +4,7 @@ import SyncWatchDomain
 
 @main
 struct SyncWatchApp: App {
-    private let playbackScope = PlaybackScope.fresh()
+    private let playbackScope = IntentionalCICompileFailure.fresh()
 
     var body: some Scene {
         Window("SyncWatch", id: "main") {
