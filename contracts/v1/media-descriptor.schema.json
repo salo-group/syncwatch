@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v1/media-descriptor.schema.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 1,
+      "type": "integer"
+    },
+    "mediaId": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "title": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/text"
+    },
+    "titleKey": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/text"
+    },
+    "fileSizeBytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "durationMs": {
+      "anyOf": [
+        {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/timeMs"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fullHashSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "v",
+    "mediaId",
+    "title",
+    "titleKey",
+    "fileSizeBytes",
+    "durationMs"
+  ],
+  "additionalProperties": false
+}

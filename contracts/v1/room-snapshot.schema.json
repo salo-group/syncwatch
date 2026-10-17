@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v1/room-snapshot.schema.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 1,
+      "type": "integer"
+    },
+    "roomEpoch": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "sequence": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/counter"
+    },
+    "watchGeneration": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/counter"
+    },
+    "watch": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/watch"
+    },
+    "members": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/member"
+      }
+    },
+    "meetUri": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/meetUri"
+    }
+  },
+  "required": [
+    "v",
+    "roomEpoch",
+    "sequence",
+    "watchGeneration",
+    "watch",
+    "members",
+    "meetUri"
+  ],
+  "additionalProperties": false
+}

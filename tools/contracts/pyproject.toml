@@ -1,0 +1,17 @@
+[project]
+name = "syncwatch-contracts"
+version = "1.0.0"
+description = "Offline reference validation of SyncWatch wire contracts"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.syncwatch]
+check-command = "python3 tools/contracts/check_contracts.py"
+test-command = "python3 -m unittest discover -s tools/contracts/tests -v"
+
+[tool.syncwatch.source-dependencies.fastjsonschema]
+path = "3rdparty/fastjsonschema"
+revision = "4f1ed6d9c0462f3522a66f49c8f3dc482300101b"
+version = "2.21.2"
+license = "BSD-3-Clause"
+runtime-dependencies = []

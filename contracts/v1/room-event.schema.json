@@ -1,0 +1,211 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v1/room-event.schema.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 1,
+      "type": "integer"
+    },
+    "type": {
+      "enum": [
+        "member.bound",
+        "member.left",
+        "catalog.updated",
+        "selection.changed",
+        "watch.started",
+        "watch.ended",
+        "media.missing",
+        "call.linkChanged"
+      ]
+    },
+    "roomEpoch": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "memberId": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "clientRunId": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "watchGeneration": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/counter"
+    },
+    "payload": {}
+  },
+  "required": [
+    "v",
+    "type",
+    "roomEpoch",
+    "sequence",
+    "memberId",
+    "clientRunId",
+    "watchGeneration",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "const": "member.bound"
+        },
+        "payload": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/member"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "member.left"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "catalog.updated"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "$ref": "https://schemas.syncwatch.invalid/v1/media-descriptor.schema.json"
+              }
+            },
+            "batchId": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            },
+            "final": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "items",
+            "batchId",
+            "final"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "selection.changed"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "mediaId": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            }
+          },
+          "required": [
+            "mediaId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "watch.started"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "mediaId": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            }
+          },
+          "required": [
+            "mediaId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "watch.ended"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "enum": [
+                "finished",
+                "user",
+                "ownerLeft"
+              ]
+            }
+          },
+          "required": [
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "media.missing"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "mediaId": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            },
+            "missing": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "mediaId",
+            "missing"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "call.linkChanged"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "meetUri": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/meetUri"
+            }
+          },
+          "required": [
+            "meetUri"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

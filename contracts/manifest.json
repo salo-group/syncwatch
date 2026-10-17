@@ -1,0 +1,15 @@
+{
+  "contractVersion": 1,
+  "schemaDialect": "http://json-schema.org/draft-07/schema#",
+  "maxFrameBytes": 65536,
+  "maxNesting": 32,
+  "schemas": {
+    "playback-state": "v1/playback-state.schema.json",
+    "media-descriptor": "v1/media-descriptor.schema.json",
+    "watch-generation": "v1/watch-generation.schema.json",
+    "call-capabilities": "v1/call-capabilities.schema.json",
+    "room-event": "v1/room-event.schema.json",
+    "room-snapshot": "v1/room-snapshot.schema.json",
+    "helper-ipc": "v1/helper-ipc.schema.json"
+  }
+}

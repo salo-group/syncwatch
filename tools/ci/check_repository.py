@@ -183,7 +183,7 @@ def check_submodules(root: Path) -> None:
 
 def check_workflows(root: Path) -> None:
     paths = sorted((root / ".github/workflows").glob("*.y*ml"))
-    require(len(paths) == 1, "CI01 requires one repository workflow")
+    require(len(paths) == 1, "use one repository workflow until native lanes are introduced")
     workflow = load_json(paths[0])
     require(isinstance(workflow, dict), "workflow must be a JSON-compatible YAML object")
     require(workflow.get("permissions") == {"contents": "read"}, "CI must use read-only repository permissions")
@@ -193,21 +193,30 @@ def check_workflows(root: Path) -> None:
     require(events["push"] == {"branches": ["main"]}, "main pushes must run without path filters")
     require(workflow.get("concurrency", {}).get("cancel-in-progress") is True, "superseded checks must cancel")
     jobs = workflow.get("jobs", {})
-    require(set(jobs) == {"repository", "tests", "required"}, "unexpected CI01 job set")
+    require(set(jobs) == {"repository", "tests", "contracts", "required"}, "unexpected repository job set")
     for name, job in jobs.items():
         require(job.get("runs-on") == "ubuntu-24.04", f"{name}: use the declared runner image")
         require(type(job.get("timeout-minutes")) is int and 0 < job["timeout-minutes"] <= 15, f"{name}: require a bounded timeout")
         require(not job.get("continue-on-error"), f"{name}: failures must propagate")
         require("permissions" not in job and "secrets" not in job and "environment" not in job, f"{name}: no privileged job overrides")
         for step in job.get("steps", []):
-            require("uses" not in step, "CI01 uses runner tools and repository-owned scripts")
+            require("uses" not in step, "use runner tools and repository-owned scripts")
             require(not step.get("continue-on-error"), "step failures must propagate")
+    commands = {step.get("run") for step in jobs["contracts"].get("steps", [])}
+    require(
+        {
+            "git submodule update --init --checkout --depth=1 -- 3rdparty/fastjsonschema",
+            "python3 tools/contracts/check_contracts.py",
+            "python3 -m unittest discover -s tools/contracts/tests -v",
+        }.issubset(commands),
+        "contract job must initialize pinned sources and execute its checks and tests",
+    )
     required = jobs["required"]
     require(required.get("name") == "ci/required", "required check name must remain stable")
     require(required.get("if") == "${{ always() }}", "aggregate must evaluate unsuccessful dependencies")
-    require(required.get("needs") == ["repository", "tests"], "aggregate must cover every check")
+    require(required.get("needs") == ["repository", "tests", "contracts"], "aggregate must cover every check")
     final = required["steps"][-1]
-    require(final.get("run") == "python3 tools/ci/required_status.py repository tests", "aggregate must validate the selected results")
+    require(final.get("run") == "python3 tools/ci/required_status.py repository tests contracts", "aggregate must validate the selected results")
     require(final.get("env") == {"CI_NEEDS_JSON": "${{ toJSON(needs) }}"}, "aggregate must inspect actual job results")
 
 

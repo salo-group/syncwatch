@@ -67,7 +67,7 @@ Example acknowledgement:
 
 `openFile` resolves an opaque local media handle through the coordinator. Remote descriptors cannot request arbitrary local paths. Network URL playback is outside the initial local-file feature set.
 
-Limit a frame to 64 KiB and bound all queues. Coalesce redundant position observations while retaining commands, acknowledgements, and failures. A duplicate command ID returns its stored result without repeating a seek. Reject unsupported major versions, malformed frames, foreign process run IDs, and stale media generations. Formal JSON schemas and exact timeout values accompany the first implementation.
+Limit a frame to 64 KiB including LF and bound all queues. Coalesce redundant position observations while retaining commands, acknowledgements, and failures. Use monotonically increasing command IDs and a bounded replay cache: return retained duplicate results without repeating a seek and reject older evicted IDs. Reject unsupported major versions, malformed frames, foreign process run IDs, and stale media generations. [Shared contracts](contracts.md) define the executable schemas, ordering, units, framing, and rejection cases. Exact runtime timeout values accompany the bridge implementation.
 
 The application owns the helper. On EOF, the helper releases its engine and exits. After a bounded graceful shutdown, the parent may terminate only its own child. Use a Windows Job Object and an owned macOS process group with a signed embedded runtime. A helper crash pauses playback without closing the UI. A replacement helper receives a new run ID and current state; obsolete pending seeks are discarded.
 

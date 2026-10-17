@@ -1,0 +1,207 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v1/common.schema.json",
+  "definitions": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "counter": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "timeMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 604800000
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "malformed",
+            "frameTooLarge",
+            "unsupportedVersion",
+            "foreignRun",
+            "staleGeneration",
+            "staleEpoch",
+            "sequenceGap",
+            "duplicate",
+            "conflict",
+            "invalidState",
+            "queueFull",
+            "unavailable",
+            "timeout",
+            "cancelled",
+            "internal"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "additionalProperties": false
+    },
+    "playback": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "unloaded",
+            "loading",
+            "ready",
+            "failed"
+          ]
+        },
+        "positionMs": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/timeMs"
+        },
+        "durationMs": {
+          "anyOf": [
+            {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/timeMs"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paused": {
+          "type": "boolean"
+        },
+        "rate": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 4
+        },
+        "seekable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "status",
+        "positionMs",
+        "durationMs",
+        "paused",
+        "rate",
+        "seekable"
+      ],
+      "additionalProperties": false
+    },
+    "member": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        },
+        "clientRunId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        },
+        "syncplayUsername": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+        }
+      },
+      "required": [
+        "memberId",
+        "clientRunId",
+        "syncplayUsername"
+      ],
+      "additionalProperties": false
+    },
+    "watch": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "idle",
+            "selected",
+            "active",
+            "ended"
+          ]
+        },
+        "mediaId": {
+          "anyOf": [
+            {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "mediaId"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "idle"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mediaId": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "mediaId": {
+                "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "meetUri": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^https://meet\\.google\\.com/[a-z]{3}-[a-z]{4}-[a-z]{3}$",
+          "maxLength": 36
+        }
+      ]
+    },
+    "commandId": {
+      "type": "string",
+      "pattern": "^cmd-[1-9][0-9]{0,15}$",
+      "minLength": 5,
+      "maxLength": 20
+    }
+  }
+}

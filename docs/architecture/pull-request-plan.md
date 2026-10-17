@@ -1,6 +1,6 @@
 # Pull request implementation plan
 
-This plan turns the [architecture](README.md) and [product requirements](product-requirements.md) into 29 reviewable implementation changes. PR01-PR24 identify product deliverables; CI01-CI05 identify continuous integration deliverables. Assign GitHub numbers when opening the corresponding pull requests. Repository CI is implemented; product and later CI deliverables remain planned.
+This plan turns the [architecture](README.md) and [product requirements](product-requirements.md) into 29 reviewable implementation changes. PR01-PR24 identify product deliverables; CI01-CI05 identify continuous integration deliverables. Assign GitHub numbers when opening the corresponding pull requests. Repository CI and shared contracts (PR01) are implemented; native applications and later deliverables remain planned.
 
 ## Execution rules
 

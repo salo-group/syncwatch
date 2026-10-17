@@ -1,24 +1,27 @@
 # Development setup
 
-The repository checks require Git and Python 3.12 or newer. They use the Python standard library and install no packages. `tools/ci/pyproject.toml` declares their runtime requirements. Editor formatting is defined by `.editorconfig`; `.gitattributes` keeps repository text in LF format.
+The repository checks require Git and Python 3.12 or newer. Repository policy checks use the standard library; contract checks load the pinned fastjsonschema submodule directly and install no packages. `tools/ci/pyproject.toml` and `tools/contracts/pyproject.toml` declare their requirements. Editor formatting is defined by `.editorconfig`; `.gitattributes` keeps repository text in LF format.
 
 Run from the repository root:
 
 ```sh
 python3 tools/ci/check_repository.py
 python3 -m unittest discover -s tools/ci/tests -v
+git submodule update --init --checkout --depth=1 -- 3rdparty/fastjsonschema
+python3 tools/contracts/check_contracts.py
+python3 -m unittest discover -s tools/contracts/tests -v
 git diff --check
 ```
 
-The checks validate first-party UTF-8 text, final newlines, whitespace, Python syntax, English documentation, local links, design JSON, component token references, source submodule registrations, and the initial workflow policy. Upstream submodule content is excluded from first-party text and documentation rules. Source-pin checks inspect Git index entries and do not need dependency downloads.
+The checks validate first-party UTF-8 text, final newlines, whitespace, Python syntax, English documentation, local links, design JSON, component token references, source submodule registrations, and workflow policy. Upstream submodule content is excluded from first-party text and documentation rules. Source-registration checks inspect Git index entries and do not need dependency downloads. Contract checks additionally verify schemas, domain invariants, acceptance fixtures, framing bounds, and trusted process/generation/room context. See [shared contracts](architecture/contracts.md) for the wire specification and validation boundary.
 
 CI tooling uses standard-library `unittest`. Tests create isolated temporary repositories and malformed inputs to verify meaningful failures, including broken links, invalid JSON/design values, copied vendor sources, missing Git links, unsafe workflow changes, and unsuccessful job results.
 
 ## Repository workflow
 
-`.github/workflows/repository.yml` runs on pull requests, pushes to `main`, merge-group checks, and manual requests. It performs repository validation and CI tooling tests as independent jobs. The final `ci/required` job succeeds only when both selected jobs report `success`; missing, failed, canceled, skipped, or unknown results fail.
+`.github/workflows/repository.yml` runs on pull requests, pushes to `main`, merge-group checks, and manual requests. It performs repository validation, CI tooling tests, and shared contract checks/tests as three independent jobs. The final `ci/required` job succeeds only when all three report `success`; missing, failed, canceled, skipped, or unknown results fail.
 
-The workflow uses JSON-compatible YAML, allowing strict validation with the Python standard library. Use that format when editing this initial workflow. Checkout uses the hosted runner's Git and shell to fetch the exact GitHub workflow revision from this public repository. It does not depend on a remote checkout action or fetch vendor submodules. Ubuntu 24.04 supplies the initial runner environment; each job checks the Python runtime requirement.
+The workflow uses JSON-compatible YAML, allowing strict validation with the Python standard library. Use that format when editing this workflow. Checkout uses the hosted runner's Git and shell to fetch the exact GitHub workflow revision from this public repository. It does not depend on a remote checkout action. Only the contract job initializes its required fastjsonschema source, without recursing into upstream development dependencies. After source initialization, contract validation runs offline. Ubuntu 24.04 supplies the runner environment; each job checks the Python runtime requirement.
 
 The initial workflow policy fixes the current job set and required aggregation. Introducing additional workflows or component jobs includes a corresponding policy/test update so their actual results participate in merge checks. Native builds and physical media acceptance are added by the later CI deliverables.
 

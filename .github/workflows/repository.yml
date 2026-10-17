@@ -65,6 +65,33 @@
         }
       ]
     },
+    "contracts": {
+      "name": "Shared contracts",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 10,
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Initialize the pinned validator source",
+          "run": "git submodule update --init --checkout --depth=1 -- 3rdparty/fastjsonschema"
+        },
+        {
+          "name": "Validate contracts and acceptance fixtures offline",
+          "run": "python3 tools/contracts/check_contracts.py"
+        },
+        {
+          "name": "Contract regression tests",
+          "run": "python3 -m unittest discover -s tools/contracts/tests -v"
+        }
+      ]
+    },
     "required": {
       "name": "ci/required",
       "runs-on": "ubuntu-24.04",
@@ -72,7 +99,8 @@
       "if": "${{ always() }}",
       "needs": [
         "repository",
-        "tests"
+        "tests",
+        "contracts"
       ],
       "steps": [
         {
@@ -88,7 +116,7 @@
           "env": {
             "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
           },
-          "run": "python3 tools/ci/required_status.py repository tests"
+          "run": "python3 tools/ci/required_status.py repository tests contracts"
         }
       ]
     }

@@ -1,0 +1,1153 @@
+[
+  {
+    "name": "playback-ready",
+    "schema": "playback-state",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "status": "ready",
+      "positionMs": 140500,
+      "durationMs": 7200000,
+      "paused": true,
+      "rate": 1,
+      "seekable": true
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "playback-unloaded",
+    "schema": "playback-state",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "status": "unloaded",
+      "positionMs": 0,
+      "durationMs": null,
+      "paused": true,
+      "rate": 1,
+      "seekable": false
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "media-full-hash",
+    "schema": "media-descriptor",
+    "value": {
+      "v": 1,
+      "mediaId": "movie-1",
+      "title": "Example Movie",
+      "titleKey": "example movie",
+      "fileSizeBytes": 1000000000,
+      "durationMs": 7200000,
+      "fullHashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "error": null
+  },
+  {
+    "name": "media-unconfirmed-edition",
+    "schema": "media-descriptor",
+    "value": {
+      "v": 1,
+      "mediaId": "movie-1",
+      "title": "Example Movie",
+      "titleKey": "example movie",
+      "fileSizeBytes": 1000000000,
+      "durationMs": 7200000
+    },
+    "error": null
+  },
+  {
+    "name": "watch-active",
+    "schema": "watch-generation",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "status": "active",
+      "mediaId": "movie-1"
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "watch-idle",
+    "schema": "watch-generation",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "status": "idle",
+      "mediaId": null
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "call-capabilities-unverified",
+    "schema": "call-capabilities",
+    "value": {
+      "v": 1,
+      "canObserveJoin": false,
+      "canMuteFromNativeUI": false,
+      "canSelectDevicesFromNativeUI": false,
+      "canSetCallVolume": false,
+      "canObserveRemoteSpeaking": false,
+      "canConfirmHangup": false
+    },
+    "error": null
+  },
+  {
+    "name": "room-snapshot",
+    "schema": "room-snapshot",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 10,
+      "watchGeneration": 4,
+      "watch": {
+        "status": "active",
+        "mediaId": "movie-1"
+      },
+      "members": [
+        {
+          "memberId": "member-1",
+          "clientRunId": "run-7",
+          "syncplayUsername": "Viewer"
+        }
+      ],
+      "meetUri": null
+    },
+    "error": null
+  },
+  {
+    "name": "room-member.bound",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "member.bound",
+      "payload": {
+        "memberId": "member-1",
+        "clientRunId": "run-7",
+        "syncplayUsername": "Viewer"
+      }
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-member.left",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "member.left",
+      "payload": {}
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-catalog.updated",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "catalog.updated",
+      "payload": {
+        "items": [
+          {
+            "v": 1,
+            "mediaId": "movie-1",
+            "title": "Example Movie",
+            "titleKey": "example movie",
+            "fileSizeBytes": 1000000000,
+            "durationMs": 7200000,
+            "fullHashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "batchId": "batch-1",
+        "final": true
+      }
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-selection.changed",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 5,
+      "type": "selection.changed",
+      "payload": {
+        "mediaId": "movie-1"
+      }
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-watch.started",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 5,
+      "type": "watch.started",
+      "payload": {
+        "mediaId": "movie-1"
+      }
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-watch.ended",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 5,
+      "type": "watch.ended",
+      "payload": {
+        "reason": "user"
+      }
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-media.missing",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "media.missing",
+      "payload": {
+        "mediaId": "movie-1",
+        "missing": true
+      }
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-call.linkChanged",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "call.linkChanged",
+      "payload": {
+        "meetUri": null
+      }
+    },
+    "error": null,
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "ipc-bridge.hello",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "bridge.hello",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "supportedVersions": [
+          1
+        ]
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-sync.connect",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "sync.connect",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "host": "sync.example.invalid",
+        "port": 8999,
+        "room": "Example room",
+        "username": "Viewer",
+        "tls": true,
+        "secretHandle": "secret-1"
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-sync.disconnect",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "sync.disconnect",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {}
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-sync.setReady",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "sync.setReady",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "ready": true
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-player.setPaused",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setPaused",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "paused": true
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-player.setPosition",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "positionMs": 140500
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-player.setSpeed",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setSpeed",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "rate": 1
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-player.openFile",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.openFile",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "mediaHandle": "local-media-1"
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-bridge.shutdown",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "bridge.shutdown",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {}
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-player.state",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.state",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "status": "ready",
+        "positionMs": 140500,
+        "durationMs": 7200000,
+        "paused": true,
+        "rate": 1,
+        "seekable": true
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-sync.connection",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "sync.connection",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "state": "disconnected",
+        "error": {
+          "code": "unavailable",
+          "message": "Player is unavailable",
+          "retryable": true
+        }
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-sync.participants",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "sync.participants",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "participants": [
+          {
+            "username": "Viewer",
+            "ready": true
+          }
+        ]
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-sync.readiness",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "sync.readiness",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "ready": true
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-bridge.ready",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "replyTo": "cmd-42",
+      "type": "bridge.ready",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "syncplayRevision": "993232ab095bb810593459bc705b3e6fc64ad161"
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-player.result",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "replyTo": "cmd-42",
+      "type": "player.result",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "status": "applied",
+        "positionMs": 140500,
+        "paused": true
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-bridge.result",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "replyTo": "cmd-42",
+      "type": "bridge.result",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "status": "applied"
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-bridge.error",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "replyTo": "cmd-42",
+      "type": "bridge.error",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "code": "unavailable",
+        "message": "Player is unavailable",
+        "retryable": true
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "ipc-bridge.stopped",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "replyTo": "cmd-42",
+      "type": "bridge.stopped",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {}
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "unsupported-major",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 2,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "positionMs": 140500
+      }
+    },
+    "error": "unsupportedVersion",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "boolean-version",
+    "schema": "helper-ipc",
+    "value": {
+      "v": true,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "positionMs": 140500
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "unknown-command",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.seekElsewhere",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "positionMs": 140500
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "negative-position",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "positionMs": -1
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "seconds-instead-of-ms",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "positionMs": 1.25
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "unknown-field",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "payload": {
+        "positionMs": 140500
+      },
+      "extra": true
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "obsolete-media",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-7",
+      "mediaGeneration": 2,
+      "payload": {
+        "positionMs": 140500
+      }
+    },
+    "error": "staleGeneration",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "unallocated-media",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-7",
+      "mediaGeneration": 4,
+      "payload": {
+        "positionMs": 140500
+      }
+    },
+    "error": "staleGeneration",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "replaced-helper",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "id": "cmd-42",
+      "type": "player.setPosition",
+      "clientRunId": "run-6",
+      "mediaGeneration": 3,
+      "payload": {
+        "positionMs": 140500
+      }
+    },
+    "error": "foreignRun",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "playback-past-duration",
+    "schema": "playback-state",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "status": "ready",
+      "positionMs": 7200001,
+      "durationMs": 7200000,
+      "paused": true,
+      "rate": 1,
+      "seekable": true
+    },
+    "error": "invalidState",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "media-local-path-forbidden",
+    "schema": "media-descriptor",
+    "value": {
+      "v": 1,
+      "mediaId": "movie-1",
+      "title": "Example Movie",
+      "titleKey": "example movie",
+      "fileSizeBytes": 1000000000,
+      "durationMs": 7200000,
+      "fullHashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "localPath": "/private/movie.mp4"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "watch-idle-with-media",
+    "schema": "watch-generation",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "status": "idle",
+      "mediaId": "movie-1"
+    },
+    "error": "malformed",
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "stale-watch",
+    "schema": "watch-generation",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 3,
+      "status": "active",
+      "mediaId": "movie-1"
+    },
+    "error": "staleGeneration",
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-old-epoch",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-0",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "media.missing",
+      "payload": {
+        "mediaId": "movie-1",
+        "missing": true
+      }
+    },
+    "error": "staleEpoch",
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-sequence-gap",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 12,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "media.missing",
+      "payload": {
+        "mediaId": "movie-1",
+        "missing": true
+      }
+    },
+    "error": "sequenceGap",
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-duplicate",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 10,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "media.missing",
+      "payload": {
+        "mediaId": "movie-1",
+        "missing": true
+      }
+    },
+    "error": "duplicate",
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-obsolete-member-run",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-6",
+      "watchGeneration": 4,
+      "type": "media.missing",
+      "payload": {
+        "mediaId": "movie-1",
+        "missing": true
+      }
+    },
+    "error": "foreignRun",
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-stale-generation",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 3,
+      "type": "media.missing",
+      "payload": {
+        "mediaId": "movie-1",
+        "missing": true
+      }
+    },
+    "error": "staleGeneration",
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "room-no-second-playback-controller",
+    "schema": "room-event",
+    "value": {
+      "v": 1,
+      "roomEpoch": "epoch-1",
+      "sequence": 11,
+      "memberId": "member-1",
+      "clientRunId": "run-7",
+      "watchGeneration": 4,
+      "type": "player.setPosition",
+      "payload": {
+        "positionMs": 10
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "roomEpoch": "epoch-1",
+      "watchGeneration": 4,
+      "sequence": 10,
+      "members": {
+        "member-1": "run-7"
+      }
+    }
+  },
+  {
+    "name": "malformed-json",
+    "schema": "helper-ipc",
+    "frame": "{\n",
+    "error": "malformed"
+  },
+  {
+    "name": "duplicate-key",
+    "schema": "helper-ipc",
+    "frame": "{\"v\":1,\"v\":1}\n",
+    "error": "malformed"
+  },
+  {
+    "name": "nonfinite-json",
+    "schema": "helper-ipc",
+    "frame": "{\"v\":NaN}\n",
+    "error": "malformed"
+  },
+  {
+    "name": "missing-frame-terminator",
+    "schema": "helper-ipc",
+    "frame": "{}",
+    "error": "malformed"
+  },
+  {
+    "name": "multiple-frames",
+    "schema": "helper-ipc",
+    "frame": "{}\n{}\n",
+    "error": "malformed"
+  }
+]

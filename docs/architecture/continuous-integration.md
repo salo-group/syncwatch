@@ -1,6 +1,6 @@
 # Continuous integration
 
-GitHub Actions is the CI orchestrator for SyncWatch. Repository-owned scripts under `tools/ci/` run the same validation and build commands locally and on runners. The five CI deliverables below are part of the [pull request plan](pull-request-plan.md). The CI01 repository workflow and regression tests are implemented; native, dependency, integration, and release jobs remain planned. See [development setup](../development.md) for executable commands. Repository merge enforcement is configured and verified separately in GitHub.
+GitHub Actions is the CI orchestrator for SyncWatch. Repository-owned scripts under `tools/ci/` run the same validation and build commands locally and on runners. The five CI deliverables below are part of the [pull request plan](pull-request-plan.md). The CI01 repository workflow, shared contract job, and regression tests are implemented; native, dependency, integration, and release jobs remain planned. See [development setup](../development.md) for executable commands. Repository merge enforcement is configured and verified separately in GitHub.
 
 ## Delivery order
 
@@ -18,7 +18,7 @@ Every later component PR adds its real jobs and test commands to the existing wo
 
 | Workflow | Triggers | Work performed |
 |---|---|---|
-| Repository checks | Pull requests and pushes to `main` | Whitespace, English documentation and links, design JSON/token references, Git submodule metadata, and workflow policy |
+| Repository checks | Pull requests and pushes to `main` | Whitespace, English documentation and links, design JSON/token references, Git submodule metadata, workflow policy, shared schema/fixture validation, and CI/contract regression tests |
 | Native checks | Relevant pull requests and pushes to `main` | Swift and C# formatting, builds, tests, generated-resource consistency, and component checks as introduced |
 | Dependency builds | Relevant source/pin/toolchain changes; trusted scheduled or manual rebuilds | Build the affected complete source graphs, verify manifests/notices, and exercise cold builds |
 | Integration | Relevant implementation changes; scheduled or manual runs where appropriate | Controlled Syncplay and metadata services, native/helper integration, deterministic fixtures, failures, and cleanup |

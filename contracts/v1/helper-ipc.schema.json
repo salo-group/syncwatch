@@ -1,0 +1,620 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v1/helper-ipc.schema.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 1,
+      "type": "integer"
+    },
+    "id": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "replyTo": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "type": {
+      "enum": [
+        "bridge.hello",
+        "sync.connect",
+        "sync.disconnect",
+        "sync.setReady",
+        "player.setPaused",
+        "player.setPosition",
+        "player.setSpeed",
+        "player.openFile",
+        "bridge.shutdown",
+        "player.state",
+        "sync.connection",
+        "sync.participants",
+        "sync.readiness",
+        "bridge.ready",
+        "player.result",
+        "bridge.result",
+        "bridge.error",
+        "bridge.stopped"
+      ]
+    },
+    "clientRunId": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "mediaGeneration": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/counter"
+    },
+    "payload": {}
+  },
+  "required": [
+    "v",
+    "type",
+    "clientRunId",
+    "mediaGeneration",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "const": "bridge.hello"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "supportedVersions": {
+              "type": "array",
+              "items": {
+                "const": 1,
+                "type": "integer"
+              },
+              "minItems": 1,
+              "maxItems": 1
+            }
+          },
+          "required": [
+            "supportedVersions"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "sync.connect"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253,
+              "pattern": "^[A-Za-z0-9.:_-]+$"
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "room": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/text"
+            },
+            "username": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            },
+            "tls": {
+              "const": true,
+              "type": "boolean"
+            },
+            "secretHandle": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            }
+          },
+          "required": [
+            "host",
+            "port",
+            "room",
+            "username",
+            "tls"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "sync.disconnect"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "sync.setReady"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "ready": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "ready"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "player.setPaused"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "paused": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "paused"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "player.setPosition"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "positionMs": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/timeMs"
+            }
+          },
+          "required": [
+            "positionMs"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "player.setSpeed"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "rate": {
+              "type": "number",
+              "minimum": 0.25,
+              "maximum": 4
+            }
+          },
+          "required": [
+            "rate"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "player.openFile"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "mediaHandle": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            }
+          },
+          "required": [
+            "mediaHandle"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "bridge.shutdown"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "player.state"
+        },
+        "payload": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/playback"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "sync.connection"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "connecting",
+                "connected",
+                "disconnected"
+              ]
+            },
+            "error": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/error"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "sync.participants"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "participants": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+                  },
+                  "ready": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "username",
+                  "ready"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "participants"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "sync.readiness"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "ready": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "ready"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "bridge.ready"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "syncplayRevision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          },
+          "required": [
+            "syncplayRevision"
+          ],
+          "additionalProperties": false
+        },
+        "replyTo": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "replyTo"
+      ],
+      "not": {
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "player.result"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "applied"
+            },
+            "positionMs": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/timeMs"
+            },
+            "paused": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "status",
+            "positionMs",
+            "paused"
+          ],
+          "additionalProperties": false
+        },
+        "replyTo": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "replyTo"
+      ],
+      "not": {
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "bridge.result"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "applied"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        "replyTo": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "replyTo"
+      ],
+      "not": {
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "bridge.error"
+        },
+        "payload": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/error"
+        },
+        "replyTo": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "replyTo"
+      ],
+      "not": {
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "bridge.stopped"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "replyTo": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+        }
+      },
+      "required": [
+        "replyTo"
+      ],
+      "not": {
+        "required": [
+          "id"
+        ]
+      }
+    }
+  ]
+}

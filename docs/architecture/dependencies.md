@@ -9,10 +9,13 @@ All external library sources are pinned Git submodules under `3rdparty/`. `.gitm
 | `3rdparty/style-dictionary` | `v5.7.0` / `745264a62d01037581c6654fb4ac66bb3d245f07` | Generate platform resources from shared design data | Apache 2.0; `LICENSE` and `NOTICE` |
 | `3rdparty/syncplay` | `v1.7.6` / `993232ab095bb810593459bc705b3e6fc64ad161` | Playback synchronization client engine and server | Apache 2.0; bundled files may have separate notices |
 | `3rdparty/vlc` | `3.0.24` / `6de05adcbaf2e8b85fe86aad4169393098628119` | Embedded libVLC and C API headers | LGPL 2.1 in `COPYING.LIB`; the full application and individual modules have additional license terms |
+| `3rdparty/fastjsonschema` | `v2.21.2` / `4f1ed6d9c0462f3522a66f49c8f3dc482300101b` | Offline Draft 7 contract validation from pinned Python source | BSD 3-Clause; `LICENSE` |
 
 The Apache 2.0 requirement applies to the shared design library and Style Dictionary. It does not change VLC's license. The planned native adapters use Swift C interoperability and C# P/Invoke directly; VLCKit and LibVLCSharp are not included.
 
 Style Dictionary is a build tool. The native UI does not require a JavaScript runtime for design resources. Its pinned `package.json` requires Node.js `>=22.0.0`.
+
+The contract checker imports fastjsonschema directly from its submodule and verifies its revision, Git index pin, and source version. Its runtime graph has no third-party dependencies. Python 3.12 or newer is a developer/CI toolchain requirement. No pip packages are installed. The upstream nested JSON-Schema-Test-Suite submodule and development extras are unused by this checker. See the [tool manifest](../../tools/contracts/pyproject.toml) and [contract validation commands](contracts.md#reproducible-validation).
 
 ## Complete source graph
 
@@ -60,5 +63,6 @@ For each update, review the release and licenses, check out an exact revision, u
 - [Style Dictionary source and license](https://github.com/style-dictionary/style-dictionary).
 - [Syncplay source and license](https://github.com/Syncplay/syncplay).
 - [VideoLAN libVLC](https://www.videolan.org/vlc/libvlc.html).
+- [fastjsonschema source and license](https://github.com/horejsek/python-fastjsonschema).
 - [CEF](https://github.com/chromiumembedded/cef) and [CefSharp](https://github.com/cefsharp/CefSharp).
 - [WebView2 runtime distribution](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution).

@@ -62,7 +62,7 @@ Each device reads its own movie file. Syncplay exchanges playback state. RoomMet
 | ConnectionSupervisor | Independent recovery of playback synchronization, metadata, and call channels |
 | Design renderer | Displays state and emits user actions; contains no networking or media engine logic |
 
-Swift and C# implement the same contracts and use the same acceptance fixtures. Domain behavior remains independent of UI and provider SDK types. The Python helper adapts the selected Syncplay engine while the application remains native Swift or C#.
+Swift and C# implement the [shared contracts](contracts.md) and use the same acceptance fixtures. Domain behavior remains independent of UI and provider SDK types. The Python helper adapts the selected Syncplay engine while the application remains native Swift or C#.
 
 ## Native video integration
 
@@ -97,7 +97,7 @@ Synchronization loss pauses playback and resets the rate to 1.0. Commands from a
 
 ## Source layout
 
-The design package, documentation, and pinned submodules exist. The remaining directories below describe the planned implementation:
+The design package, documentation, contracts, contract/CI tooling, workflows, and pinned submodules exist. Native applications and runtime integrations in the layout below remain planned:
 
 ```text
 apps/apple/                 # Swift application and native platform adapters
@@ -111,8 +111,9 @@ services/room-metadata/     # C# ASP.NET Core metadata service
 tools/design/              # Custom Style Dictionary formatters
 tools/dependencies/        # Source graph and deterministic build tooling
 tools/ci/                  # Shared local/CI validation and orchestration
+tools/contracts/           # Offline reference contract validation and tests
 .github/workflows/         # Repository, platform, dependency, integration, and release jobs
-tests/                      # Contract and integration coverage
+tests/                      # Planned integration coverage
 3rdparty/                   # External source Git submodules
 docs/                       # All project documentation
 ```
@@ -141,6 +142,7 @@ A failed gate remains an unmet requirement. A change to the call provider, windo
 
 - [Product requirements](product-requirements.md).
 - [Shared design system](design-system.md).
+- [Shared contracts](contracts.md).
 - [Syncplay and room metadata](syncplay.md).
 - [Google Meet integration](google-meet.md).
 - [External dependencies](dependencies.md).

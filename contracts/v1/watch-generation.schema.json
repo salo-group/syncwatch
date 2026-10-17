@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v1/watch-generation.schema.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 1,
+      "type": "integer"
+    },
+    "roomEpoch": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "watchGeneration": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/counter"
+    },
+    "status": {
+      "enum": [
+        "idle",
+        "selected",
+        "active",
+        "ended"
+      ]
+    },
+    "mediaId": {
+      "anyOf": [
+        {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "v",
+    "roomEpoch",
+    "watchGeneration",
+    "status",
+    "mediaId"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "idle"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "mediaId": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "mediaId": {
+            "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+          }
+        }
+      }
+    }
+  ]
+}

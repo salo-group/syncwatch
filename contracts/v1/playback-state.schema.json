@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v1/playback-state.schema.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 1,
+      "type": "integer"
+    },
+    "clientRunId": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+    },
+    "mediaGeneration": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/counter"
+    },
+    "status": {
+      "enum": [
+        "unloaded",
+        "loading",
+        "ready",
+        "failed"
+      ]
+    },
+    "positionMs": {
+      "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/timeMs"
+    },
+    "durationMs": {
+      "anyOf": [
+        {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/timeMs"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "paused": {
+      "type": "boolean"
+    },
+    "rate": {
+      "type": "number",
+      "minimum": 0.25,
+      "maximum": 4
+    },
+    "seekable": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "v",
+    "clientRunId",
+    "mediaGeneration",
+    "status",
+    "positionMs",
+    "durationMs",
+    "paused",
+    "rate",
+    "seekable"
+  ],
+  "additionalProperties": false
+}

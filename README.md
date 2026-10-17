@@ -12,4 +12,4 @@ cd syncwatch
 git submodule update --init --recursive
 ```
 
-The repository currently contains architecture specifications, the platform-neutral design package, pinned dependency sources, and repository CI tooling. See [development setup](docs/development.md) for reproducible checks. Native application implementation and media runtime validation are pending.
+The repository contains architecture specifications, the platform-neutral design package, shared contracts in `contracts/`, pinned dependency sources, and validation tooling in `tools/ci/` and `tools/contracts/`. See [development setup](docs/development.md) for reproducible checks and [shared contracts](docs/architecture/contracts.md) for schemas and acceptance fixtures. Native application implementation and media runtime validation are pending.

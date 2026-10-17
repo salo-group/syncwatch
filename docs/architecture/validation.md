@@ -7,46 +7,15 @@ Validation establishes the product requirements and integration gates on both su
 Run from the repository root:
 
 ```sh
+python3 tools/ci/check_repository.py
+python3 -m unittest discover -s tools/ci/tests -v
+git submodule update --init --checkout --depth=1 -- 3rdparty/fastjsonschema
+python3 tools/contracts/check_contracts.py
+python3 -m unittest discover -s tools/contracts/tests -v
 git diff --check
-git submodule status --recursive
-python3 - <<'PYCODE'
-from pathlib import Path
-import json
-import re
-
-root = Path.cwd()
-design = root / 'packages/design'
-for path in design.rglob('*.json'):
-    json.loads(path.read_text())
-
-tokens = {}
-def collect(value, path=''):
-    if isinstance(value, dict) and 'value' in value:
-        assert path not in tokens, path
-        tokens[path] = value
-    elif isinstance(value, dict):
-        for key, child in value.items():
-            collect(child, f'{path}.{key}' if path else key)
-
-for path in (design / 'tokens').glob('*.json'):
-    collect(json.loads(path.read_text()))
-components = json.loads((design / 'components.json').read_text())['components']
-for component in components.values():
-    for reference in component.get('tokens', []):
-        assert reference in tokens, reference
-
-for path in [root / 'README.md', *(root / 'docs').rglob('*.md')]:
-    text = path.read_text()
-    assert not re.search(r'[\u0400-\u04ff]', text), path
-    for target in re.findall(r'(?<!!)\[[^\]]+\]\(([^)]+)\)', text):
-        if target.startswith(('https:', 'http:', 'mailto:', '#')):
-            continue
-        assert (path.parent / target.split('#')[0]).exists(), (path, target)
-print('Design JSON, token references, documentation language, and local links are valid')
-PYCODE
 ```
 
-These checks need Python 3 and this checkout. They do not require another workspace, a device profile, or an undeclared application.
+These checks require Git, Python 3.12 or newer, and the declared validator source submodule. They do not require another workspace, a device profile, or an undeclared application. See [shared contracts](contracts.md) for wire limits, contextual acceptance, and the validation boundary.
 
 Submodules must be initialized at their recorded Git revisions with no unexplained changes. Verify that external library entries use Git link mode `160000`. A clean checkout with `git submodule update --init --recursive` must obtain the pinned sources. This source-availability check does not establish dependency closure or a successful component build.
 

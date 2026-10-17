@@ -187,6 +187,18 @@ class WorkflowChecks(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "read-only"):
             self.validate(lambda data: data.update({"permissions": {"contents": "write"}}))
 
+    def test_contract_job_cannot_omit_source_initialization(self):
+        with self.assertRaisesRegex(ValidationError, "initialize pinned sources"):
+            self.validate(lambda data: data["jobs"]["contracts"]["steps"].pop(1))
+
+    def test_contract_job_cannot_omit_acceptance_checks(self):
+        with self.assertRaisesRegex(ValidationError, "execute its checks"):
+            self.validate(lambda data: data["jobs"]["contracts"]["steps"].pop(2))
+
+    def test_contract_job_cannot_omit_regression_tests(self):
+        with self.assertRaisesRegex(ValidationError, "execute its checks"):
+            self.validate(lambda data: data["jobs"]["contracts"]["steps"].pop(3))
+
 
 if __name__ == "__main__":
     unittest.main()

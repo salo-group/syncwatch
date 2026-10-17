@@ -7,3 +7,6 @@
 [submodule "3rdparty/style-dictionary"]
 	path = 3rdparty/style-dictionary
 	url = https://github.com/style-dictionary/style-dictionary.git
+[submodule "3rdparty/fastjsonschema"]
+	path = 3rdparty/fastjsonschema
+	url = https://github.com/horejsek/python-fastjsonschema.git
