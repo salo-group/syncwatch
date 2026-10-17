@@ -12,4 +12,4 @@ cd syncwatch
 git submodule update --init --recursive
 ```
 
-The repository contains architecture specifications, the platform-neutral design package, shared contracts in `contracts/`, pinned dependency sources, and validation tooling in `tools/ci/` and `tools/contracts/`. See [development setup](docs/development.md) for reproducible checks and [shared contracts](docs/architecture/contracts.md) for schemas and acceptance fixtures. Native application implementation and media runtime validation are pending.
+The repository contains native shells in `apps/apple/` and `apps/windows/`, domain modules in `packages/apple-domain/` and `packages/windows-domain/`, the platform-neutral design package, shared contracts in `contracts/`, pinned dependency sources, and validation/build tooling under `tools/`. See [native development](docs/native-development.md) for toolchains, formatting, builds, tests, and launch commands; [development setup](docs/development.md) covers repository checks. Player, synchronization, call, and complete product UI integrations remain planned.

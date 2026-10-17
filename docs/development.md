@@ -27,7 +27,7 @@ The initial workflow policy fixes the current job set and required aggregation. 
 
 Repository merge protection is a GitHub setting, separate from the workflow file. Require the actual `ci/required` status after it has run; preserve existing review and access rules when configuring it. Check a pull request's real merge eligibility and result for the selected revision rather than assuming the file alone enforces protection.
 
-Application setup, native build commands, and provider acceptance instructions will be added with the corresponding implementations. The repository workflow does not claim that native applications or real calls have been tested.
+See [native development](native-development.md) for the implemented Swift/macOS and C#/WPF shells, declared SDKs, formatting, build/test commands, and interactive launch/close checks. Repository policy also verifies native SDK selection, framework targets, local project references, and empty registry sources. Native GitHub build/test lanes follow in CI02. Provider integration and real movie/call acceptance remain planned.
 
 ## Pull request destination
 

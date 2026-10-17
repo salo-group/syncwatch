@@ -5,6 +5,7 @@ SyncWatch lets people watch their local movie files together with synchronized p
 ## Product specification
 
 - [Development setup](development.md): repository checks, tooling requirements, and initial CI behavior.
+- [Native development](native-development.md): Swift/macOS and C#/WPF shells, SDK requirements, formatting, builds, tests, and launch commands.
 - [Product requirements](architecture/product-requirements.md): library, playback, synchronization, calls, settings, and resource lifecycle.
 - [Application architecture](architecture/README.md): components, state ownership, native clients, and integration gates.
 - [Shared contracts](architecture/contracts.md): versioned schemas, wire units/bounds, ordering, IPC, and acceptance fixtures.
@@ -30,4 +31,4 @@ SyncWatch lets people watch their local movie files together with synchronized p
 | Room metadata service | C#, ASP.NET Core, HTTPS/WSS |
 | External source dependencies | Pinned Git submodules under `3rdparty/` |
 
-The repository contains specifications, design data, shared contracts, offline contract validation, repository CI, and dependency sources. Native applications, generated platform resources, and runtime integration are not implemented yet. Meet embedding, complete VLC feature support, and dependency closure remain explicit acceptance gates.
+The repository contains native shells and domain ownership guards, specifications, design data, shared contracts, offline contract validation, repository CI, and dependency sources. Generated platform design resources and media/provider integration remain planned. Meet embedding, complete VLC feature support, and dependency closure remain explicit acceptance gates.

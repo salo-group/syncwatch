@@ -29,7 +29,7 @@ Before building a component:
 4. Associate distributed binaries with their source revisions, build flags, toolchain, and SHA-256 digests.
 5. Disable implicit dependency downloads and verify the notices for the resulting binary module set.
 
-Compilers, platform SDKs, and system frameworks such as SwiftUI, AppKit, WebKit, .NET, and WPF are build-platform requirements. Google Meet is a remote service rather than a vendored source library.
+Compilers, platform SDKs, and system frameworks such as SwiftUI, AppKit, Foundation, WebKit, .NET, and WPF are build-platform requirements. This exception includes SDK-provided Swift Testing, compiler analyzers, formatting tools, and the .NET reference/runtime packs used by the dependency-free native shells. Toolchain versions and commands are declared in [native development](../native-development.md); no NuGet test framework or formatter package is installed. Google Meet is a remote service rather than a vendored source library.
 
 ## Dependency closure still required
 

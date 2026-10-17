@@ -1,6 +1,6 @@
 # Application architecture
 
-SyncWatch is a native desktop product for synchronized local movie viewing and video calls. This document specifies the application architecture; native clients and runtime integrations are still to be implemented.
+SyncWatch is a native desktop product for synchronized local movie viewing and video calls. Native Swift/macOS and C#/WPF shells with initial domain ownership guards are implemented. This document specifies the full application architecture; shared-design UI, media, synchronization, and provider integrations remain planned.
 
 ## Technology decisions
 
@@ -97,7 +97,7 @@ Synchronization loss pauses playback and resets the rate to 1.0. Commands from a
 
 ## Source layout
 
-The design package, documentation, contracts, contract/CI tooling, workflows, and pinned submodules exist. Native applications and runtime integrations in the layout below remain planned:
+Native shells, initial domain modules, the design package, documentation, contracts, native/contract/CI tooling, workflows, and pinned submodules exist. Media/provider services and full product workflows in the layout below remain planned:
 
 ```text
 apps/apple/                 # Swift application and native platform adapters
@@ -112,6 +112,7 @@ tools/design/              # Custom Style Dictionary formatters
 tools/dependencies/        # Source graph and deterministic build tooling
 tools/ci/                  # Shared local/CI validation and orchestration
 tools/contracts/           # Offline reference contract validation and tests
+tools/native/              # Native SDK, formatting, build, and test entry points
 .github/workflows/         # Repository, platform, dependency, integration, and release jobs
 tests/                      # Planned integration coverage
 3rdparty/                   # External source Git submodules
@@ -141,6 +142,7 @@ A failed gate remains an unmet requirement. A change to the call provider, windo
 ## Related specifications
 
 - [Product requirements](product-requirements.md).
+- [Native development](../native-development.md).
 - [Shared design system](design-system.md).
 - [Shared contracts](contracts.md).
 - [Syncplay and room metadata](syncplay.md).

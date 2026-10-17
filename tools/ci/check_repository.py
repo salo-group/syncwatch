@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
+import xml.etree.ElementTree as ET
 
 
 class ValidationError(ValueError):
@@ -220,6 +221,31 @@ def check_workflows(root: Path) -> None:
     require(final.get("env") == {"CI_NEEDS_JSON": "${{ toJSON(needs) }}"}, "aggregate must inspect actual job results")
 
 
+def check_native_manifests(root: Path) -> None:
+    toolchains = load_json(root / "tools/native/toolchains.json")
+    sdk = load_json(root / "global.json")["sdk"]
+    require(sdk == {
+        "version": toolchains["windows"]["dotnetSdk"], "rollForward": "disable", "allowPrerelease": False,
+    }, "native SDK selection must match the exact toolchain pin")
+    sources = ET.parse(root / "NuGet.Config").getroot()
+    for name in ("packageSources", "auditSources"):
+        section = sources.find(name)
+        require(section is not None and len(section) == 1 and section[0].tag == "clear", "native restore must use no registry sources")
+    solution = ET.parse(root / "SyncWatch.slnx").getroot()
+    projects = solution.findall(".//Project")
+    require(len(projects) == 3, "native solution must include the shell, domain, and executable tests")
+    for project in projects:
+        path = (root / project.attrib["Path"]).resolve()
+        require(path.is_relative_to(root.resolve()) and path.is_file(), "native project must be a repository file")
+        content = ET.parse(path).getroot()
+        require(not content.findall(".//PackageReference"), "native libraries must use pinned local sources")
+        expected = toolchains["windows"]["targetFramework"] if path.stem == "SyncWatch" else "net10.0"
+        require(content.findtext(".//TargetFramework") == expected, "native target framework does not match its manifest")
+        for reference in content.findall(".//ProjectReference"):
+            target = (path.parent / reference.attrib["Include"]).resolve()
+            require(target.is_relative_to(root.resolve()) and target.is_file(), "native project reference must stay local")
+
+
 def check_repository(root: Path) -> None:
     paths = owned_files(root)
     for path in paths:
@@ -231,6 +257,7 @@ def check_repository(root: Path) -> None:
     check_design(root)
     check_submodules(root)
     check_workflows(root)
+    check_native_manifests(root)
 
 
 def main() -> int:
@@ -239,7 +266,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         check_repository(args.root.resolve())
-    except (OSError, ValueError, SyntaxError, configparser.Error, subprocess.CalledProcessError) as error:
+    except (OSError, ValueError, SyntaxError, ET.ParseError, configparser.Error, subprocess.CalledProcessError) as error:
         print(f"Repository validation failed: {error}", file=sys.stderr)
         return 1
     print("Repository documentation, design, source pins, text, and workflow policy are valid")

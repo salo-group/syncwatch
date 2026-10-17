@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from check_repository import (
@@ -12,6 +13,7 @@ from check_repository import (
     check_design,
     check_document,
     check_repository,
+    check_native_manifests,
     check_submodules,
     check_text,
     check_workflows,
@@ -142,6 +144,46 @@ class RepositoryChecks(unittest.TestCase):
         subprocess.run(["git", "add", "3rdparty/copied/source.py"], cwd=self.root, check=True)
         with self.assertRaisesRegex(ValidationError, "must be a Git submodule"):
             check_submodules(self.root)
+
+    def copy_native_manifests(self):
+        files = ["global.json", "tools/native/toolchains.json", "NuGet.Config", "SyncWatch.slnx"]
+        solution = ET.parse(REPOSITORY / "SyncWatch.slnx").getroot()
+        files += [project.attrib["Path"] for project in solution.findall(".//Project")]
+        for name in files:
+            self.write(name, (REPOSITORY / name).read_text())
+
+    def test_native_sdk_roll_forward_fails(self):
+        self.copy_native_manifests()
+        path = self.root / "global.json"
+        data = json.loads(path.read_text())
+        data["sdk"]["rollForward"] = "latestMajor"
+        path.write_text(json.dumps(data) + "\n")
+        with self.assertRaisesRegex(ValidationError, "exact toolchain pin"):
+            check_native_manifests(self.root)
+
+    def test_native_registry_sources_fail(self):
+        self.copy_native_manifests()
+        self.write("NuGet.Config", '<configuration><packageSources><add key="registry" value="https://example.invalid" /></packageSources></configuration>\n')
+        with self.assertRaisesRegex(ValidationError, "no registry sources"):
+            check_native_manifests(self.root)
+
+    def test_native_package_reference_fails(self):
+        self.copy_native_manifests()
+        path = self.root / "packages/windows-domain/SyncWatch.Domain/SyncWatch.Domain.csproj"
+        content = ET.parse(path)
+        ET.SubElement(content.getroot(), "PackageReference", {"Include": "Unpinned.Library", "Version": "1.0"})
+        content.write(path)
+        with self.assertRaisesRegex(ValidationError, "pinned local sources"):
+            check_native_manifests(self.root)
+
+    def test_native_project_reference_cannot_escape_repository(self):
+        self.copy_native_manifests()
+        path = self.root / "apps/windows/SyncWatch/SyncWatch.csproj"
+        content = ET.parse(path)
+        content.find(".//ProjectReference").set("Include", "../../../../outside.csproj")
+        content.write(path)
+        with self.assertRaisesRegex(ValidationError, "stay local"):
+            check_native_manifests(self.root)
 
 
 class WorkflowChecks(unittest.TestCase):

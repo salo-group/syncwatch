@@ -1,0 +1,10 @@
+[project]
+name = "syncwatch-native-tools"
+version = "0.1.0"
+description = "Native shell build and validation entry points"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.syncwatch]
+apple-check-command = "python3 tools/native/check_apple.py"
+windows-check-command = "powershell -NoProfile -File tools/native/check_windows.ps1"
