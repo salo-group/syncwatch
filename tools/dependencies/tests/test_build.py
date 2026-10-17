@@ -165,6 +165,14 @@ class DependencyBuildTests(unittest.TestCase):
         self.assertEqual(self.prepare()["key"], baseline)
         self.assertEqual(self.run_build()["result"], "success")
 
+    def test_source_exports_ignore_ambient_git_line_ending_conversion(self):
+        source = self.root / "3rdparty/example"
+        baseline = self.prepare()["inputs"]["sources"]["3rdparty/example"]["archiveSha256"]
+        subprocess.run(["git", "config", "core.autocrlf", "true"], cwd=source, check=True)
+        self.assertEqual(self.prepare()["inputs"]["sources"]["3rdparty/example"]["archiveSha256"], baseline)
+        self.run_build(cold=True)
+        self.assertEqual((self.root / f"artifacts/dependencies/example/{TARGET}/payload/library.txt").read_bytes(), b"source payload\n")
+
     def test_dirty_source_checkout_is_rejected_before_checkout_changes(self):
         source = self.root / "3rdparty/example/library.txt"
         source.write_text("uncommitted work\n")

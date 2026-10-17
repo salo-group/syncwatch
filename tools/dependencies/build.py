@@ -230,7 +230,7 @@ def initialize_sources(root, sources, directory):
         for notice in specification["notices"]:
             require(git(source, "cat-file", "-t", f"HEAD:{notice}").strip() == b"blob", "Source notice is missing")
         archive = directory / (path.split("/")[-1] + ".tar")
-        subprocess.run(["git", "archive", "--format=tar", "--output", str(archive), "HEAD"], cwd=source, check=True)
+        subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "archive", "--format=tar", "--output", str(archive), "HEAD"], cwd=source, check=True)
         snapshots[path] = {
             "url": urls[path], "revision": specification["revision"], "tree": git(source, "rev-parse", "HEAD^{tree}").decode().strip(),
             "archiveSha256": digest(archive),
