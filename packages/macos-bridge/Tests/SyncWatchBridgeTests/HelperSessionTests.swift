@@ -280,7 +280,8 @@ private actor SessionPlayer: PlaybackPort {
 }
 
 @Test(arguments: [
-    "recover", "paused", "missingIdentity", "renamed", "earlyReady", "pendingIntent", "pendingCorrection", "cancel", "timeout",
+    "recover", "paused", "missingIdentity", "renamed", "earlyReady", "pendingIntent", "pendingCorrection", "cancel",
+    "timeout",
 ])
 @MainActor func sessionRecovery(_ scenario: String) async throws {
     let native = try PlaybackScope.fresh().replacingMedia()
