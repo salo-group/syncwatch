@@ -16,7 +16,7 @@ class PlaybackSdkCheckTests(unittest.TestCase):
         for name, data in {
             "native-proof.json": {"abiBytes": 80, "actualClock": True, "repeatedRelease": True, "physicalOutputAccepted": False},
             "media-input-proof.json": {"versionBytes": 64, "noHandleGrowth": True},
-            "player-input-proof.json": {"loadedContentHash": True, "positionalReadsPreservePlayback": True, "physicalOutputAccepted": False},
+            "player-input-proof.json": {"repeatedPausedSeekResume": 3, "loadedContentHash": True, "positionalReadsPreservePlayback": True, "physicalOutputAccepted": False},
             "external-input-proof.json": {"actualSelectedID": True, "externalAudioSelectedID": True, "repeatedRelease": True, "physicalOutputAccepted": False},
         }.items():
             (output / name).write_text(json.dumps(data))
@@ -43,6 +43,19 @@ class PlaybackSdkCheckTests(unittest.TestCase):
             self.assertFalse((output / "owned-i420-pcm.avi").exists())
             self.assertFalse((output / "playback-probe").exists())
             self.assertFalse((output / "owned-input-test").exists())
+
+    def test_missing_resume_progress_evidence_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); package = root / "payload"; package.mkdir(); output = root / "consumer"
+            def missing(_, directory):
+                self.proofs(directory)
+                path = directory / "player-input-proof.json"
+                proof = json.loads(path.read_text()); del proof["repeatedPausedSeekResume"]
+                path.write_text(json.dumps(proof))
+            with patch.object(gate, "native_check", side_effect=missing):
+                with self.assertRaisesRegex(ValueError, "incomplete"):
+                    gate.verify(package, output)
+            self.assertFalse(json.loads((output / "first-party-proof.json").read_text())["success"])
 
     def test_native_failure_remains_failed_and_releases_owned_fixture(self):
         with tempfile.TemporaryDirectory() as temporary:
