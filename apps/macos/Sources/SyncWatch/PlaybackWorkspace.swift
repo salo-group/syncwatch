@@ -292,7 +292,9 @@ struct LocalPlaybackLaunch {
                 }
                 checkpoint?.clear()
                 gateSharedActions()
-            } catch { /* A rejected request retains the offer; observations remain authoritative. */  }
+            } catch {
+                // A rejected request retains the offer; observations remain authoritative.
+            }
             return
         }
         if action == "openPlaylist" {
