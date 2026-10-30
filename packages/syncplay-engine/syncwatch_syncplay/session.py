@@ -50,6 +50,16 @@ class Session(SyncplayClient):
         self.bridge_player = BridgePlayer(self, player_port)
         self.initPlayer(self.bridge_player)
 
+    def initProtocol(self, protocol):
+        self.assert_owner_thread()
+        super().initProtocol(protocol)
+        # Upstream stamps the previous global state when registering a protocol.
+        # Our native player survives transports, so that timestamp would prevent
+        # upstream's first-state initialization when a surviving peer is ahead.
+        # Require this transport's actual server snapshot; its ordinary ordered
+        # native corrections and acknowledgements remain the only timing path.
+        self._lastGlobalUpdate = None
+
     def connect(self):
         self.assert_owner_thread()
         self.start(self.endpoint_host, self.endpoint_port)

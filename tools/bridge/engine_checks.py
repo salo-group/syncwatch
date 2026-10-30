@@ -4,6 +4,28 @@ import os
 import shutil
 import subprocess
 import queue
+from collections import deque
+
+
+class PipeServerProtocol(ObservedServerProtocol):
+    def handleState(self, state):
+        playstate = state.get("playstate", {})
+        self._factory.timings.append(("received", self._watcher.getName(),
+            playstate.get("position"), playstate.get("paused"), playstate.get("doSeek")))
+        super().handleState(state)
+
+    def sendState(self, position, paused, doSeek, setBy, forcedUpdate):
+        self._factory.timings.append(("sent", self._watcher.getName(), position, paused, doSeek))
+        super().sendState(position, paused, doSeek, setBy, forcedUpdate)
+
+
+class PipeFactory(ObservedFactory):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.timings = deque(maxlen=32)
+
+    def buildProtocol(self, address):
+        return PipeServerProtocol(self)
 
 
 class PipePlayer(SimulatedPlayer):
@@ -124,7 +146,7 @@ def bridge_run(root):
     with trust_store.open("ab") as stream: stream.write(b"\n" + ca.public_bytes(serialization.Encoding.PEM))
     directory = root / "pipe-server"
     certificate_set(directory, key, ca)
-    factory = ObservedFactory(port="0", salt="pipe-fixture", tlsCertPath=str(directory))
+    factory = PipeFactory(port="0", salt="pipe-fixture", tlsCertPath=str(directory))
     listener = reactor.listenTCP(0, factory, interface="127.0.0.1")
     players, failures = [], []
     scenario_worker = [None]
@@ -225,7 +247,8 @@ def bridge_run(root):
             report["disconnect"] = True
         except Exception:
             print("PIPE_FAILURE", [{"events": p.events[-8:], "commands": p.commands[-8:], "paused": p.paused,
-                "position": p.current(), "exit": p.process.poll()} for p in players], "server", factory.states[-4:], flush=True)
+                "position": p.current(), "exit": p.process.poll()} for p in players], "server", factory.states[-4:],
+                "timing", list(factory.timings), flush=True)
             from twisted.python.failure import Failure
             failures.append(Failure())
         finally:
