@@ -50,6 +50,16 @@ class Session(SyncplayClient):
         self.bridge_player = BridgePlayer(self, player_port)
         self.initPlayer(self.bridge_player)
 
+    def initProtocol(self, protocol):
+        self.assert_owner_thread()
+        super().initProtocol(protocol)
+        # Upstream stamps the previous global state when registering a protocol.
+        # Our native player survives transports, so that timestamp would prevent
+        # upstream's first-state initialization when a surviving peer is ahead.
+        # Require this transport's actual server snapshot; its ordinary ordered
+        # native corrections and acknowledgements remain the only timing path.
+        self._lastGlobalUpdate = None
+
     def connect(self):
         self.assert_owner_thread()
         self.start(self.endpoint_host, self.endpoint_port)
@@ -84,14 +94,6 @@ class Session(SyncplayClient):
     def transport_failed(self, code):
         if self._closing:
             return
-        if code == "connection_lost":
-            # ClientService can reconnect an established TCP transport without
-            # invoking its failed-connect retry policy. Run upstream's state
-            # reset here as well, so its next server snapshot initializes the
-            # player even when a surviving participant has sought ahead.
-            # Retaining the old global timestamp skips that initialization and
-            # lets the returning watcher pull the room back to its stale time.
-            self._performRetryStateReset()
         self.userlist.currentUser.setReady(False)
         if self._player is not None:
             self._player.setPaused(True)
