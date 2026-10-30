@@ -26,6 +26,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
 {
     private readonly VLCPlayback player = new();
     private readonly PlaybackScope scope;
+    private readonly SharedPlaybackCheckpoint checkpoint;
     private readonly PlayerChrome chrome = new();
     private readonly LocalPlaybackTracks tracks;
     private readonly WatchPlaylist playlist = new();
@@ -102,6 +103,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     }
     internal async Task RevokeSharedAsync(bool releaseAdmission = false)
     {
+        checkpoint.Clear();
         RequireSharedAdmission(); sharedAuthority = null;
         var session = sharedSession; sharedSession = null; SharedState = null;
         var preparation = sharedMediaPreparation;
@@ -121,14 +123,21 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
             await sharedMediaPreparation.ValidateAsync(player, scope);
             if (closing || !attached || sharedSession is not null || authority?.Invoke() == false) throw new InvalidOperationException("Shared playback unavailable");
             var session = new HelperSession(transport, player, scope, endpoint, media, revision, state =>
-            { SharedState = state; GateSharedActions(); RenderChrome(); }, requiresSharedAdmission || requireDeclaredIdentity);
+            { if (state.Connection == HelperConnection.Reconnecting) checkpoint.Interrupt(); SharedState = state; GateSharedActions(); RenderChrome(); }, requiresSharedAdmission || requireDeclaredIdentity);
             sharedSession = session; SharedState = session.State; GateSharedActions(); RenderChrome();
             session.Start();
         }
         catch { await transport.DisposeAsync(); throw; }
     }
+    private bool SharedPlaybackAvailable => !closing && sharedSession is not null && sharedAuthority?.Invoke() != false
+        && SharedState is { Connection: HelperConnection.Connected, PlaybackReady: true };
     private void GateSharedActions()
     {
+        if (sharedAuthority?.Invoke() == false) checkpoint.Clear();
+        long? position = SharedPlaybackAvailable ? checkpoint.Position(presentation.DurationMs) : null;
+        var actions = presentation.EnabledActions.Except(["restoreSharedPosition", "dismissSharedPosition"]).ToHashSet();
+        if (position is not null) actions.UnionWith(["restoreSharedPosition", "dismissSharedPosition"]);
+        presentation = presentation with { SharedPositionMs = position, EnabledActions = actions };
         if ((requiresSharedAdmission || sharedSession is not null) &&
             (sharedAuthority?.Invoke() == false || SharedState is not { Connection: HelperConnection.Connected } || (requiresSharedAdmission && SharedState is not { PlaybackReady: true })))
             presentation = presentation with { EnabledActions = presentation.EnabledActions.Except(["playPause", "seek", "skip"]).ToHashSet() };
@@ -147,6 +156,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         this.launch = launch; this.language = language;
         this.onPlaylistUpdate = onPlaylistUpdate; this.onPlaylistSelection = onPlaylistSelection;
         this.scope = scope ?? PlaybackScope.Create().ReplacingMedia(); initialPositionMs = positionMs;
+        checkpoint = new(this.scope);
         tracks = new(player, this.scope, RenderTracks, new ExternalTrackPicker(() => Window.GetWindow(this)));
         this.selection = selection; this.onLoaded = onLoaded; this.onObservation = onObservation;
         this.onNavigation = onNavigation; this.onFailure = onFailure;
@@ -198,6 +208,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
                     admissionPending = false; onLoaded?.Invoke(scope);
                     continue;
                 }
+                checkpoint.Observe(value, SharedPlaybackAvailable);
                 HashSet<string> enabled = NavigationActions; enabled.Add("playPause");
                 if (value.Seekable) enabled.UnionWith(["seek", "skip"]);
                 if (value.Volume is not null) enabled.UnionWith(["setMovieVolume", "muteMovie"]);
@@ -247,6 +258,21 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         if (closing || cancellation.IsCancellationRequested) return;
         GateSharedActions(); RefreshPlaylist();
         if (!presentation.EnabledActions.Contains(action)) return;
+        if (action is "restoreSharedPosition" or "dismissSharedPosition")
+        {
+            if (value is not null || !presentation.Allows(action)) return;
+            try
+            {
+                if (action == "restoreSharedPosition")
+                {
+                    if (sharedSession is null || presentation.SharedPositionMs is not long position) return;
+                    sharedSession.Seek(position);
+                }
+                checkpoint.Clear(); GateSharedActions(); RenderChrome();
+            }
+            catch (Exception) { /* A rejected request retains the offer. */ }
+            return;
+        }
         if (action == "openPlaylist") { tracks.Dismiss(); playlist.Open(); RenderChrome(); return; }
         if (action is "previousFile" or "nextFile")
         {
@@ -274,6 +300,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
             {
                 if (action == "playPause") sharedSession.TogglePause();
                 else if (value is double position) sharedSession.Seek(checked((long)position));
+                checkpoint.Clear(); GateSharedActions(); RenderChrome();
                 return;
             }
             switch (action)
@@ -289,7 +316,8 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     public Task CloseAsync() => shutdown ??= CloseCoreAsync();
     private async Task CloseCoreAsync()
     {
-        closing = true; playlist.Close();
+        closing = true; checkpoint.Clear(); playlist.Close();
+        presentation = presentation with { SharedPositionMs = null };
         cancellation.Cancel();
         await tracks.CloseAsync();
         presentation = presentation with { EnabledActions = new HashSet<string>() };

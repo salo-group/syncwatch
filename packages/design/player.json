@@ -24,7 +24,9 @@
     "openPlayerSettings",
     "selectAudio",
     "selectSubtitles",
-    "openPlaylist"
+    "openPlaylist",
+    "restoreSharedPosition",
+    "dismissSharedPosition"
   ],
   "completedNavigationActions": ["previousFile", "nextFile"],
   "input": {

@@ -65,6 +65,7 @@ internal class PlaybackController(
     private val work = CoroutineScope(parentScope.coroutineContext + ownerJob)
     internal val player = VLCPlayback()
     internal val scope = requestedScope ?: PlaybackScope.fresh().replacingMedia()
+    private val checkpoint = SharedPlaybackCheckpoint(scope)
     internal val tracks by lazy { LocalPlaybackTracks(player, scope, work, ExternalTrackPicker { canvas }) }
     val playlist = WatchPlaylist()
     var language = "en"
@@ -105,6 +106,7 @@ internal class PlaybackController(
         if (autoplay) checkNotNull(sharedSession).playFrom(sharedResumePositionMs)
     }
     suspend fun revokeShared(releaseAdmission: Boolean = false) = withContext(NonCancellable) {
+        checkpoint.clear()
         requireSharedAdmission(); sharedAuthority = null
         val session = sharedSession; sharedSession = null; sharedState = null
         val preparation = sharedMediaPreparation
@@ -121,12 +123,20 @@ internal class PlaybackController(
             sharedMediaPreparation.validate(player, scope)
             check(!closing && started && sharedSession == null && authority?.invoke() != false)
             val session = HelperSession(transport, player, scope, endpoint, media, revision, work, requiresSharedAdmission || requireDeclaredIdentity) { state ->
+                if (state.connection == HelperConnection.reconnecting) checkpoint.interrupt()
                 sharedState = state; gateSharedActions()
             }
             sharedSession = session; sharedState = session.state; gateSharedActions(); session.start()
         } catch (error: Exception) { withContext(NonCancellable + Dispatchers.IO) { transport.close() }; throw error }
     }
+    private val sharedPlaybackAvailable get() = !closing && sharedSession != null && sharedAuthority?.invoke() != false
+        && sharedState?.connection == HelperConnection.connected && sharedState?.playbackReady == true
     private fun gateSharedActions() {
+        if (sharedAuthority?.invoke() == false) checkpoint.clear()
+        val position = if (sharedPlaybackAvailable) checkpoint.position(presentation.durationMs) else null
+        val actions = presentation.enabledActions - setOf("restoreSharedPosition", "dismissSharedPosition")
+        presentation = presentation.copy(sharedPositionMs = position, enabledActions =
+            if (position != null) actions + setOf("restoreSharedPosition", "dismissSharedPosition") else actions)
         if ((requiresSharedAdmission || sharedSession != null) &&
             (sharedAuthority?.invoke() == false || sharedState?.connection != HelperConnection.connected || (requiresSharedAdmission && sharedState?.playbackReady != true)))
             presentation = presentation.copy(enabledActions = presentation.enabledActions - setOf("playPause", "seek", "skip"))
@@ -180,6 +190,7 @@ internal class PlaybackController(
     }
 
     private fun apply(value: PlaybackObservation) {
+        checkpoint.observe(value, sharedPlaybackAvailable)
         val state = when {
             value.ended -> PlayerVisualState.ended
             value.buffering -> PlayerVisualState.buffering
@@ -211,6 +222,13 @@ internal class PlaybackController(
         gateSharedActions()
         refreshPlaylist()
         presentation.dispatch(action, value) { accepted, number ->
+            if (accepted in setOf("restoreSharedPosition", "dismissSharedPosition")) {
+                try {
+                    if (accepted == "restoreSharedPosition") checkNotNull(sharedSession).seek(checkNotNull(presentation.sharedPositionMs))
+                    checkpoint.clear(); gateSharedActions()
+                } catch (_: Exception) { /* A rejected request retains the offer. */ }
+                return@dispatch
+            }
             if (accepted == "openPlaylist") { tracks.dismiss(); playlist.open(); return@dispatch }
             if (accepted in setOf("previousFile", "nextFile")) {
                 playlist.neighbor(if (accepted == "previousFile") -1 else 1)?.let { onPlaylistSelection?.invoke(it) }
@@ -230,6 +248,7 @@ internal class PlaybackController(
             if (shared != null && accepted in setOf("playPause", "seek")) {
                 try {
                     if (accepted == "playPause") shared.togglePause() else if (number != null) shared.seek(number.toLong())
+                    checkpoint.clear(); gateSharedActions()
                 } catch (_: Exception) { /* A rejected intent cannot acknowledge playback state. */ }
                 return@dispatch
             }
@@ -254,6 +273,8 @@ internal class PlaybackController(
         check(EventQueue.isDispatchThread())
         shutdown?.let { return it.copy() }
         closing = true
+        checkpoint.clear()
+        presentation = presentation.copy(sharedPositionMs = null)
         playlist.close()
         loaded.completeExceptionally(CancellationException("closed"))
         presentation = presentation.copy(enabledActions = emptySet())

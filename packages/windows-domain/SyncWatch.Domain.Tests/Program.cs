@@ -45,6 +45,7 @@ foreach (string invalid in new[] { "", "-run", "run/7", "run\n7", "\u00e9", new 
     Require(Capture(() => new PlaybackScope(invalid, 0)) == ContractRejection.Malformed, "Invalid process identity was accepted");
 }
 
+SharedPlaybackCheckpointTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);
 WatchSessionTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);
 PlaybackActionFenceTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);
 MediaAgreementTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);

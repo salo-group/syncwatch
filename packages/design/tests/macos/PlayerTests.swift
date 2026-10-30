@@ -11,6 +11,7 @@ private struct PlayerEvent: Codable, Equatable {
 private struct PlayerCase: Decodable {
     let name: String
     let state: String
+    let sharedPositionMs: Int64?
     let positionMs: Int64
     let durationMs: Int64
     let volume: Double
@@ -27,10 +28,11 @@ private struct PlayerCases: Decodable { let cases: [PlayerCase] }
     let source = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         .appendingPathComponent("fixtures/player-actions.json")
     let cases = try JSONDecoder().decode(PlayerCases.self, from: Data(contentsOf: source))
-    #expect(cases.cases.count == 19)
+    #expect(cases.cases.count == 27)
     for fixture in cases.cases {
         var model = PlayerPresentation()
         model.state = try #require(PlayerVisualState(rawValue: fixture.state))
+        model.sharedPositionMs = fixture.sharedPositionMs
         model.positionMs = fixture.positionMs
         model.durationMs = fixture.durationMs
         model.volume = fixture.volume
