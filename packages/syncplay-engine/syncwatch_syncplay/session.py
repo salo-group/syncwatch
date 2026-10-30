@@ -61,7 +61,7 @@ class Session(SyncplayClient):
     @property
     def has_initial_state(self):
         return bool(self._protocol and self._protocol.logged and self._protocol.hadFirstStateUpdate
-                    and self._lastPlayerUpdate is not None)
+                    and self._lastGlobalUpdate is not None and self._lastPlayerUpdate is not None)
 
     def getLocalState(self):
         # An asynchronous native correction is not applied until acknowledged.
@@ -84,6 +84,14 @@ class Session(SyncplayClient):
     def transport_failed(self, code):
         if self._closing:
             return
+        if code == "connection_lost":
+            # ClientService can reconnect an established TCP transport without
+            # invoking its failed-connect retry policy. Run upstream's state
+            # reset here as well, so its next server snapshot initializes the
+            # player even when a surviving participant has sought ahead.
+            # Retaining the old global timestamp skips that initialization and
+            # lets the returning watcher pull the room back to its stale time.
+            self._performRetryStateReset()
         self.userlist.currentUser.setReady(False)
         if self._player is not None:
             self._player.setPaused(True)
