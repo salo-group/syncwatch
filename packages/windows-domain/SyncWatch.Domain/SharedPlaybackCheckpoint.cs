@@ -19,6 +19,6 @@ public sealed class SharedPlaybackCheckpoint(PlaybackScope scope)
         checkpoint ??= last;
         last = null;
     }
-    public long? Position(long durationMs) => checkpoint?.DurationMs == durationMs ? checkpoint.PositionMs : null;
+    public long? Position(long durationMs) => checkpoint is { } value && value.DurationMs == durationMs ? value.PositionMs : null;
     public void Clear() { last = null; checkpoint = null; }
 }
