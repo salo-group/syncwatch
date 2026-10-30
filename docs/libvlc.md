@@ -2,6 +2,12 @@
 
 The `libvlc` component builds VLC 3.0.24 and its selected codec, audio, text and font dependencies from the exact Git submodules registered in `3rdparty/`. It targets native macOS arm64, Windows x64 and Linux x64. This SDK is consumed by the separate [native playback adapters](playback.md). Native output modules are selected for AppKit, Windows and Linux X11/PulseAudio; physical output remains separately unqualified.
 
+## Decoder reset ownership
+
+The common VLC source recipe makes full decoder and preroll resets discard every queued picture, including undated preview pictures. The upstream threshold excluded those pictures; repeated paused seeks after playback could fill the picture pool, stop video decoding and block a later Playing seek and shutdown. The configured derivative changes only the two full-reset thresholds. Timestamp-selective flushes, playback authority and client controls retain their existing boundaries. The original LGPL source remains intact in its archive; the configured source and change notice accompany the SDK.
+
+Every native SDK build and revalidation runs a first-party sparse-video regression: warm playback, pause, thirty fractional seeks, resume and a Playing seek. It requires fresh decoded-video statistics, advancing native time and normal stop/release. An advancing timer or repeated display of an old frame cannot pass. The bounded child is joined and its temporary media/executable are removed. This headless regression does not qualify native windows or physical output.
+
 ## Build and revalidate
 
 Provision developer tools before preparing the offline source graph:

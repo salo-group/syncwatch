@@ -91,6 +91,7 @@ def run(operation, directory, payload, original, profile):
     return {"component": "libvlc", "target": context.target, "profile": profile["profile"],
             "sources": len(original), "nativeFiles": len(imports), "fixtures": sorted(proof["media"]),
             "effects": sorted(proof["effects"]),
+            "seekReset": proof["seekReset"],
             "physicalOutputAccepted": False, "applicationIntegrationReady": False,
             "firstPartyPlayback": consumer,
             "sourceInventorySha256": digest(contents["sources/inventory.json"])}

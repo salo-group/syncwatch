@@ -7,6 +7,17 @@ from source_files import digest, encoded
 REPORT = "build-report.json"
 
 
+def validate_seek_reset(result):
+    if (not isinstance(result, dict) or result.get("pausedSeeks") != 30
+            or any(result.get(key) is not True for key in
+                   ["success", "actualClock", "normalClose", "ownedLibraryLoaded", "temporaryFixturesRemoved"])
+            or result.get("physicalOutputAccepted") is not False
+            or type(result.get("decodedBefore")) is not int or result["decodedBefore"] < 0
+            or type(result.get("decodedAfter")) is not int
+            or result["decodedAfter"] < result["decodedBefore"] + 4):
+        raise ValueError("Native decoder seek reset proof requires fresh video, native clock and normal close")
+
+
 def inventory(package):
     files = {}
     for path in sorted(package.rglob("*")):
@@ -22,6 +33,7 @@ def inventory(package):
 
 
 def create(package, sdk, sources, imports, proof, codec):
+    validate_seek_reset(proof.get("seekReset"))
     report = {"schemaVersion": 1, "profile": "native-decoder-v1", "sdk": sdk,
               "sources": sources, "imports": imports, "proof": proof, "codec": codec,
               "physicalOutputAccepted": False, "applicationIntegrationReady": False,
@@ -41,6 +53,7 @@ def verify(package, sdk, sources, original_contents):
                                                        "hardwareH264BackwardSeekAccepted"]) or
             report.get("files") != inventory(package)):
         raise ValueError("Native media payload, source or SDK identity changed")
+    validate_seek_reset(report.get("proof", {}).get("seekReset"))
     for name, data in original_contents.items():
         if not (package / name).is_file() or (package / name).read_bytes() != data:
             raise ValueError("Original media source, recipe or grant changed: " + name)
