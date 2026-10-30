@@ -215,6 +215,14 @@ def bridge_run(root):
             factory.connections[0].transport.abortConnection()
             yield wait_for(lambda: any(k == "sync.connection" and v["state"] == "connecting"
                                       for k, v in a.events[before:]), "pipe recovery starts")
+            # The surviving participant may choose a newer paused timeline while
+            # this native player still observes its pre-interruption position.
+            # Rejoining must initialize from the server instead of advertising
+            # that stale position as the room's new slowest participant.
+            b.set_position(150000)
+            b.publish(user=True)
+            yield wait_for(lambda: any(s.get("playstate", {}).get("position", 0) > 145
+                                      for s in factory.states), "survivor seek reaches server")
             yield wait_for(lambda: any(k == "sync.connection" and v["state"] == "connected"
                                       for k, v in a.events[before:]), "pipe authenticated recovery", timeout=15)
             recovered = a.events[before:]
@@ -227,6 +235,13 @@ def bridge_run(root):
             a.send("sync.setReady", {"ready": True})
             yield wait_for(lambda: any(k == "sync.readiness" and v["ready"]
                                       for k, v in a.events[before:]), "pipe recovery readiness")
+            yield wait_for(lambda: a.current() > 145000 and b.current() > 145000,
+                           "surviving newer timeline retained on recovery")
+            # Room position is periodically derived from its slowest watcher.
+            # Check beyond that update, not only the first reconnect frame.
+            yield task.deferLater(reactor, 2, lambda: None)
+            assert a.current() > 145000 and b.current() > 145000, "survivor timeline rolled back"
+            report["survivorSeekDuringRecoveryRetained"] = True
             a.set_position(120000)
             a.publish(user=True)
             yield wait_for(lambda: b.current() > 115000 and abs(a.current() - b.current()) < 1500,

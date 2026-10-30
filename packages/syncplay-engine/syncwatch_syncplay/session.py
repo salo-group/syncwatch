@@ -71,7 +71,7 @@ class Session(SyncplayClient):
     @property
     def has_initial_state(self):
         return bool(self._protocol and self._protocol.logged and self._protocol.hadFirstStateUpdate
-                    and self._lastPlayerUpdate is not None)
+                    and self._lastGlobalUpdate is not None and self._lastPlayerUpdate is not None)
 
     def getLocalState(self):
         # An asynchronous native correction is not applied until acknowledged.
