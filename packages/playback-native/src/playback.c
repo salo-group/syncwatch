@@ -33,7 +33,6 @@ struct sw_playback {
     int loaded;
     int failed;
     int output;
-    int refill_on_resume;
     atomic_uint_fast64_t sequence;
 };
 static const libvlc_event_type_t event_types[] = {
@@ -63,7 +62,6 @@ static void release_input(sw_playback *p) {
     sw_media_input_close(p->input);
     p->input = NULL;
     p->loaded = 0;
-    p->refill_on_resume = 0;
 }
 static int valid_input(sw_playback *p) {
     sw_input_version version;
@@ -268,21 +266,10 @@ int sw_playback_observe(sw_playback *p, uint64_t generation, sw_observation *res
 int sw_playback_pause(sw_playback *p, uint64_t generation, int paused) {
     int code = check(p, generation); if (code) return code;
     if (paused != 0 && paused != 1) return SW_INVALID;
-    /* A stream selected on pause may be acknowledged before its decoder has
-     * consumed the demux refill. Refill once more when playback resumes, after
-     * that selection has settled, using the actual clock rather than a cached
-     * seek request. Keep this local pipeline detail below all client ports. */
-    int64_t refill_position = -1;
-    if (!paused && p->refill_on_resume) {
-        if (p->api.libvlc_media_player_is_seekable(p->player))
-            refill_position = p->api.libvlc_media_player_get_time(p->player);
-        p->refill_on_resume = 0;
-    }
-    /* Queue resume before the refill. A second seek while still paused can
-     * leave the input waiting on decoder pictures before it handles resume. */
+    /* Resume changes pause state only. A second seek here can strand native
+     * decoder picture queues, even after the input reports Playing. Stream
+     * selection already refills its packets at the actual local position. */
     p->api.libvlc_media_player_set_pause(p->player, paused);
-    if (refill_position >= 0)
-        p->api.libvlc_media_player_set_time(p->player, refill_position);
     return SW_OK;
 }
 int sw_playback_seek(sw_playback *p, uint64_t generation, int64_t target) {
@@ -290,11 +277,6 @@ int sw_playback_seek(sw_playback *p, uint64_t generation, int64_t target) {
     int64_t duration = p->api.libvlc_media_player_get_length(p->player);
     if (target < 0 || duration < 0 || target > duration || target > INT64_C(604800000)) return SW_INVALID;
     if (!p->api.libvlc_media_player_is_seekable(p->player)) return SW_UNAVAILABLE;
-    /* A paused seek can discard packets for the selected streams just as a
-     * paused selection does. Rearm even after an earlier resume consumed the
-     * marker; connection setup may already have resumed this input once. */
-    if (p->api.libvlc_media_player_get_state(p->player) == libvlc_Paused)
-        p->refill_on_resume = 1;
     p->api.libvlc_media_player_set_time(p->player, target); return SW_OK;
 }
 int sw_playback_rate(sw_playback *p, uint64_t generation, double rate) {
@@ -371,7 +353,6 @@ int sw_playback_attach_track(sw_playback *p, uint64_t generation, int subtitles,
     entry->next = p->external;
     p->external = entry;
     if (!valid_input(p)) return SW_UNAVAILABLE;
-    if (p->api.libvlc_media_player_get_state(p->player) == libvlc_Paused) p->refill_on_resume = 1;
     return SW_OK;
 }
 int sw_playback_select_track(sw_playback *p, uint64_t generation, int subtitles, int32_t id) {
@@ -384,8 +365,6 @@ int sw_playback_select_track(sw_playback *p, uint64_t generation, int subtitles,
     int64_t position = p->api.libvlc_media_player_get_time(p->player);
     int seekable = p->api.libvlc_media_player_is_seekable(p->player);
     if (subtitles ? p->api.libvlc_video_set_spu(p->player, id) : p->api.libvlc_audio_set_track(p->player, id)) return SW_ENGINE;
-    if (p->api.libvlc_media_player_get_state(p->player) == libvlc_Paused)
-        p->refill_on_resume = 1;
     /* The demuxer may have discarded packets for an unselected stream while
      * prebuffering. Refill from the actual local clock without changing pause
      * state or emitting a shared seek intent. Selection alone is not output. */

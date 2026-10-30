@@ -94,6 +94,8 @@ def check(package, output):
                         str(library), str(libvlc.resolve()), profile_data()["sources"]["vlc"]["revision"],
                         str(media), str(output)], stdout=log, stderr=subprocess.STDOUT,
                        stdin=subprocess.DEVNULL, check=True, env=env, timeout=90)
+    from output_checks import check_outputs
+    check_outputs(context, package, output, env)
     print(json.dumps(proof, sort_keys=True))
     return library
 

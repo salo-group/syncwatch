@@ -15,9 +15,10 @@ INPUTS = ["packages/playback-native/include/syncwatch_playback.h",
           "packages/playback-native/src/media_input.c", "packages/playback-native/src/vlc_api.h",
           "tools/playback/build.py", "tools/playback/native_probe.c",
           "tools/playback/media_input_checks.py", "tools/playback/player_input_checks.py",
-          "tools/playback/external_input_checks.py",
+          "tools/playback/external_input_checks.py", "tools/playback/output_checks.py", "tools/playback/output_probe.c",
           "tools/playback/appkit_code_lifetime.py", "tools/playback/appkit_module_probe.c",
-          "tools/playback/sdk_check.py"]
+          "tools/playback/sdk_check.py", "tools/vlc/probe_common.h", "tools/vlc/owned_libraries.h",
+          "tools/vlc/fixtures.py", "tools/vlc/media/embedded-tracks.json", "tools/vlc/media/embedded-tracks.b64"]
 
 
 def native_check(package, output):
@@ -42,11 +43,25 @@ def verify(package, output):
             native_check(package, output)
         actual = {name: json.loads((output / filename).read_bytes()) for name, filename in [
             ("playback", "native-proof.json"), ("input", "media-input-proof.json"),
-            ("loadedInput", "player-input-proof.json"), ("externalInput", "external-input-proof.json")]}
+            ("loadedInput", "player-input-proof.json"), ("externalInput", "external-input-proof.json"), ("decodedOutput", "decoded-output-proof.json")]}
+        decoded = actual["decodedOutput"]
+        cases = decoded.get("cases", {})
+        decoded_valid = (decoded.get("success") is True and decoded.get("callbackSinksOnly") is True
+                         and decoded.get("physicalOutputAccepted") is False
+                         and decoded.get("temporaryFixturesRemoved") is True
+                         and decoded.get("nativeSourceSha256") == inputs["packages/playback-native/src/playback.c"]
+                         and set(cases) == {"embedded", "external"}
+                         and all(case.get("success") is True and case.get("cycles") == 3
+                                 and 840 <= case.get("alternateToneHz", 0) <= 920
+                                 and 20 <= case.get("whiteSubtitlePixels", 0) < 320 * 180 / 4
+                                 and case.get("selectedStreamsRetained") is True
+                                 and case.get("normalClose") is True
+                                 and case.get("physicalOutputAccepted") is False for case in cases.values()))
         if (actual["playback"].get("abiBytes") != 80 or actual["playback"].get("actualClock") is not True or
                 actual["playback"].get("repeatedRelease") is not True or
                 actual["playback"].get("physicalOutputAccepted") is not False or
                 actual["input"].get("versionBytes") != 64 or actual["input"].get("noHandleGrowth") is not True or
+                not decoded_valid or
                 actual["loadedInput"].get("repeatedPausedSeekResume") != 3 or
                 actual["loadedInput"].get("loadedContentHash") is not True or
                 actual["loadedInput"].get("positionalReadsPreservePlayback") is not True or
