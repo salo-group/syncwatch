@@ -47,6 +47,7 @@ def verify(package, output):
                 actual["playback"].get("repeatedRelease") is not True or
                 actual["playback"].get("physicalOutputAccepted") is not False or
                 actual["input"].get("versionBytes") != 64 or actual["input"].get("noHandleGrowth") is not True or
+                actual["loadedInput"].get("repeatedPausedSeekResume") != 3 or
                 actual["loadedInput"].get("loadedContentHash") is not True or
                 actual["loadedInput"].get("positionalReadsPreservePlayback") is not True or
                 actual["loadedInput"].get("physicalOutputAccepted") is not False or

@@ -272,13 +272,18 @@ int sw_playback_pause(sw_playback *p, uint64_t generation, int paused) {
      * consumed the demux refill. Refill once more when playback resumes, after
      * that selection has settled, using the actual clock rather than a cached
      * seek request. Keep this local pipeline detail below all client ports. */
+    int64_t refill_position = -1;
     if (!paused && p->refill_on_resume) {
-        int64_t position = p->api.libvlc_media_player_get_time(p->player);
-        if (position >= 0 && p->api.libvlc_media_player_is_seekable(p->player))
-            p->api.libvlc_media_player_set_time(p->player, position);
+        if (p->api.libvlc_media_player_is_seekable(p->player))
+            refill_position = p->api.libvlc_media_player_get_time(p->player);
         p->refill_on_resume = 0;
     }
-    p->api.libvlc_media_player_set_pause(p->player, paused); return SW_OK;
+    /* Queue resume before the refill. A second seek while still paused can
+     * leave the input waiting on decoder pictures before it handles resume. */
+    p->api.libvlc_media_player_set_pause(p->player, paused);
+    if (refill_position >= 0)
+        p->api.libvlc_media_player_set_time(p->player, refill_position);
+    return SW_OK;
 }
 int sw_playback_seek(sw_playback *p, uint64_t generation, int64_t target) {
     int code = check(p, generation); if (code) return code;

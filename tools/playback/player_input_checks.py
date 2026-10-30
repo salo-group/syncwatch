@@ -89,6 +89,28 @@ def check_player_input(library, libvlc, revision, fixture, output):
             load(1)
             before = version(1)
             assert before.words[3] == len(content)
+            # A paused seek/stream refill must not strand the native input on
+            # resume. Observe progress and a subsequent pause, not just Playing.
+            for _ in range(3):
+                for target in (1300, 0, 1300, 0, 1300):
+                    assert api.sw_playback_seek(player, 1, target) == 0
+                    ready(1, target)
+                start = observation(1).position_ms
+                assert api.sw_playback_pause(player, 1, 0) == 0
+                until = time.monotonic() + 4
+                while True:
+                    actual = observation(1)
+                    assert actual.status != 3 and not actual.ended
+                    if actual.status == 2 and not actual.paused and actual.position_ms > start + 250:
+                        break
+                    assert time.monotonic() < until, "Repeated paused seeks stalled native resume"
+                    time.sleep(.02)
+                assert api.sw_playback_pause(player, 1, 1) == 0
+                until = time.monotonic() + 4
+                while not observation(1).paused:
+                    assert time.monotonic() < until, "Native pause did not settle after resume"
+                    time.sleep(.02)
+            proof["repeatedPausedSeekResume"] = 3
             assert api.sw_playback_seek(player, 1, 1300) == 0
             position = ready(1, 1300).position_ms
             digest = hashlib.sha256()
