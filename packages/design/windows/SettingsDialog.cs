@@ -26,7 +26,7 @@ public sealed class SettingsEditor
 
     public void Edit(string id, string value)
     {
-        if (!EditableFields.Contains(id) || !SyncWatchSettings.Fields.Any(f => f.Id == id)) return;
+        if (!EditableFields.Contains(id) || !SyncWatchSettings.Fields.Any(f => f.Id == id && f.Kind != "folder")) return;
         values[id] = value; State = SettingsVisualState.Editing; Message = "";
     }
 
@@ -52,6 +52,9 @@ public sealed class SettingsDialog : UserControl
     public string UiLanguage { get; private set; }
     public string Section { get; private set; }
     public Func<IReadOnlyDictionary<string, string>, bool> Persist { get; set; } = _ => false;
+    private string folderPath = "";
+    private bool canChooseFolder;
+    public event Action? ChooseFolderRequested;
     public event Action? CloseRequested;
     public event Action? MoveRequested;
     public event Action<System.Windows.Vector>? MoveDeltaRequested;
@@ -66,6 +69,7 @@ public sealed class SettingsDialog : UserControl
             {
                 case "selectSection": if (e.Value is string selected) SelectSection(selected); return;
                 case "editField": if (e.Payload is string id && e.Value is string value) Editor.Edit(id, value); break;
+                case "chooseFolder": if (canChooseFolder && Editor.CanSave) ChooseFolderRequested?.Invoke(); break;
                 case "save": Editor.Save(values => Persist(values)); break;
                 case "close": case "cancel": Editor.Cancel(); CloseRequested?.Invoke(); break;
                 case "moveDialog":
@@ -77,7 +81,8 @@ public sealed class SettingsDialog : UserControl
             Refresh();
         }; Refresh();
     }
+    public void UpdateFolder(string path, bool canChoose) { folderPath = path; canChooseFolder = canChoose; Refresh(); }
     public void SetLanguage(string language) { UiLanguage = language; Refresh(); }
     public void SelectSection(string section) { if (SyncWatchSettings.Sections.Contains(section)) { Section = section; Refresh(); } }
-    private void Refresh() => surface.Render(DesignBindings.Settings(Editor, Section), UiLanguage);
+    private void Refresh() => surface.Render(DesignBindings.Settings(Editor, Section, folderPath, canChooseFolder), UiLanguage);
 }

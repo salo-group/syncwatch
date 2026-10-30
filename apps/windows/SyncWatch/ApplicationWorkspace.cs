@@ -69,8 +69,7 @@ internal sealed class ApplicationWorkspace : UserControl
         if (action is "openLibraryAudio" or "openLibrarySubtitles") catalog.OpenTracks(action == "openLibraryAudio" ? "audio" : "subtitles", preferences.State.Preferences.Language);
         else if (action == "chooseFolder")
         {
-            var picker = new Microsoft.Win32.OpenFolderDialog { Title = Design.SyncWatchCopy.Text("folder", preferences.State.Preferences.Language), Multiselect = false };
-            if (picker.ShowDialog(owner) == true) catalog.Choose(picker.FolderName);
+            ChooseFolder(owner);
         }
         else if (action == "rescan") catalog.Rescan();
         else if (action == "selectMovie" && value is not null) catalog.Select(value);
@@ -123,11 +122,21 @@ internal sealed class ApplicationWorkspace : UserControl
         ShowInTaskbar = false,
         WindowStartupLocation = WindowStartupLocation.CenterOwner
     };
+    private void ChooseFolder(Window parent)
+    {
+        if (!catalog.CanConfigure) return;
+        var picker = new Microsoft.Win32.OpenFolderDialog { Title = Design.SyncWatchCopy.Text("folder", preferences.State.Preferences.Language), Multiselect = false };
+        if (picker.ShowDialog(parent) == true) catalog.Choose(picker.FolderName);
+    }
     private void OpenSettings()
     {
         var view = new Design.SettingsDialog(catalog.SettingsEditor(preferences.CreateEditor()), preferences.State.Preferences.Language);
         var window = CreateDialog(view);
         view.CloseRequested += window.Close; view.MoveRequested += window.DragMove;
+        void RefreshFolder() => view.UpdateFolder(catalog.FolderPath, catalog.CanConfigure);
+        view.ChooseFolderRequested += () => ChooseFolder(window);
+        catalog.Changed += RefreshFolder;
+        RefreshFolder();
         view.Persist = values =>
         {
             bool options = view.Editor.EditableFields.Contains("scanSubfolders");
@@ -137,6 +146,7 @@ internal sealed class ApplicationWorkspace : UserControl
             application.ApplySystemTheme(); watch.PreferencesChanged(); Refresh();
             view.SetLanguage(preferences.State.Preferences.Language); return true;
         };
-        window.ShowDialog();
+        try { window.ShowDialog(); }
+        finally { catalog.Changed -= RefreshFolder; }
     }
 }

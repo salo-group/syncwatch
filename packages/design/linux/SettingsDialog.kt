@@ -19,7 +19,7 @@ class SettingsEditor private constructor(
     private fun updated(values: Map<String, String> = this.values, state: SettingsVisualState = this.state,
         message: String = this.message, original: Map<String, String> = this.original) =
         SettingsEditor(values, editableFields, canSave, state, message, original)
-    fun edit(id: String, value: String): SettingsEditor = if (id in editableFields && id in SyncWatchSettings.defaults)
+    fun edit(id: String, value: String): SettingsEditor = if (id in editableFields && SyncWatchSettings.fields.any { it.id == id && it.kind != "folder" })
         updated(values = values + (id to value), state = SettingsVisualState.editing, message = "") else this
     val isValid: Boolean get() = values.keys == SyncWatchSettings.defaults.keys && editableFields.all { it in SyncWatchSettings.defaults } &&
         SyncWatchSettings.fields.all { descriptor -> values[descriptor.id]?.let { value ->
@@ -36,11 +36,13 @@ class SettingsEditor private constructor(
 }
 
 @Composable fun SettingsDialog(editor:SettingsEditor,onEditorChange:(SettingsEditor)->Unit,language:String="en",initialSection:String="interface",theme:SyncWatchTheme=SyncWatchTheme.dark,
+    folderPath:String="",canChooseFolder:Boolean=false,onChooseFolder:()->Unit={},
     onSave:(Map<String,String>)->Boolean={false},onClose:()->Unit={}) {
     var section by remember {mutableStateOf(initialSection.takeIf{it in SyncWatchSettings.sections}?:"interface")}
-    DesignSurface("Settings",DesignBindings.settings(editor,section),language,theme){event->when(event.action){
+    DesignSurface("Settings",DesignBindings.settings(editor,section,folderPath,canChooseFolder),language,theme){event->when(event.action){
         "selectSection"->event.value?.takeIf{it in SyncWatchSettings.sections}?.let{section=it}
         "editField"->if(event.payload!=null&&event.value!=null)onEditorChange(editor.edit(event.payload,event.value))
+        "chooseFolder"->if(canChooseFolder && editor.canSave)onChooseFolder()
         "save"->onEditorChange(editor.save(onSave).first)
         "close","cancel"->{onEditorChange(editor.cancel());onClose()}
     }}

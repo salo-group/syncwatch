@@ -187,6 +187,16 @@ private fun settingsChecks(root: Path): Int {
     check(!SettingsEditor(values = mapOf("unexpected" to "value"), canSave = true).isValid)
     check(SettingsVisualState.entries.map { it.name } == SyncWatchSettings.states)
 
+    val folderPath = "/Movies/Кино " + "long-path/".repeat(70)
+    for (canSave in listOf(false, true)) for (canChoose in listOf(false, true)) {
+        val draft = SettingsEditor(editableFields = setOf("theme", "folder"), canSave = canSave).edit("theme", "dark").edit("folder", "ungranted")
+        val folder = DesignBindings.settings(draft, "library", folderPath, canChoose).collections.getValue("fields").single { it.values["id"] == "folder" }
+        check(folder.values["kind"] == "folder" && folder.values["value"] == folderPath)
+        check(folder.values["canChooseFolder"] == (canSave && canChoose).toString())
+        check(draft.isValid && draft.values["theme"] == "dark" && draft.values["folder"] == "")
+        if (canSave) check(draft.save { it["folder"] == "" && it["theme"] == "dark" }.second)
+    }
+
     val fields = Json.parse(Files.readString(root.resolve("player-settings.json"))).record()["fields"].rows()
     check(fields.map { it.text("id") }.toSet() == SyncWatchPlayerSettings.defaults.keys)
     for (fixture in fields) {
