@@ -920,11 +920,24 @@ public static class SyncWatchRoomForm
     ];
 }
 
+public sealed record PlayerInputBinding(string Key, string Action, double? Value, bool Repeats, bool FullscreenOnly);
+
 public static class SyncWatchPlayer
 {
     public static string[] States => ["loading", "paused", "playing", "buffering", "fullscreen", "connectionInterrupted", "ended"];
     public static string[] Actions => ["playPause", "seek", "skip", "previousFile", "nextFile", "setMovieVolume", "muteMovie", "showLibrary", "endWatching", "openCall", "toggleFullscreen", "openPlayerSettings", "selectAudio", "selectSubtitles", "openPlaylist"];
     public static string[] CompletedNavigationActions => ["previousFile", "nextFile"];
+    public const double InputVolumeStep = 0.05;
+    public static PlayerInputBinding[] InputBindings => [
+        new("Space", "playPause", null, false, false),
+        new("ArrowLeft", "skip", -1, true, false),
+        new("ArrowRight", "skip", 1, true, false),
+        new("ArrowUp", "setMovieVolume", 1, true, false),
+        new("ArrowDown", "setMovieVolume", -1, true, false),
+        new("KeyM", "muteMovie", null, false, false),
+        new("KeyF", "toggleFullscreen", null, false, false),
+        new("Escape", "toggleFullscreen", null, false, true),
+    ];
     public const long MaximumPositionMs = 604800000;
     public static System.Collections.Generic.IReadOnlyDictionary<string, double[][]> Icons => new System.Collections.Generic.Dictionary<string, double[][]>
     {

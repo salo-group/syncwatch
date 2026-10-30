@@ -180,7 +180,10 @@ private class NativePopoverWindow(
                 // when selection has already disposed the former anchor.
                 // Its original canvas survives a content/media replacement.
                 returnFocus?.takeIf { it.isShowing && SwingUtilities.isDescendingFrom(it, owner) }
-                    ?.requestFocusInWindow()
+                    // A focusable popup may still own the native window focus here.
+                    // Request the original component together with its owner window;
+                    // requestFocusInWindow cannot restore an unfocused owner.
+                    ?.requestFocus()
                 onReturnFocus()
             }
         }

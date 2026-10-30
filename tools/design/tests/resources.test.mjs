@@ -122,6 +122,7 @@ test('player states, supported actions and first-party polygons generate into al
     for (const file of [files[0], files[1], files[4]]) {
         const text = readFileSync(join(output, file), 'utf8');
         assert.ok(text.includes('SyncWatchPlayer'));
+        for (const binding of manifest.player.input.keys) assert.ok(text.includes('"' + binding.key + '"'));
         for (const state of manifest.player.states) assert.ok(text.includes('"' + state + '"'));
         for (const [icon, polygons] of Object.entries(manifest.player.icons)) {
             assert.ok(text.includes('"' + icon + '"'));
@@ -136,6 +137,10 @@ test('invalid player contracts and polygon bounds fail before native generation'
         s => delete s.completedNavigationActions, s => s.completedNavigationActions = [],
         s => s.completedNavigationActions = ['playPause'], s => s.completedNavigationActions = ['unknown'],
         s => s.completedNavigationActions = ['nextFile', 'nextFile'],
+        s => delete s.input, s => s.input.volumeStep = 0, s => s.input.volumeStep = 2,
+        s => s.input.keys[0].action = 'endWatching', s => s.input.keys[0].repeat = 'yes',
+        s => s.input.keys.push(s.input.keys[0]), s => s.input.keys[1].value = 3,
+        s => s.input.keys[0].value = 1, s => s.input.keys[0].fullscreenOnly = 1,
         s => s.maximumPositionMs++, s => s.icons.play = [[0, 1, 2]], s => s.icons.play[0][0] = 21,
         s => s.icons.play[0][0] = null, s => delete s.icons.pause]) {
         const design = fixture();

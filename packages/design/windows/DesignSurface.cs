@@ -160,8 +160,17 @@ public class DesignSurface : UserControl
                     if (button.Tag is not Popup)
                     {
                         button.Tag = popup;
+                        IInputElement? returnFocus = null;
+                        popup.Opened += (_, _) =>
+                        {
+                            returnFocus = Keyboard.FocusedElement;
+                            if (popup.Child is UIElement child)
+                                child.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+                        };
                         popup.Closed += (_, _) =>
                         {
+                            if (returnFocus is UIElement { IsVisible: true } target) target.Focus();
+                            returnFocus = null;
                             if (!updating && elements.TryGetValue(id, out var current) && Slots.ContainsKey(current.Text("popoverSlot")))
                                 EventRequested?.Invoke(new(current.Text("popoverDismiss")));
                         };

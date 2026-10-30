@@ -83,6 +83,7 @@ public struct PlayerPresentation: Sendable {
 }
 
 public struct PlayerChrome: View {
+    @Environment(\.designPresented) private var presented
     public var presentation: PlayerPresentation
     public var language: String
     public var videoSurface: AnyView?
@@ -120,6 +121,9 @@ public struct PlayerChrome: View {
                 presentation.dispatch(event.action, value: event.value.flatMap(Double.init), to: onAction)
             }
         }
+        .nativeInputHost(
+            NativePlayerInput(
+                presentation: presentation, protectedFocus: !presented || selectionMenu != nil, onAction: onAction))
     }
 
     private var ownedSlots: [String: AnyView] {

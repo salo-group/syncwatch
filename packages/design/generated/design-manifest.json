@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "units": "logical",
-  "sourceDigest": "cc30c0750a8b29d14b601166c5fd771648ed44a34cefa368585fef4154bc410c",
+  "sourceDigest": "3276c826a2b3c8e12e4858c50a37e63be11b0e79539e0c633e319aba28d879a0",
   "sources": {
     "tokens/geometry.json": "83534a4d3b484f7a810a4c67f1f8ee58b2f2f4a14db4e4df404381e936a78a4b",
     "tokens/palette.json": "bb4dabce249ffe75a20192d8ccf523630432a3d1f3ca8dcba45fa787a7028a2c",
@@ -10,14 +10,14 @@
     "copy.json": "8e1b1fa6581c17a5146879c61540d11634f2532ea7519a742e3a5316b2aefde4",
     "settings.json": "5871fefd13955a2ed51fb989cc35177c2940aca4c3905ec117ad894a81c041f2",
     "room.json": "84189acaeef566dfcdb6282eec0080e10afe045fb9a220d98ecc86ea5d33d96b",
-    "player.json": "d020d46054d1208d607cd6ec84ea2694dccc1ff530b3ef137febd7c5ffe3ad8a",
+    "player.json": "c7cc1a1b559ec70b9337af1bc3a69669a0a10f6fe2319fc573417035c54923ec",
     "call.json": "a26821925540d925182355af12c02a40780c84c051e53610b300934536186a01",
     "player-settings.json": "ce2d79c36e1557ddee4cedd4db931042fdd7aa0f96969580e0a815c89a95c38a",
     "selection-menu.json": "86ff7683d675213327acd83ebc38174dbcfea37235b454e0afe37671c59d1502",
     "layouts.json": "ac4f55de7bcfd25bde0e66cad0a368e8a03b572a557fc52079be2e42dfb33ea8",
     "package.json": "49e278398b736b490a57f3ec73bfdcdcc863d63be73788115f41b6db6bee5165"
   },
-  "generatorRevision": "ecbf5411522140d50f2cff4b68d9cf5f42bca4c6701b0d76928beb29f93255fd",
+  "generatorRevision": "6ab5fb9eee4ac8af1a2db6d1be0ef5763cf2162991416018568238f84d8701da",
   "generator": {
     "styleDictionary": "5.7.0",
     "files": {
@@ -29,7 +29,7 @@
       "tools/design/sources.json": "61ee09429a49bf5ba132278fa43982326d0741e47974ed0ba5d5c431d9befcb3",
       "tools/design/presentation-formats.mjs": "47a8570026c429720ac121c0ad1c4067cd1e1f29395d6e390512ea39d2e8bb7a",
       "tools/design/settings-formats.mjs": "b17647dd949614a82025800452ac9a81bcf6f2d4c20dadeb68aacfa0c3221136",
-      "tools/design/player-formats.mjs": "446cefd7538425a0e6a066e478a3706e5b4d7e7b4f8b3f7ef7e922cf7a98fdc8",
+      "tools/design/player-formats.mjs": "d18bab019efb9a72f6be1eea5a400dc8098cca0d47cad760ac4a1b62227cd6b9",
       "tools/design/player-settings-formats.mjs": "1f1a623d7ff3de8f7f4c3af6536e8baf83c56e89b5bb2364f60f5267e5b43927",
       "tools/design/layout-formats.mjs": "28ff7a4da70b4364fc28ba1069f8bc497642150f7d7154c7f03189cee7566c6b",
       "tools/design/call-formats.mjs": "9856ebe6902df77af71c86934b85d3fc2c2f9928bc9bef3cf3aa0d26fb07299c",
@@ -863,6 +863,56 @@
       "previousFile",
       "nextFile"
     ],
+    "input": {
+      "volumeStep": 0.05,
+      "keys": [
+        {
+          "key": "Space",
+          "action": "playPause",
+          "repeat": false
+        },
+        {
+          "key": "ArrowLeft",
+          "action": "skip",
+          "value": -1,
+          "repeat": true
+        },
+        {
+          "key": "ArrowRight",
+          "action": "skip",
+          "value": 1,
+          "repeat": true
+        },
+        {
+          "key": "ArrowUp",
+          "action": "setMovieVolume",
+          "value": 1,
+          "repeat": true
+        },
+        {
+          "key": "ArrowDown",
+          "action": "setMovieVolume",
+          "value": -1,
+          "repeat": true
+        },
+        {
+          "key": "KeyM",
+          "action": "muteMovie",
+          "repeat": false
+        },
+        {
+          "key": "KeyF",
+          "action": "toggleFullscreen",
+          "repeat": false
+        },
+        {
+          "key": "Escape",
+          "action": "toggleFullscreen",
+          "repeat": false,
+          "fullscreenOnly": true
+        }
+      ]
+    },
     "maximumPositionMs": 604800000,
     "icons": {
       "play": [

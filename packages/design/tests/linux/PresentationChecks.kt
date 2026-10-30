@@ -17,6 +17,33 @@ private fun Record.optionalNumber(key: String) = (this[key] as Number?)?.toDoubl
 private fun corpus(root: Path, name: String) =
     Json.parse(Files.readString(root.resolve(name))).record()["cases"].rows()
 
+private fun playerInputChecks(root: Path) {
+    val data = Json.parse(Files.readString(root.resolve("player-input.json"))).record()
+    val defaults = data["defaults"].record()
+    val cases = data["cases"].rows()
+    check(cases.size == 34)
+    for (row in cases) {
+        val value = defaults + row
+        val model = PlayerPresentation(state = PlayerVisualState.valueOf(value.text("state")),
+            positionMs = value.number("positionMs").toLong(), durationMs = value.number("durationMs").toLong(),
+            volume = value.number("volume").toDouble(), skipSeconds = value.number("skipSeconds").toInt(),
+            enabledActions = value.strings("enabledActions").toSet())
+        val received = mutableListOf<Pair<String, Double?>>()
+        val handler: (String, Double?) -> Unit = { action, number -> received.add(action to number); Unit }
+        fun flag(key: String) = row[key] == true
+        val handled = if (row.text("kind") == "wheel") model.dispatchWheel(row.number("wheel").toDouble(), flag("modified"), flag("protectedFocus"), handler)
+            else model.dispatchKey(row.text("key"), flag("repeating"), flag("fullscreen"), flag("modified"), flag("protectedFocus"), handler)
+        val expected = row["expected"].rows().map { it.text("action") to it.optionalNumber("value") }
+        check(handled == row.flag("handled") && received.size == expected.size && received.zip(expected).all { (actual, wanted) ->
+            actual.first == wanted.first && (if (actual.second != null && wanted.second != null) kotlin.math.abs(actual.second!! - wanted.second!!) < .000001 else actual.second == wanted.second)
+        }) { row.text("name") }
+        check(model.volume == value.number("volume").toDouble() && model.positionMs == value.number("positionMs").toLong())
+    }
+    for (number in listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY)) {
+        check(!PlayerPresentation.gallery(PlayerVisualState.paused).dispatchWheel(number) { _, _ -> error("Nonfinite wheel emitted input") })
+    }
+}
+
 private fun playerChecks(root: Path): Int {
     data class Event(val action: String, val value: Double?)
     val cases = corpus(root, "player-actions.json")
@@ -200,6 +227,7 @@ private fun settingsChecks(root: Path): Int {
 fun main(arguments: Array<String>) {
     require(arguments.size == 1) { "Pass the shared design fixture directory" }
     val root = Path.of(arguments.single())
+    playerInputChecks(root)
     val player = playerChecks(root)
     val call = callChecks(root)
     val selection = selectionChecks(root)

@@ -202,7 +202,7 @@ private fun verifyNativePopoverFocusReturn() {
         onEvent { open = true; Snapshot.sendApplyNotifications() }
         waitFor("popup did not acquire native focus") { window.ownedWindows.any { it.isFocused } }
         onEvent { open = false; Snapshot.sendApplyNotifications() }
-        waitFor("popup close stranded keyboard focus on the owner Window") { manager.focusOwner === original }
+        waitFor("popup close stranded keyboard focus on the owner Window") { window.isFocused && manager.focusOwner === original }
     } finally { onEvent { window.dispose() } }
 }
 

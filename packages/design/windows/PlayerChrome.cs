@@ -85,8 +85,13 @@ public sealed class PlayerChrome : UserControl
     public UIElement? VideoSurface { get; set; }
     private readonly SelectionMenu menu = new();
     private readonly DesignSurface surface = new("Player");
+    private NativePlayerInput? input;
+    internal void RequestInput(string action, double? value) => ActionRequested?.Invoke(action, value);
     public PlayerChrome()
     {
+        Focusable = true;
+        Loaded += (_, _) => input ??= new NativePlayerInput(this);
+        Unloaded += (_, _) => { input?.Dispose(); input = null; };
         Content = surface; surface.ConfigureHost(this);
         surface.EventRequested += e =>
         {

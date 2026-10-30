@@ -67,6 +67,7 @@ data class PlayerPresentation(
 @Composable fun PlayerChrome(presentation:PlayerPresentation=PlayerPresentation(),language:String="en",theme:SyncWatchTheme=SyncWatchTheme.dark,modifier:Modifier=Modifier,
     videoSurface:@Composable BoxScope.()->Unit={},selectionMenu:SelectionMenuPresentation?=null,
     onSelection:(SelectionMenuRequest)->Unit={},onDismissSelection:()->Unit={},onAction:(String,Double?)->Unit={_,_->}) {
+    NativePlayerInput(presentation, selectionMenu != null, onAction)
     val slots=mutableMapOf<String,@Composable BoxScope.()->Unit>("video" to videoSurface)
     selectionMenu?.let { menu -> slots[menu.kind+"Selection"]={SelectionMenu(menu,language,theme,onSelection=onSelection)} }
     DesignSurface("Player",DesignBindings.player(presentation),language,theme,modifier,slots){event->

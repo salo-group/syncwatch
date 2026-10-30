@@ -28,6 +28,7 @@ internal static class PlayerAssertions
     private static Event ReadEvent(JsonElement value) => new(value.GetProperty("action").GetString()!, value.TryGetProperty("value", out var number) ? number.GetDouble() : null);
     public static void Run(Application application, ResourceDictionary dictionary)
     {
+        PlayerInputAssertions.Run();
         using var data = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "player-actions.json")));
         int scenarios = 0;
         foreach (var fixture in data.RootElement.GetProperty("cases").EnumerateArray())

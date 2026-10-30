@@ -10,6 +10,7 @@ internal sealed class WindowFullscreen
     private bool fullscreen;
     private WindowState savedState;
     private WindowStyle savedStyle;
+    private ResizeMode savedResizeMode;
     public WindowFullscreen(Window window)
     {
         this.window = window;
@@ -17,11 +18,19 @@ internal sealed class WindowFullscreen
     }
     public void Toggle()
     {
-        if (fullscreen) { window.WindowStyle = savedStyle; window.WindowState = savedState; }
+        if (fullscreen)
+        {
+            window.WindowState = WindowState.Normal;
+            window.WindowStyle = savedStyle; window.ResizeMode = savedResizeMode;
+            window.WindowState = savedState;
+        }
         else
         {
-            savedState = window.WindowState; savedStyle = window.WindowStyle;
-            window.WindowStyle = WindowStyle.None; window.WindowState = WindowState.Maximized;
+            savedState = window.WindowState; savedStyle = window.WindowStyle; savedResizeMode = window.ResizeMode;
+            // Recalculate the maximized bounds after removing the resize frame, including when already maximized.
+            window.WindowState = WindowState.Normal;
+            window.WindowStyle = WindowStyle.None; window.ResizeMode = ResizeMode.NoResize;
+            window.WindowState = WindowState.Maximized;
         }
         fullscreen = !fullscreen;
     }

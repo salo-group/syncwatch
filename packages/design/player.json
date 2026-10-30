@@ -27,6 +27,19 @@
     "openPlaylist"
   ],
   "completedNavigationActions": ["previousFile", "nextFile"],
+  "input": {
+    "volumeStep": 0.05,
+    "keys": [
+      {"key": "Space", "action": "playPause", "repeat": false},
+      {"key": "ArrowLeft", "action": "skip", "value": -1, "repeat": true},
+      {"key": "ArrowRight", "action": "skip", "value": 1, "repeat": true},
+      {"key": "ArrowUp", "action": "setMovieVolume", "value": 1, "repeat": true},
+      {"key": "ArrowDown", "action": "setMovieVolume", "value": -1, "repeat": true},
+      {"key": "KeyM", "action": "muteMovie", "repeat": false},
+      {"key": "KeyF", "action": "toggleFullscreen", "repeat": false},
+      {"key": "Escape", "action": "toggleFullscreen", "repeat": false, "fullscreenOnly": true}
+    ]
+  },
   "maximumPositionMs": 604800000,
   "icons": {
     "play": [

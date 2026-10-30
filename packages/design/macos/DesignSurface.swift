@@ -1,5 +1,12 @@
 import SwiftUI
 
+extension View {
+    /// Mount a nonvisual native input adapter with the same lifetime and bounds as its content.
+    func nativeInputHost<Input: NSViewRepresentable>(_ host: Input) -> some View {
+        background(host)
+    }
+}
+
 /// Neutral component data; generated from layouts.json. No native view is stored in the design document.
 public struct DesignNode: Codable, Sendable {
     public var id: String

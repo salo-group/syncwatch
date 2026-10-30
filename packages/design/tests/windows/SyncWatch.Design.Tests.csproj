@@ -16,6 +16,8 @@
         <Compile Include="../../windows/RoomDialog.cs" Link="RoomDialog.cs" />
         <Compile Include="../../windows/PlayerSettingsDialog.cs" Link="PlayerSettingsDialog.cs" />
         <Compile Include="../../windows/PlayerChrome.cs" Link="PlayerChrome.cs" />
+        <Compile Include="../../windows/PlayerInput.cs" Link="PlayerInput.cs" />
+        <Compile Include="../../windows/NativePlayerInput.cs" Link="NativePlayerInput.cs" />
         <ProjectReference Include="../../../windows-domain/SyncWatch.Domain/SyncWatch.Domain.csproj" />
         <ProjectReference Include="../../../windows-library/SyncWatch.Library/SyncWatch.Library.csproj" />
         <Compile Include="../../../../apps/windows/SyncWatch/LibraryController.cs" Link="LibraryController.cs" />
@@ -24,6 +26,7 @@
         <Compile Include="../../../../apps/windows/SyncWatch/AppearancePreferences.cs" Link="AppearancePreferences.cs" />
         <Compile Include="../../../../apps/windows/SyncWatch/LocalStatePersistence.cs" Link="LocalStatePersistence.cs" />
         <None Include="../fixtures/player-settings.json" Link="player-settings.json" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="../fixtures/player-input.json" Link="player-input.json" CopyToOutputDirectory="PreserveNewest" />
         <None Include="../fixtures/player-actions.json" Link="player-actions.json" CopyToOutputDirectory="PreserveNewest" />
         <Compile Include="../../windows/DesignData.cs" Link="DesignData.cs" />
         <Compile Include="../../windows/DesignSurface.cs" Link="DesignSurface.cs" />

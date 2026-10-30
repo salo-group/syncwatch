@@ -742,10 +742,23 @@ object SyncWatchRoomForm {
     )
 }
 
+data class PlayerInputBinding(val key: String, val action: String, val value: Double?, val repeats: Boolean, val fullscreenOnly: Boolean)
+
 object SyncWatchPlayer {
     val states = listOf("loading", "paused", "playing", "buffering", "fullscreen", "connectionInterrupted", "ended")
     val actions = setOf("playPause", "seek", "skip", "previousFile", "nextFile", "setMovieVolume", "muteMovie", "showLibrary", "endWatching", "openCall", "toggleFullscreen", "openPlayerSettings", "selectAudio", "selectSubtitles", "openPlaylist")
     val completedNavigationActions = setOf("previousFile", "nextFile")
+    const val inputVolumeStep = 0.05
+    val inputBindings = listOf(
+        PlayerInputBinding("Space", "playPause", null, false, false),
+        PlayerInputBinding("ArrowLeft", "skip", -1.0, true, false),
+        PlayerInputBinding("ArrowRight", "skip", 1.0, true, false),
+        PlayerInputBinding("ArrowUp", "setMovieVolume", 1.0, true, false),
+        PlayerInputBinding("ArrowDown", "setMovieVolume", -1.0, true, false),
+        PlayerInputBinding("KeyM", "muteMovie", null, false, false),
+        PlayerInputBinding("KeyF", "toggleFullscreen", null, false, false),
+        PlayerInputBinding("Escape", "toggleFullscreen", null, false, true),
+    )
     const val maximumPositionMs: Long = 604800000L
     val icons = mapOf(
         "play" to listOf(listOf(6.0f, 3.0f, 17.0f, 10.0f, 6.0f, 17.0f)),

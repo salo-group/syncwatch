@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "state": "paused",
+    "positionMs": 30000,
+    "durationMs": 100000,
+    "volume": 0.7,
+    "skipSeconds": 10,
+    "enabledActions": [
+      "playPause",
+      "seek",
+      "skip",
+      "setMovieVolume",
+      "muteMovie",
+      "toggleFullscreen"
+    ]
+  },
+  "cases": [
+    {
+      "name": "space toggles observed playback",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "playPause"
+        }
+      ],
+      "key": "Space"
+    },
+    {
+      "name": "held space does not oscillate playback",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "Space",
+      "repeating": true
+    },
+    {
+      "name": "left uses configured skip",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "seek",
+          "value": 20000
+        }
+      ],
+      "key": "ArrowLeft"
+    },
+    {
+      "name": "right uses configured skip",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "seek",
+          "value": 40000
+        }
+      ],
+      "key": "ArrowRight"
+    },
+    {
+      "name": "configured interval is used",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "seek",
+          "value": 33000
+        }
+      ],
+      "key": "ArrowRight",
+      "skipSeconds": 3
+    },
+    {
+      "name": "left clamps at start",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "seek",
+          "value": 0
+        }
+      ],
+      "key": "ArrowLeft",
+      "positionMs": 2000
+    },
+    {
+      "name": "left at start emits no redundant seek",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "ArrowLeft",
+      "positionMs": 0
+    },
+    {
+      "name": "held arrows repeat seeks",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "seek",
+          "value": 40000
+        }
+      ],
+      "key": "ArrowRight",
+      "repeating": true
+    },
+    {
+      "name": "reconnecting cannot seek",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "ArrowRight",
+      "state": "connectionInterrupted"
+    },
+    {
+      "name": "ended cannot seek",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "ArrowRight",
+      "state": "ended"
+    },
+    {
+      "name": "revoked capability cannot play",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "Space",
+      "enabledActions": []
+    },
+    {
+      "name": "invalid observation cannot change volume",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "ArrowUp",
+      "positionMs": -1
+    },
+    {
+      "name": "up raises only movie volume",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "setMovieVolume",
+          "value": 0.75
+        }
+      ],
+      "key": "ArrowUp"
+    },
+    {
+      "name": "down lowers only movie volume",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "setMovieVolume",
+          "value": 0.65
+        }
+      ],
+      "key": "ArrowDown"
+    },
+    {
+      "name": "held volume key repeats",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "setMovieVolume",
+          "value": 0.75
+        }
+      ],
+      "key": "ArrowUp",
+      "repeating": true
+    },
+    {
+      "name": "volume clamps to full",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "setMovieVolume",
+          "value": 1
+        }
+      ],
+      "key": "ArrowUp",
+      "volume": 0.98
+    },
+    {
+      "name": "full volume emits no redundant change",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "ArrowUp",
+      "volume": 1
+    },
+    {
+      "name": "silent volume emits no redundant change",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "ArrowDown",
+      "volume": 0
+    },
+    {
+      "name": "mute remains an explicit local request",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "muteMovie"
+        }
+      ],
+      "key": "KeyM"
+    },
+    {
+      "name": "held mute does not oscillate",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "KeyM",
+      "repeating": true
+    },
+    {
+      "name": "fullscreen is an explicit request",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "toggleFullscreen"
+        }
+      ],
+      "key": "KeyF"
+    },
+    {
+      "name": "held fullscreen does not oscillate",
+      "kind": "key",
+      "handled": true,
+      "expected": [],
+      "key": "KeyF",
+      "repeating": true
+    },
+    {
+      "name": "escape outside fullscreen retains native behavior",
+      "kind": "key",
+      "handled": false,
+      "expected": [],
+      "key": "Escape"
+    },
+    {
+      "name": "escape exits fullscreen",
+      "kind": "key",
+      "handled": true,
+      "expected": [
+        {
+          "action": "toggleFullscreen"
+        }
+      ],
+      "key": "Escape",
+      "fullscreen": true
+    },
+    {
+      "name": "popover retains escape",
+      "kind": "key",
+      "handled": false,
+      "expected": [],
+      "key": "Escape",
+      "fullscreen": true,
+      "protectedFocus": true
+    },
+    {
+      "name": "unrecognized key retains native behavior",
+      "kind": "key",
+      "handled": false,
+      "expected": [],
+      "key": "KeyQ"
+    },
+    {
+      "name": "modified space retains native behavior",
+      "kind": "key",
+      "handled": false,
+      "expected": [],
+      "key": "Space",
+      "modified": true
+    },
+    {
+      "name": "editable control retains arrows",
+      "kind": "key",
+      "handled": false,
+      "expected": [],
+      "key": "ArrowRight",
+      "protectedFocus": true
+    },
+    {
+      "name": "wheel up raises movie only",
+      "kind": "wheel",
+      "handled": true,
+      "expected": [
+        {
+          "action": "setMovieVolume",
+          "value": 0.75
+        }
+      ],
+      "wheel": 1
+    },
+    {
+      "name": "wheel down lowers movie only",
+      "kind": "wheel",
+      "handled": true,
+      "expected": [
+        {
+          "action": "setMovieVolume",
+          "value": 0.65
+        }
+      ],
+      "wheel": -1
+    },
+    {
+      "name": "zero wheel does nothing",
+      "kind": "wheel",
+      "handled": false,
+      "expected": [],
+      "wheel": 0
+    },
+    {
+      "name": "modified wheel is preserved",
+      "kind": "wheel",
+      "handled": false,
+      "expected": [],
+      "wheel": 1,
+      "modified": true
+    },
+    {
+      "name": "popover wheel is preserved",
+      "kind": "wheel",
+      "handled": false,
+      "expected": [],
+      "wheel": 1,
+      "protectedFocus": true
+    },
+    {
+      "name": "wheel magnitude never multiplies the step",
+      "kind": "wheel",
+      "handled": true,
+      "expected": [
+        {
+          "action": "setMovieVolume",
+          "value": 0.75
+        }
+      ],
+      "wheel": 120
+    }
+  ]
+}

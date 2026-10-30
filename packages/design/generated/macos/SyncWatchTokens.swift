@@ -1004,6 +1004,14 @@ public enum SyncWatchRoomForm {
     ]
 }
 
+public struct PlayerInputBinding: Sendable {
+    public let key: String
+    public let action: String
+    public let value: Double?
+    public let repeats: Bool
+    public let fullscreenOnly: Bool
+}
+
 public enum SyncWatchPlayer {
     public static let states = [
         "loading",
@@ -1032,6 +1040,17 @@ public enum SyncWatchPlayer {
         "openPlaylist",
     ]
     public static let completedNavigationActions: Set<String> = ["previousFile", "nextFile"]
+    public static let inputVolumeStep = 0.05
+    public static let inputBindings: [PlayerInputBinding] = [
+        PlayerInputBinding(key: "Space", action: "playPause", value: nil, repeats: false, fullscreenOnly: false),
+        PlayerInputBinding(key: "ArrowLeft", action: "skip", value: -1, repeats: true, fullscreenOnly: false),
+        PlayerInputBinding(key: "ArrowRight", action: "skip", value: 1, repeats: true, fullscreenOnly: false),
+        PlayerInputBinding(key: "ArrowUp", action: "setMovieVolume", value: 1, repeats: true, fullscreenOnly: false),
+        PlayerInputBinding(key: "ArrowDown", action: "setMovieVolume", value: -1, repeats: true, fullscreenOnly: false),
+        PlayerInputBinding(key: "KeyM", action: "muteMovie", value: nil, repeats: false, fullscreenOnly: false),
+        PlayerInputBinding(key: "KeyF", action: "toggleFullscreen", value: nil, repeats: false, fullscreenOnly: false),
+        PlayerInputBinding(key: "Escape", action: "toggleFullscreen", value: nil, repeats: false, fullscreenOnly: true),
+    ]
     public static let maximumPositionMs: Int64 = 604_800_000
     public static let icons: [String: [[Double]]] = [
         "play": [

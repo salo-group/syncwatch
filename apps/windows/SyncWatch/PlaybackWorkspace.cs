@@ -78,9 +78,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     internal HelperSessionState? SharedState { get; private set; }
     private bool closing;
     private bool attached;
-    private bool fullscreen;
-    private WindowState savedWindowState;
-    private WindowStyle savedWindowStyle;
+    private WindowFullscreen? standaloneFullscreen;
     internal VLCPlayback Player => player;
     internal PlaybackScope Scope => scope;
     internal NativeVideoHost Surface => surface;
@@ -267,14 +265,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         if (action == "toggleFullscreen")
         {
             if (onFullscreen is not null) { onFullscreen(); return; }
-            Window window = Window.GetWindow(this);
-            if (fullscreen) { window.WindowStyle = savedWindowStyle; window.WindowState = savedWindowState; }
-            else
-            {
-                savedWindowState = window.WindowState; savedWindowStyle = window.WindowStyle;
-                window.WindowStyle = WindowStyle.None; window.WindowState = WindowState.Maximized;
-            }
-            fullscreen = !fullscreen;
+            (standaloneFullscreen ??= new WindowFullscreen(Window.GetWindow(this))).Toggle();
             return;
         }
         try
