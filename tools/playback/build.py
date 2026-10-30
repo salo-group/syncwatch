@@ -19,7 +19,9 @@ from source_profile import profile_data
 def build(directory):
     directory = directory.resolve()
     directory.mkdir(parents=True, exist_ok=True)
-    context = BuildContext(directory / "sdk", profile_data()["sourceDateEpoch"])
+    # This adapter consumes an existing SDK and compiles C directly. It does
+    # not regenerate a dependency's configure scripts or require Autotools.
+    context = BuildContext(directory / "sdk", profile_data()["sourceDateEpoch"], autotools=False)
     suffix = {"macos-arm64": ".dylib", "windows-x64": ".dll", "linux-x64": ".so"}[context.target]
     library = directory / ("syncwatch_playback" + suffix)
     sources = ROOT / "packages/playback-native/src"

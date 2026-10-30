@@ -38,7 +38,7 @@ def sdk_paths(environment):
 
 
 class BuildContext:
-    def __init__(self, work, epoch):
+    def __init__(self, work, epoch, *, autotools=True):
         self.work, self.target = work, native_target()
         self.logs = work / "logs"
         self.logs.mkdir(parents=True, exist_ok=True)
@@ -63,12 +63,13 @@ class BuildContext:
                 paths.append(Path("/opt/homebrew/bin"))
             self.shell = "/bin/sh"
         self.env["PATH"] = os.pathsep.join(str(p) for p in paths) + os.pathsep + self.env["PATH"]
-        for name, key in [("m4", "M4"), ("autoconf", "AUTOCONF"), ("automake", "AUTOMAKE"),
-                          ("aclocal", "ACLOCAL"), ("autoreconf", "AUTORECONF"), ("autom4te", "AUTOM4TE"),
-                          ("autoheader", "AUTOHEADER"),
-                          ("glibtoolize" if self.target == "macos-arm64" else "libtoolize", "LIBTOOLIZE")]:
-            path = self.tool(name)
-            self.env[key] = shell_path(path) if self.target == "windows-x64" else path
+        if autotools:
+            for name, key in [("m4", "M4"), ("autoconf", "AUTOCONF"), ("automake", "AUTOMAKE"),
+                              ("aclocal", "ACLOCAL"), ("autoreconf", "AUTORECONF"), ("autom4te", "AUTOM4TE"),
+                              ("autoheader", "AUTOHEADER"),
+                              ("glibtoolize" if self.target == "macos-arm64" else "libtoolize", "LIBTOOLIZE")]:
+                path = self.tool(name)
+                self.env[key] = shell_path(path) if self.target == "windows-x64" else path
         prefix = self.prefix.as_posix()
         self.env["PATH"] = str(self.prefix / "bin") + os.pathsep + self.env["PATH"]
         self.env.update(PKG_CONFIG_PATH=prefix + "/lib/pkgconfig",
