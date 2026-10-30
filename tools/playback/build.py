@@ -94,8 +94,10 @@ def check(package, output):
                         str(library), str(libvlc.resolve()), profile_data()["sources"]["vlc"]["revision"],
                         str(media), str(output)], stdout=log, stderr=subprocess.STDOUT,
                        stdin=subprocess.DEVNULL, check=True, env=env, timeout=90)
-    from output_checks import check_outputs
-    check_outputs(context, package, output, env)
+    spec = importlib.util.spec_from_file_location("syncwatch_playback_output", ROOT / "tools/playback/output_checks.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.check_outputs(context, package, output, env)
     print(json.dumps(proof, sort_keys=True))
     return library
 
