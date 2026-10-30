@@ -4,6 +4,28 @@ import os
 import shutil
 import subprocess
 import queue
+from collections import deque
+
+
+class PipeServerProtocol(ObservedServerProtocol):
+    def handleState(self, state):
+        playstate = state.get("playstate", {})
+        self._factory.timings.append(("received", self._watcher.getName(),
+            playstate.get("position"), playstate.get("paused"), playstate.get("doSeek")))
+        super().handleState(state)
+
+    def sendState(self, position, paused, doSeek, setBy, forcedUpdate):
+        self._factory.timings.append(("sent", self._watcher.getName(), position, paused, doSeek))
+        super().sendState(position, paused, doSeek, setBy, forcedUpdate)
+
+
+class PipeFactory(ObservedFactory):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.timings = deque(maxlen=32)
+
+    def buildProtocol(self, address):
+        return PipeServerProtocol(self)
 
 
 class PipePlayer(SimulatedPlayer):
@@ -124,7 +146,7 @@ def bridge_run(root):
     with trust_store.open("ab") as stream: stream.write(b"\n" + ca.public_bytes(serialization.Encoding.PEM))
     directory = root / "pipe-server"
     certificate_set(directory, key, ca)
-    factory = ObservedFactory(port="0", salt="pipe-fixture", tlsCertPath=str(directory))
+    factory = PipeFactory(port="0", salt="pipe-fixture", tlsCertPath=str(directory))
     listener = reactor.listenTCP(0, factory, interface="127.0.0.1")
     players, failures = [], []
     scenario_worker = [None]
@@ -193,6 +215,14 @@ def bridge_run(root):
             factory.connections[0].transport.abortConnection()
             yield wait_for(lambda: any(k == "sync.connection" and v["state"] == "connecting"
                                       for k, v in a.events[before:]), "pipe recovery starts")
+            # The surviving participant may choose a newer paused timeline while
+            # this native player still observes its pre-interruption position.
+            # Rejoining must initialize from the server instead of advertising
+            # that stale position as the room's new slowest participant.
+            b.set_position(150000)
+            b.publish(user=True)
+            yield wait_for(lambda: any(s.get("playstate", {}).get("position", 0) > 145
+                                      for s in factory.states), "survivor seek reaches server")
             yield wait_for(lambda: any(k == "sync.connection" and v["state"] == "connected"
                                       for k, v in a.events[before:]), "pipe authenticated recovery", timeout=15)
             recovered = a.events[before:]
@@ -205,6 +235,13 @@ def bridge_run(root):
             a.send("sync.setReady", {"ready": True})
             yield wait_for(lambda: any(k == "sync.readiness" and v["ready"]
                                       for k, v in a.events[before:]), "pipe recovery readiness")
+            yield wait_for(lambda: a.current() > 145000 and b.current() > 145000,
+                           "surviving newer timeline retained on recovery")
+            # Room position is periodically derived from its slowest watcher.
+            # Check beyond that update, not only the first reconnect frame.
+            yield task.deferLater(reactor, 2, lambda: None)
+            assert a.current() > 145000 and b.current() > 145000, "survivor timeline rolled back"
+            report["survivorSeekDuringRecoveryRetained"] = True
             a.set_position(120000)
             a.publish(user=True)
             yield wait_for(lambda: b.current() > 115000 and abs(a.current() - b.current()) < 1500,
@@ -225,7 +262,8 @@ def bridge_run(root):
             report["disconnect"] = True
         except Exception:
             print("PIPE_FAILURE", [{"events": p.events[-8:], "commands": p.commands[-8:], "paused": p.paused,
-                "position": p.current(), "exit": p.process.poll()} for p in players], "server", factory.states[-4:], flush=True)
+                "position": p.current(), "exit": p.process.poll()} for p in players], "server", factory.states[-4:],
+                "timing", list(factory.timings), flush=True)
             from twisted.python.failure import Failure
             failures.append(Failure())
         finally:
