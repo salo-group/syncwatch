@@ -14,7 +14,7 @@ internal static class PlayerPreferencesChecks
         {
             Preferences = LocalPreferences.CreateDefault() with { Language = "ru", MovieVolume = 0.4, SkipSeconds = 42 },
             SelectedMediaId = "retained-film",
-            ResumePositions = [new("retained-film", 12345)]
+            ResumePositions = [new() { MediaId = "retained-film", PositionMs = 12345 }]
         };
         try
         {
