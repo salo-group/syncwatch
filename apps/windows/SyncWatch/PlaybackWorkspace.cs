@@ -47,10 +47,20 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     private readonly CancellationTokenSource cancellation = new();
     private PlayerPresentation presentation = new();
     private string roomNotice = "";
+    private int? skipSeconds;
+    private Action? openPlayerSettings;
+    internal void ConfigurePlayerSettings(int seconds, Action open)
+    {
+        skipSeconds = seconds; openPlayerSettings = open; RenderChrome();
+    }
     private void RenderChrome()
     {
         chrome.SelectionPresentation = playlist.Menu ?? tracks.Menu;
-        chrome.Render(playlist.Presentation(presentation) with { RoomNotice = roomNotice }, language);
+        var configured = playlist.Presentation(presentation) with { RoomNotice = roomNotice };
+        if (skipSeconds is int seconds) configured = configured with { SkipSeconds = seconds };
+        if (!closing && openPlayerSettings is not null)
+            configured = configured with { EnabledActions = configured.EnabledActions.Append("openPlayerSettings").ToHashSet() };
+        chrome.Render(configured, language);
     }
     private void RefreshPlaylist() { onPlaylistUpdate?.Invoke(playlist); presentation = playlist.Presentation(presentation); }
     private void SelectMenu(SelectionMenuRequest request)
@@ -246,6 +256,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     {
         if (closing || cancellation.IsCancellationRequested) return;
         GateSharedActions(); RefreshPlaylist();
+        if (action == "openPlayerSettings" && openPlayerSettings is not null) { DismissMenu(); openPlayerSettings(); return; }
         if (!presentation.EnabledActions.Contains(action)) return;
         if (action == "openPlaylist") { tracks.Dismiss(); playlist.Open(); RenderChrome(); return; }
         if (action is "previousFile" or "nextFile")
@@ -291,6 +302,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     {
         closing = true; playlist.Close();
         cancellation.Cancel();
+        openPlayerSettings = null;
         await tracks.CloseAsync();
         presentation = presentation with { EnabledActions = new HashSet<string>() };
         RenderChrome();

@@ -59,6 +59,28 @@ import SyncWatchLibrary
         } catch { return false }
     }
 
+    var playerSettingsEditor: PlayerSettingsEditor {
+        PlayerSettingsEditor(
+            values: ["skipSeconds": String(state.preferences.skipSeconds)],
+            editableFields: canWrite && !savingWatchState ? ["skipSeconds"] : [],
+            canSave: canWrite && !savingWatchState)
+    }
+
+    func savePlayerSettings(_ values: [String: String]) -> Bool {
+        guard canWrite, !savingWatchState, let value = values["skipSeconds"],
+            let field = SyncWatchPlayerSettings.fields.first(where: { $0.id == "skipSeconds" }),
+            PlayerSettingsEditor.valid(value, for: field), let seconds = Int(value)
+        else { return false }
+        var next = state
+        next.preferences.skipSeconds = seconds
+        do {
+            try next.validate()
+            try store.write(next)
+            state = next
+            return true
+        } catch { return false }
+    }
+
     /// The WatchSession owner serializes checkpoints. Current appearance always wins the merge.
     func persistWatchState(_ value: LocalState) async -> Bool {
         guard !savingWatchState else { return false }
@@ -254,9 +276,9 @@ import SyncWatchLibrary
     private var playerContent: AnyView {
         if let controller = watch.player {
             return AnyView(
-                PlaybackPane(
-                    controller: controller, language: preferences.state.preferences.language,
-                    roomNotice: shared.playerNotice
+                ConfiguredPlaybackPane(
+                    controller: controller, preferences: preferences,
+                    roomNotice: shared.playerNotice, onSaved: watch.preferencesChanged
                 )
                 .id(controller.scope.mediaGeneration))
         }

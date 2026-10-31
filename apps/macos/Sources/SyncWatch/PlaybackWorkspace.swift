@@ -366,10 +366,12 @@ struct PlaybackPane: View {
     @ObservedObject var controller: PlaybackController
     var language: String
     var roomNotice = ""
+    var skipSeconds: Int? = nil
+    var onOpenSettings: (() -> Void)? = nil
     var body: some View {
         PlaybackTrackPane(
             controller: controller, tracks: controller.tracks, playlist: controller.playlist, language: language,
-            roomNotice: roomNotice)
+            roomNotice: roomNotice, skipSeconds: skipSeconds, onOpenSettings: onOpenSettings)
     }
 }
 
@@ -379,9 +381,13 @@ private struct PlaybackTrackPane: View {
     @ObservedObject var playlist: WatchPlaylist
     var language: String
     var roomNotice: String
+    var skipSeconds: Int?
+    var onOpenSettings: (() -> Void)?
     private var presentation: PlayerPresentation {
         var result = playlist.presentation(controller.presentation)
         result.roomNotice = roomNotice
+        if let skipSeconds { result.skipSeconds = skipSeconds }
+        if onOpenSettings != nil { result.enabledActions.insert("openPlayerSettings") }
         return result
     }
     var body: some View {
@@ -391,7 +397,12 @@ private struct PlaybackTrackPane: View {
             selectionMenu: playlist.menu ?? tracks.menu,
             onAction: { action, value in
                 controller.language = language
-                controller.action(action, value: value)
+                if action == "openPlayerSettings", let onOpenSettings {
+                    controller.dismissMenu()
+                    onOpenSettings()
+                } else {
+                    controller.action(action, value: value)
+                }
             }
         ).selectionHandlers(onSelection: controller.selectMenu, onDismiss: controller.dismissMenu)
     }
@@ -410,7 +421,7 @@ struct PlaybackWorkspace: View {
         }
     }
     private var content: some View {
-        PlaybackPane(controller: controller, language: preferences.state.preferences.language)
+        ConfiguredPlaybackPane(controller: controller, preferences: preferences)
             .preferredColorScheme(preferences.colorScheme)
             .environment(\.locale, Locale(identifier: preferences.state.preferences.language))
             .alert(

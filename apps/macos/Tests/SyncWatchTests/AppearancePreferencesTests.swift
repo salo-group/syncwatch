@@ -1,4 +1,5 @@
 import Foundation
+import SyncWatchDesign
 import SyncWatchDomain
 import Testing
 
@@ -52,4 +53,57 @@ private final class TestStore: LocalStateStore {
     let restored = AppearancePreferences(store: store)
     #expect(restored.state.preferences.theme == "light")
     #expect(restored.state.preferences.language == "ru")
+}
+
+@MainActor @Test func playbackSettingsSaveIsLocalTransactionalAndRestored() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let disk = FileLocalStateStore(url: directory.appendingPathComponent("local-state.json"))
+    var initial = LocalState()
+    initial.preferences.language = "ru"
+    initial.preferences.movieVolume = 0.4
+    initial.preferences.skipSeconds = 42
+    initial.selectedMediaID = "retained-film"
+    initial.resumePositions = [ResumePosition(mediaID: "retained-film", positionMs: 12_345)]
+    try disk.write(initial)
+    let preferences = AppearancePreferences(store: disk)
+    var draft = preferences.playerSettingsEditor
+    #expect(draft.editableFields == ["skipSeconds"])
+    #expect(draft.values["skipSeconds"] == "42" && !draft.isValid)
+    draft.edit("skipSeconds", value: "30")
+    draft.cancel()
+    #expect(preferences.state == initial && draft.values["skipSeconds"] == "42")
+    draft.edit("skipSeconds", value: "30")
+    #expect(draft.save(using: preferences.savePlayerSettings))
+    var expected = initial
+    expected.preferences.skipSeconds = 30
+    #expect(preferences.state == expected)
+    #expect(AppearancePreferences(store: disk).state == expected)
+    // An older watch checkpoint must retain the just-saved local setting.
+    #expect(await preferences.persistWatchState(initial))
+    #expect(AppearancePreferences(store: disk).state == expected)
+    for value in ["", "0", "42", "600", "30.0", "+30", " 30", "30\n"] {
+        #expect(!preferences.savePlayerSettings(["skipSeconds": value]))
+    }
+    #expect(AppearancePreferences(store: disk).state == expected)
+    let future = Data("{\"version\":2,\"future\":true}".utf8)
+    try future.write(to: directory.appendingPathComponent("local-state.json"))
+    #expect(!preferences.savePlayerSettings(["skipSeconds": "15"]))
+    #expect(
+        preferences.state == expected
+            && (try Data(contentsOf: directory.appendingPathComponent("local-state.json"))) == future)
+    let readonly = AppearancePreferences(store: disk)
+    #expect(!readonly.playerSettingsEditor.canSave)
+    #expect(!readonly.savePlayerSettings(["skipSeconds": "15"]))
+}
+
+@MainActor @Test func playbackSettingsWriteFailureLeavesAppliedValueUnchanged() {
+    let store = TestStore()
+    let preferences = AppearancePreferences(store: store)
+    store.failWrite = true
+    var draft = preferences.playerSettingsEditor
+    draft.edit("skipSeconds", value: "60")
+    #expect(!draft.save(using: preferences.savePlayerSettings))
+    #expect(draft.message == "saveFailed" && preferences.state.preferences.skipSeconds == 10)
+    #expect(store.writes == 0)
 }

@@ -29,6 +29,7 @@ fun main(arguments: Array<String>) = runBlocking {
             libraryRefreshChecks(owner)
             libraryMetadataChecks(owner)
             localPlaybackTracksChecks(owner)
+            playerPreferencesChecks(scratch)
             watchPersistenceChecks(scratch)
             roomPlaybackGateChecks(owner)
             roomPublicationChecks(repository.resolve("contracts/fixtures/room-client.json"))
