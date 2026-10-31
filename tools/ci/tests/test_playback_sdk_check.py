@@ -24,9 +24,9 @@ class PlaybackSdkCheckTests(unittest.TestCase):
                 "temporaryFixturesRemoved": True,
                 "nativeSourceSha256": hashlib.sha256((gate.ROOT / "packages/playback-native/src/playback.c").read_bytes()).hexdigest(),
                 "cases": {case: {"success": True, "cycles": 3, "alternateToneHz": 880,
-                                 "whiteSubtitlePixels": 100, "selectedStreamsRetained": True,
+                                 "whiteSubtitlePixels": 100, "actualClock": True, "decodedVideoProgress": True, "selectedStreamsRetained": True,
                                  "normalClose": True, "physicalOutputAccepted": False}
-                          for case in ["embedded", "external"]}},
+                          for case in ["embedded", "external", "externalMatroska"]}},
         }.items():
             (output / name).write_text(json.dumps(data))
 
@@ -110,19 +110,20 @@ class PlaybackSdkCheckTests(unittest.TestCase):
             self.assertFalse(json.loads((output / "first-party-proof.json").read_text())["success"])
 
     def test_missing_decoded_output_and_wrong_native_source_fail_closed(self):
-        for failure in ["case", "source", "frequency", "caption", "close", "cleanup"]:
+        for failure in ["case", "source", "frequency", "caption", "clock", "frames", "close", "cleanup"]:
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary); package = root / "payload"; package.mkdir(); output = root / "consumer"
                 def incomplete(_, directory):
                     self.proofs(directory)
                     path = directory / "decoded-output-proof.json"
                     proof = json.loads(path.read_text())
-                    if failure == "case": del proof["cases"]["external"]
+                    if failure == "case": del proof["cases"]["externalMatroska"]
                     elif failure == "source": proof["nativeSourceSha256"] = "stale"
                     elif failure == "cleanup": proof["temporaryFixturesRemoved"] = False
                     else:
                         field, value = {"frequency": ("alternateToneHz", 440),
-                                        "caption": ("whiteSubtitlePixels", 0), "close": ("normalClose", False)}[failure]
+                                        "caption": ("whiteSubtitlePixels", 0), "clock": ("actualClock", False),
+                                        "frames": ("decodedVideoProgress", False), "close": ("normalClose", False)}[failure]
                         proof["cases"]["embedded"][field] = value
                     path.write_text(json.dumps(proof))
                 with patch.object(gate, "native_check", side_effect=incomplete):

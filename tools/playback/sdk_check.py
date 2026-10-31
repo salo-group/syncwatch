@@ -50,10 +50,11 @@ def verify(package, output):
                          and decoded.get("physicalOutputAccepted") is False
                          and decoded.get("temporaryFixturesRemoved") is True
                          and decoded.get("nativeSourceSha256") == inputs["packages/playback-native/src/playback.c"]
-                         and set(cases) == {"embedded", "external"}
+                         and set(cases) == {"embedded", "external", "externalMatroska"}
                          and all(case.get("success") is True and case.get("cycles") == 3
                                  and 840 <= case.get("alternateToneHz", 0) <= 920
                                  and 20 <= case.get("whiteSubtitlePixels", 0) < 320 * 180 / 4
+                                 and case.get("actualClock") is True and case.get("decodedVideoProgress") is True
                                  and case.get("selectedStreamsRetained") is True
                                  and case.get("normalClose") is True
                                  and case.get("physicalOutputAccepted") is False for case in cases.values()))

@@ -98,16 +98,21 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < count; ++i) if (ids[i] >= 0 && (audio < 0 || !external)) audio = ids[i];
     REQUIRE(audio >= 0 && sw_playback_select_track(player, 1, 0, audio) == SW_OK, "audio selection");
     if (external) {
+        int32_t old_subtitles[256]; size_t old_count = 0;
+        REQUIRE(sw_playback_tracks(player, 1, 1, old_subtitles, 256, &old_count) == SW_OK, "prior subtitle list");
         REQUIRE(sw_playback_attach_track(player, 1, 1, argv[4]) == SW_OK, "paused external subtitle attachment");
         uint64_t end = milliseconds() + 4000;
         do {
             REQUIRE(sw_playback_selected_track(player, 1, 1, &subtitle) == SW_OK, "external subtitle selection");
-            if (subtitle >= 0) break;
+            int old = 0;
+            for (size_t i = 0; i < old_count; ++i) if (old_subtitles[i] == subtitle) old = 1;
+            if (subtitle >= 0 && !old) break;
+            subtitle = -1;
             delay();
         } while (milliseconds() < end);
     }
     REQUIRE(sw_playback_tracks(player, 1, 1, ids, 256, &count) == SW_OK, "subtitle list");
-    for (size_t i = 0; i < count; ++i) if (ids[i] >= 0) { subtitle = ids[i]; break; }
+    if (!external) for (size_t i = 0; i < count; ++i) if (ids[i] >= 0) { subtitle = ids[i]; break; }
     REQUIRE(subtitle >= 0 && sw_playback_select_track(player, 1, 1, subtitle) == SW_OK, "subtitle selection");
     if (external) {
         REQUIRE(sw_playback_attach_track(player, 1, 0, argv[3]) == SW_OK, "paused external audio attachment");
@@ -134,6 +139,7 @@ int main(int argc, char **argv) {
         int64_t target = cycle == 1 ? 500 : 1500;
         REQUIRE(sw_playback_pause(player, 1, 1) == SW_OK && ready_native(player, 1, 0, 0), "pause");
         REQUIRE(sw_playback_seek(player, 1, target) == SW_OK && ready_native(player, 1, target, 1), "paused seek");
+        unsigned before_frames = atomic_load(&observed.frames);
         atomic_store(&white_pixels, 0);
         REQUIRE(sw_playback_pause(player, 1, 0) == SW_OK && ready_native(player, 0, 0, 0), "resume");
         uint64_t end = milliseconds() + 350;
@@ -151,11 +157,14 @@ int main(int argc, char **argv) {
         white = atomic_load(&white_pixels);
         REQUIRE(white >= 20 && white < WIDTH * HEIGHT / 4, "subtitle pixels missing after paused seek");
         REQUIRE(selected_native(player, 0, audio) && selected_native(player, 1, subtitle), "selected streams changed");
+        sw_observation observation;
+        REQUIRE(sw_playback_observe(player, 1, &observation) == SW_OK && observation.position_ms >= target + 100, "native clock did not advance");
+        REQUIRE(atomic_load(&observed.frames) > before_frames + 1, "decoded video did not advance");
     }
 cleanup:
     if (player) sw_playback_close(player);
     if (!result) printf("{\"success\":true,\"cycles\":3,\"alternateToneHz\":%u,\"whiteSubtitlePixels\":%u,"
-                        "\"selectedStreamsRetained\":true,\"normalClose\":true,\"physicalOutputAccepted\":false}\n",
+                        "\"actualClock\":true,\"decodedVideoProgress\":true,\"selectedStreamsRetained\":true,\"normalClose\":true,\"physicalOutputAccepted\":false}\n",
                         frequency, white);
     return result;
 }

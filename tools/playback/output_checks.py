@@ -50,7 +50,8 @@ def check_outputs(context, package, output, environment):
                              "lib/libvlc.dylib" if context.target == "macos-arm64" else "lib/libvlc.so.5")
         for name, fixture, arguments in [
                 ("embedded", media, []),
-                ("external", external_media, [str(external["external-audio"]), str(external["srt"])])]:
+                ("external", external_media, [str(external["external-audio"]), str(external["srt"])]),
+                ("externalMatroska", media, [str(external["external-audio"]), str(external["srt"])])]:
             with (output / ("decoded-" + name + ".json")).open("wb") as log, (
                     output / ("decoded-" + name + "-stderr.log")).open("wb") as errors:
                 result = subprocess.run([str(executable), str(fixture), str(library), *arguments],
@@ -62,6 +63,7 @@ def check_outputs(context, package, output, environment):
             if (actual.get("success") is not True or actual.get("cycles") != 3
                     or not 840 <= actual.get("alternateToneHz", 0) <= 920
                     or actual.get("whiteSubtitlePixels", 0) < 20
+                    or actual.get("actualClock") is not True or actual.get("decodedVideoProgress") is not True
                     or actual.get("selectedStreamsRetained") is not True
                     or actual.get("normalClose") is not True
                     or actual.get("physicalOutputAccepted") is not False):
