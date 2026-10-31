@@ -1,23 +1,23 @@
 {
   "schemaVersion": 1,
   "units": "logical",
-  "sourceDigest": "3276c826a2b3c8e12e4858c50a37e63be11b0e79539e0c633e319aba28d879a0",
+  "sourceDigest": "310a8c985918fdf89ee948ffad9a70351710fd8c982a672d1a9571a6bf3c4aba",
   "sources": {
     "tokens/geometry.json": "83534a4d3b484f7a810a4c67f1f8ee58b2f2f4a14db4e4df404381e936a78a4b",
     "tokens/palette.json": "bb4dabce249ffe75a20192d8ccf523630432a3d1f3ca8dcba45fa787a7028a2c",
     "themes.json": "1a0a77546aeb1c96aaad53408a0a2e14e4be38298b50cfeb2700fd9a18b42b50",
     "components.json": "d60d49a5c818be6959d1a90c0be4356a64d2e0d0249400a18b867b43971831c2",
     "copy.json": "8e1b1fa6581c17a5146879c61540d11634f2532ea7519a742e3a5316b2aefde4",
-    "settings.json": "5871fefd13955a2ed51fb989cc35177c2940aca4c3905ec117ad894a81c041f2",
+    "settings.json": "5c6a9033f9bf3df9e09f094996e75fd5432ac07f69f01120d4517eacce9973d8",
     "room.json": "84189acaeef566dfcdb6282eec0080e10afe045fb9a220d98ecc86ea5d33d96b",
     "player.json": "c7cc1a1b559ec70b9337af1bc3a69669a0a10f6fe2319fc573417035c54923ec",
     "call.json": "a26821925540d925182355af12c02a40780c84c051e53610b300934536186a01",
     "player-settings.json": "ce2d79c36e1557ddee4cedd4db931042fdd7aa0f96969580e0a815c89a95c38a",
     "selection-menu.json": "86ff7683d675213327acd83ebc38174dbcfea37235b454e0afe37671c59d1502",
-    "layouts.json": "ac4f55de7bcfd25bde0e66cad0a368e8a03b572a557fc52079be2e42dfb33ea8",
+    "layouts.json": "9fc4e31606820a3bc7995be99e8741cec70361a120ae5920ffbaab9a761f2af2",
     "package.json": "49e278398b736b490a57f3ec73bfdcdcc863d63be73788115f41b6db6bee5165"
   },
-  "generatorRevision": "6ab5fb9eee4ac8af1a2db6d1be0ef5763cf2162991416018568238f84d8701da",
+  "generatorRevision": "9add2a388c3ba959dc1f260b44f97eebc2563d8200be065ee6abc25db2a61c96",
   "generator": {
     "styleDictionary": "5.7.0",
     "files": {
@@ -28,7 +28,7 @@
       "tools/design/sd-utils.mjs": "c8ce6096a0428d0e76c5980b6ceb542344a679de03e3f38229d0e5274300c8a8",
       "tools/design/sources.json": "61ee09429a49bf5ba132278fa43982326d0741e47974ed0ba5d5c431d9befcb3",
       "tools/design/presentation-formats.mjs": "47a8570026c429720ac121c0ad1c4067cd1e1f29395d6e390512ea39d2e8bb7a",
-      "tools/design/settings-formats.mjs": "b17647dd949614a82025800452ac9a81bcf6f2d4c20dadeb68aacfa0c3221136",
+      "tools/design/settings-formats.mjs": "78a91a86c70c844518005ac0c93be415201b89f47c27cab32f20ba42509e24ba",
       "tools/design/player-formats.mjs": "d18bab019efb9a72f6be1eea5a400dc8098cca0d47cad760ac4a1b62227cd6b9",
       "tools/design/player-settings-formats.mjs": "1f1a623d7ff3de8f7f4c3af6536e8baf83c56e89b5bb2364f60f5267e5b43927",
       "tools/design/layout-formats.mjs": "28ff7a4da70b4364fc28ba1069f8bc497642150f7d7154c7f03189cee7566c6b",
@@ -642,7 +642,7 @@
       {
         "id": "folder",
         "section": "library",
-        "kind": "text",
+        "kind": "folder",
         "label": "folder",
         "options": [],
         "maxLength": 512
@@ -5546,6 +5546,61 @@
                       "width": "fill"
                     },
                     "children": []
+                  },
+                  {
+                    "id": "folderRow",
+                    "kind": "row",
+                    "styles": [],
+                    "props": {
+                      "case": "folder",
+                      "gap": "@control.compactGap",
+                      "width": "fill"
+                    },
+                    "children": [
+                      {
+                        "id": "folderPath",
+                        "kind": "input",
+                        "styles": [
+                          "input",
+                          "compactInput"
+                        ],
+                        "props": {
+                          "value": "$value",
+                          "enabled": "false",
+                          "automation": "{namespace}.field.{id}",
+                          "label": "~{label}",
+                          "width": "fill"
+                        },
+                        "children": []
+                      },
+                      {
+                        "id": "folderBrowse",
+                        "kind": "button",
+                        "styles": [
+                          "button",
+                          "compact"
+                        ],
+                        "props": {
+                          "action": "chooseFolder",
+                          "enabled": "$canChooseFolder",
+                          "automation": "{namespace}.chooseFolder",
+                          "label": "~chooseFolder"
+                        },
+                        "children": [
+                          {
+                            "id": "folderBrowseIcon",
+                            "kind": "icon",
+                            "styles": [
+                              "icon"
+                            ],
+                            "props": {
+                              "name": "symbols.libraryFolder"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]
               }

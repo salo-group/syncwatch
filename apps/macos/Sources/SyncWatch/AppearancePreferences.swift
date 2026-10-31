@@ -230,6 +230,7 @@ import SyncWatchLibrary
         .sheet(isPresented: $showSettings) {
             SettingsDialog(
                 editor: $editor, language: preferences.state.preferences.language,
+                folderPath: library.folderPath, canChooseFolder: library.canConfigure, onChooseFolder: chooseFolder,
                 onSave: { values in
                     let options = editor.editableFields.contains("scanSubfolders")
                     guard !options || library.canConfigure else { return false }
@@ -271,14 +272,20 @@ import SyncWatchLibrary
         await catalogOwner.closeAndWait()
     }
     private func chooseFolder() {
+        guard library.canConfigure else { return }
         let picker = NSOpenPanel()
         picker.canChooseDirectories = true
         picker.canChooseFiles = false
         picker.allowsMultipleSelection = false
         picker.title = SyncWatchCopy.text("folder", language: preferences.state.preferences.language)
         picker.prompt = SyncWatchCopy.text("chooseFolder", language: preferences.state.preferences.language)
-        picker.begin { response in
+        let selected: (NSApplication.ModalResponse) -> Void = { response in
             if response == .OK, let url = picker.url { library.choose(url) }
+        }
+        if let window = NSApp.keyWindow {
+            picker.beginSheetModal(for: window, completionHandler: selected)
+        } else {
+            picker.begin(completionHandler: selected)
         }
     }
 

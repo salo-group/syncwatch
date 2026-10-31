@@ -922,7 +922,7 @@ public enum SyncWatchSettings {
             id: "theme", section: "interface", kind: "choice", label: "theme",
             options: ["system", "dark", "light"], maxLength: 512),
         SyncWatchSettingsField(
-            id: "folder", section: "library", kind: "text", label: "folder",
+            id: "folder", section: "library", kind: "folder", label: "folder",
             options: [], maxLength: 512),
         SyncWatchSettingsField(
             id: "scanSubfolders", section: "library", kind: "boolean", label: "scanSubfolders",
@@ -2154,7 +2154,7 @@ public enum SyncWatchSelectionMenu {
 }
 
 public enum SyncWatchLayouts {
-    public static let sourceDigest = "6290c6f16c4fcde482b14b4d805ddbdfb4e80f6ed8a1d307990ea8f60551fc22"
+    public static let sourceDigest = "542e22f8d33cf9183bce7497f1b220dd63c25c7ed307a764782c770898a5ca8d"
     public static let coordinateSize = 20.0
     public static func themeColor(_ role: String, theme: SyncWatchTheme) -> Color? {
         switch role {
@@ -6895,6 +6895,81 @@ public enum SyncWatchLayouts {
                 "width": "fill",
             ],
             children: [])
+        let folderPath = DesignNode(
+            id: "folderPath", kind: "input",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accent",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "placeholderFill": "theme.textSecondary",
+                "height": "@layout.settingsControlHeight",
+                "paddingX": "@layout.settingsCardPadding",
+                "radius": "@control.fieldRadius",
+                "background": "theme.inputFill",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "fontSize": "@type.settingsBodySize",
+                "align": "leading",
+                "value": "$value",
+                "enabled": "false",
+                "automation": "{namespace}.field.{id}",
+                "label": "~{label}",
+                "width": "fill",
+            ],
+            children: [])
+        let folderBrowseIcon = DesignNode(
+            id: "folderBrowseIcon", kind: "icon",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "width": "@control.playerIconSize",
+                "height": "@control.playerIconSize",
+                "name": "symbols.libraryFolder",
+            ],
+            children: [])
+        let folderBrowse = DesignNode(
+            id: "folderBrowse", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "chooseFolder",
+                "enabled": "$canChooseFolder",
+                "automation": "{namespace}.chooseFolder",
+                "label": "~chooseFolder",
+            ],
+            children: [folderBrowseIcon])
+        let folderRow = DesignNode(
+            id: "folderRow", kind: "row",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "case": "folder",
+                "gap": "@control.compactGap",
+                "width": "fill",
+            ],
+            children: [folderPath, folderBrowse])
         let node12 = DesignNode(
             id: "node12", kind: "switch",
             props: [
@@ -6905,7 +6980,7 @@ public enum SyncWatchLayouts {
                 "focusWidth": "@control.borderWidth",
                 "value": "$kind",
             ],
-            children: [node6, node9, node10, node11])
+            children: [node6, node9, node10, node11, folderRow])
         let node13 = DesignNode(
             id: "node13", kind: "column",
             props: [

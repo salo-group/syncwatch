@@ -877,7 +877,7 @@ public static class SyncWatchSettings
     [
         new("language", "interface", "choice", "language", ["en", "ru"], 512),
         new("theme", "interface", "choice", "theme", ["system", "dark", "light"], 512),
-        new("folder", "library", "text", "folder", [], 512),
+        new("folder", "library", "folder", "folder", [], 512),
         new("scanSubfolders", "library", "boolean", "scanSubfolders", [], 512),
         new("automaticRefresh", "library", "boolean", "automaticRefresh", [], 512),
         new("inputDevice", "call", "choice", "inputDevice", ["system"], 512),
@@ -1075,7 +1075,7 @@ public static class SyncWatchSelectionMenu
 
 public static class SyncWatchLayouts
 {
-    public const string SourceDigest = "6290c6f16c4fcde482b14b4d805ddbdfb4e80f6ed8a1d307990ea8f60551fc22";
+    public const string SourceDigest = "542e22f8d33cf9183bce7497f1b220dd63c25c7ed307a764782c770898a5ca8d";
     public const double CoordinateSize = 20;
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults { get; } = new System.Collections.Generic.Dictionary<string, string>
     {
@@ -4468,6 +4468,73 @@ public static class SyncWatchLayouts
             ["label"] = "~{label}",
             ["width"] = "fill",
         }, []);
+        var folderPath = new DesignNode("folderPath", "input", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accent",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["placeholderFill"] = "theme.textSecondary",
+            ["height"] = "@layout.settingsControlHeight",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["radius"] = "@control.fieldRadius",
+            ["background"] = "theme.inputFill",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["align"] = "leading",
+            ["value"] = "$value",
+            ["enabled"] = "false",
+            ["automation"] = "{namespace}.field.{id}",
+            ["label"] = "~{label}",
+            ["width"] = "fill",
+        }, []);
+        var folderBrowseIcon = new DesignNode("folderBrowseIcon", "icon", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["width"] = "@control.playerIconSize",
+            ["height"] = "@control.playerIconSize",
+            ["name"] = "symbols.libraryFolder",
+        }, []);
+        var folderBrowse = new DesignNode("folderBrowse", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "chooseFolder",
+            ["enabled"] = "$canChooseFolder",
+            ["automation"] = "{namespace}.chooseFolder",
+            ["label"] = "~chooseFolder",
+        }, [folderBrowseIcon]);
+        var folderRow = new DesignNode("folderRow", "row", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["case"] = "folder",
+            ["gap"] = "@control.compactGap",
+            ["width"] = "fill",
+        }, [folderPath, folderBrowse]);
         var node12 = new DesignNode("node12", "switch", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -4476,7 +4543,7 @@ public static class SyncWatchLayouts
             ["hoverBorder"] = "theme.accent",
             ["focusWidth"] = "@control.borderWidth",
             ["value"] = "$kind",
-        }, [node6, node9, node10, node11]);
+        }, [node6, node9, node10, node11, folderRow]);
         var node13 = new DesignNode("node13", "column", new()
         {
             ["disabledOpacity"] = "0.4",

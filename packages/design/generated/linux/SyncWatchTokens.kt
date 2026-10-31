@@ -702,7 +702,7 @@ object SyncWatchSettings {
     val fields = listOf(
         SyncWatchSettingsField("language", "interface", "choice", "language", listOf("en", "ru"), 512),
         SyncWatchSettingsField("theme", "interface", "choice", "theme", listOf("system", "dark", "light"), 512),
-        SyncWatchSettingsField("folder", "library", "text", "folder", listOf(), 512),
+        SyncWatchSettingsField("folder", "library", "folder", "folder", listOf(), 512),
         SyncWatchSettingsField("scanSubfolders", "library", "boolean", "scanSubfolders", listOf(), 512),
         SyncWatchSettingsField("automaticRefresh", "library", "boolean", "automaticRefresh", listOf(), 512),
         SyncWatchSettingsField("inputDevice", "call", "choice", "inputDevice", listOf("system"), 512),
@@ -887,7 +887,7 @@ object SyncWatchSelectionMenu {
 }
 
 object SyncWatchLayouts {
-    const val sourceDigest = "6290c6f16c4fcde482b14b4d805ddbdfb4e80f6ed8a1d307990ea8f60551fc22"
+    const val sourceDigest = "542e22f8d33cf9183bce7497f1b220dd63c25c7ed307a764782c770898a5ca8d"
     const val coordinateSize = 20.0f
     fun themeColor(role: String, theme: SyncWatchTheme): Long? = when (role) {
         "background" -> theme.background
@@ -4053,6 +4053,69 @@ object SyncWatchLayouts {
             "label" to "~{label}",
             "width" to "fill",
         ), listOf())
+        val folderPath = DesignNode("folderPath", "input", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accent",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "placeholderFill" to "theme.textSecondary",
+            "height" to "@layout.settingsControlHeight",
+            "paddingX" to "@layout.settingsCardPadding",
+            "radius" to "@control.fieldRadius",
+            "background" to "theme.inputFill",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "fontSize" to "@type.settingsBodySize",
+            "align" to "leading",
+            "value" to "\$value",
+            "enabled" to "false",
+            "automation" to "{namespace}.field.{id}",
+            "label" to "~{label}",
+            "width" to "fill",
+        ), listOf())
+        val folderBrowseIcon = DesignNode("folderBrowseIcon", "icon", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "width" to "@control.playerIconSize",
+            "height" to "@control.playerIconSize",
+            "name" to "symbols.libraryFolder",
+        ), listOf())
+        val folderBrowse = DesignNode("folderBrowse", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "chooseFolder",
+            "enabled" to "\$canChooseFolder",
+            "automation" to "{namespace}.chooseFolder",
+            "label" to "~chooseFolder",
+        ), listOf(folderBrowseIcon))
+        val folderRow = DesignNode("folderRow", "row", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "case" to "folder",
+            "gap" to "@control.compactGap",
+            "width" to "fill",
+        ), listOf(folderPath, folderBrowse))
         val node12 = DesignNode("node12", "switch", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -4060,7 +4123,7 @@ object SyncWatchLayouts {
             "hoverBorder" to "theme.accent",
             "focusWidth" to "@control.borderWidth",
             "value" to "\$kind",
-        ), listOf(node6, node9, node10, node11))
+        ), listOf(node6, node9, node10, node11, folderRow))
         val node13 = DesignNode("node13", "column", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",

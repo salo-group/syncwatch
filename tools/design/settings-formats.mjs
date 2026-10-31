@@ -9,7 +9,7 @@ export function validateSettings(spec, components, copy) {
     const ids = new Set();
     for (const field of spec.fields) {
         if (!/^[a-z][a-zA-Z0-9]*$/.test(field.id) || ids.has(field.id) || !spec.sections.includes(field.section)
-            || !['text', 'secret', 'choice', 'boolean'].includes(field.kind) || !Object.hasOwn(copy.locales.en, field.label)
+            || !['text', 'secret', 'choice', 'boolean', 'folder'].includes(field.kind) || !Object.hasOwn(copy.locales.en, field.label)
             || !Number.isInteger(field.maxLength) || field.maxLength < 1 || field.maxLength > 512
             || !Array.isArray(field.options) || new Set(field.options).size !== field.options.length
             || (field.kind === 'choice') !== (field.options.length > 0)) throw Error('Invalid settings field');

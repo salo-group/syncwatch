@@ -74,6 +74,7 @@ internal class LibraryController(private val store: LibraryAccessStore, parent: 
         start { withContext(Dispatchers.IO) { LibraryFolderAccess.selected(path, recursive, refresh) } }
     }
     fun rescan() { grant?.let { current -> start(persistAccess = false) { current } } }
+    val folderPath: String get() = grant?.root?.toString().orEmpty()
     val canConfigure: Boolean get() = !closed && presentation.state != LibraryVisualState.scanning
     fun settingsEditor(base: SettingsEditor) = SettingsEditor(
         values = base.values + mapOf("scanSubfolders" to scanRecursively(grant).toString(), "automaticRefresh" to refreshAutomatically(grant).toString()),

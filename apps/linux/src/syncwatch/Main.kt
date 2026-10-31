@@ -114,15 +114,8 @@ fun main(arguments: Array<String>) {
         onSelection = library::selectTrack, onDismissSelection = library::dismissTracks) { action, value ->
         if (action !in setOf("openLibraryAudio", "openLibrarySubtitles")) library.dismissTracks()
         if (action in setOf("openLibraryAudio", "openLibrarySubtitles")) library.openTracks(if (action == "openLibraryAudio") "audio" else "subtitles", language)
-        else if (action == "chooseFolder") {
-            val picker = javax.swing.JFileChooser().apply {
-                fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
-                isMultiSelectionEnabled = false
-                dialogTitle = SyncWatchCopy.text("folder", language)
-                approveButtonText = SyncWatchCopy.text("chooseFolder", language)
-            }
-            if (picker.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) library.choose(picker.selectedFile.toPath())
-        } else if (action == "rescan") library.rescan()
+        else if (action == "chooseFolder") chooseMovieFolder(library, language)
+        else if (action == "rescan") library.rescan()
         else if (action == "selectMovie" && value != null) library.select(value)
         else if (action == "startWatching") library.selectedMedia()?.let(shared::start)
         else if (action == "continueWatching") watch.continueWatching()
@@ -166,6 +159,8 @@ fun main(arguments: Array<String>) {
         DialogWindow(onCloseRequest = { settingsOpen = false }, title = SyncWatchCopy.text("openSettings", language),
             state = rememberDialogState(width = SyncWatchTokens.layoutSettingsWidth.dp, height = SyncWatchTokens.layoutSettingsHeight.dp)) {
             SettingsDialog(editor, { editor = it }, language = language, theme = theme,
+                folderPath = library.folderPath, canChooseFolder = library.canConfigure,
+                onChooseFolder = { chooseMovieFolder(library, language, window) },
                 onSave = { values ->
                     val options = "scanSubfolders" in editor.editableFields
                     if (options && !library.canConfigure) false else preferences.save(values, options).also { saved ->
@@ -178,6 +173,18 @@ fun main(arguments: Array<String>) {
                 onClose = { settingsOpen = false })
         }
     }
+}
+
+/** The native folder owner is reused from Library and Settings; cancellation never changes its grant. */
+private fun chooseMovieFolder(library: LibraryController, language: String, parent: java.awt.Component? = null) {
+    if (!library.canConfigure) return
+    val picker = javax.swing.JFileChooser().apply {
+        fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
+        isMultiSelectionEnabled = false
+        dialogTitle = SyncWatchCopy.text("folder", language)
+        approveButtonText = SyncWatchCopy.text("chooseFolder", language)
+    }
+    if (picker.showOpenDialog(parent) == javax.swing.JFileChooser.APPROVE_OPTION) library.choose(picker.selectedFile.toPath())
 }
 
 /** Only local appearance facts are enabled. Provider capabilities require their own observed owners. */

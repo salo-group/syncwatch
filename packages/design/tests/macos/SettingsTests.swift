@@ -46,6 +46,24 @@ import Testing
     #expect(SettingsVisualState.allCases.map(\.rawValue) == SyncWatchSettings.states)
 }
 
+@Test func folderSelectionIsAnObservedCapabilityOutsideTheSettingsDraft() throws {
+    let path = "/Movies/Кино " + String(repeating: "long-path/", count: 70)
+    for canSave in [false, true] {
+        for canChoose in [false, true] {
+            var editor = SettingsEditor(editableFields: ["theme", "folder"], canSave: canSave)
+            editor.edit("theme", value: "dark")
+            editor.edit("folder", value: "ungranted")
+            let context = DesignBindings.settings(
+                editor, section: "library", folderPath: path, canChooseFolder: canChoose)
+            let folder = try #require(context.collections["fields"]?.first { $0.values["id"] == "folder" })
+            #expect(folder.values["kind"] == "folder" && folder.values["value"] == path)
+            #expect(folder.values["canChooseFolder"] == String(canSave && canChoose))
+            #expect(editor.isValid && editor.values["theme"] == "dark" && editor.values["folder"] == "")
+            if canSave { #expect(editor.save { $0["folder"] == "" && $0["theme"] == "dark" }) }
+        }
+    }
+}
+
 @MainActor @Test func renderAllSettingsSectionsStatesThemesAndLanguages() throws {
     NSApplication.shared.setActivationPolicy(.prohibited)
     let output = ProcessInfo.processInfo.environment["SYNCWATCH_DESIGN_SCREENSHOTS"].map {

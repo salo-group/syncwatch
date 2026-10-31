@@ -1752,7 +1752,7 @@
                 "dialogTitle"
               ],
               "props": {
-                "text": "{~brand} · {~openSettings}",
+                "text": "{~brand} \u00b7 {~openSettings}",
                 "width": "fill",
                 "moveAction": "moveDialog"
               },
@@ -3274,6 +3274,61 @@
                     "width": "fill"
                   },
                   "children": []
+                },
+                {
+                  "id": "folderRow",
+                  "kind": "row",
+                  "styles": [],
+                  "props": {
+                    "case": "folder",
+                    "gap": "@control.compactGap",
+                    "width": "fill"
+                  },
+                  "children": [
+                    {
+                      "id": "folderPath",
+                      "kind": "input",
+                      "styles": [
+                        "input",
+                        "compactInput"
+                      ],
+                      "props": {
+                        "value": "$value",
+                        "enabled": "false",
+                        "automation": "{namespace}.field.{id}",
+                        "label": "~{label}",
+                        "width": "fill"
+                      },
+                      "children": []
+                    },
+                    {
+                      "id": "folderBrowse",
+                      "kind": "button",
+                      "styles": [
+                        "button",
+                        "compact"
+                      ],
+                      "props": {
+                        "action": "chooseFolder",
+                        "enabled": "$canChooseFolder",
+                        "automation": "{namespace}.chooseFolder",
+                        "label": "~chooseFolder"
+                      },
+                      "children": [
+                        {
+                          "id": "folderBrowseIcon",
+                          "kind": "icon",
+                          "styles": [
+                            "icon"
+                          ],
+                          "props": {
+                            "name": "symbols.libraryFolder"
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
