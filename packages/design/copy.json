@@ -241,7 +241,10 @@
       "openSubtitles": "Subtitles…",
       "externalTrackUnavailable": "Could not open that track",
       "sharedWatchMediaMissing": "Add the room movie to your library or choose its folder, select the matching file and try Start again.",
-      "roomPeersMissingMedia": "A participant does not have the selected movie yet."
+      "roomPeersMissingMedia": "A participant does not have the selected movie yet.",
+      "sharedPositionCheckpoint": "Position before connection loss",
+      "restoreSharedPosition": "Return to this position",
+      "dismissSharedPosition": "Dismiss"
     },
     "ru": {
       "brand": "SyncWatch",
@@ -483,7 +486,10 @@
       "openSubtitles": "Субтитры…",
       "externalTrackUnavailable": "Не удалось открыть дорожку",
       "sharedWatchMediaMissing": "Добавьте фильм из комнаты в библиотеку или выберите его папку, выберите подходящий файл и снова нажмите «Начать просмотр».",
-      "roomPeersMissingMedia": "У одного из участников пока нет выбранного фильма."
+      "roomPeersMissingMedia": "У одного из участников пока нет выбранного фильма.",
+      "sharedPositionCheckpoint": "Позиция до потери связи",
+      "restoreSharedPosition": "Вернуться к этой позиции",
+      "dismissSharedPosition": "Скрыть"
     }
   },
   "gallery": {

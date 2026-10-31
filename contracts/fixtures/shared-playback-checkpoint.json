@@ -1,0 +1,318 @@
+{
+  "formatVersion": 1,
+  "cases": [
+    {
+      "name": "paused-room-recreated",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0,
+          "available": false
+        },
+        {
+          "op": "observe",
+          "positionMs": 0
+        }
+      ],
+      "expectedPositionMs": 49000
+    },
+    {
+      "name": "playing-checkpoint-does-not-advance",
+      "steps": [
+        {
+          "op": "observe",
+          "paused": false
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0
+        }
+      ],
+      "expectedPositionMs": 49000
+    },
+    {
+      "name": "survivor-valid-zero-is-not-overwritten",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0
+        }
+      ],
+      "expectedPositionMs": 49000
+    },
+    {
+      "name": "survivor-newer-position-is-not-overwritten",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 55000
+        }
+      ],
+      "expectedPositionMs": 49000
+    },
+    {
+      "name": "retry-does-not-replace-checkpoint-with-zero",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0
+        }
+      ],
+      "expectedPositionMs": 49000
+    },
+    {
+      "name": "interruption-before-native-ready",
+      "steps": [
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0
+        }
+      ],
+      "expectedPositionMs": null
+    },
+    {
+      "name": "nonseekable-is-not-a-checkpoint",
+      "steps": [
+        {
+          "op": "observe",
+          "seekable": false
+        },
+        {
+          "op": "interrupt"
+        }
+      ],
+      "expectedPositionMs": null
+    },
+    {
+      "name": "buffering-is-not-a-checkpoint",
+      "steps": [
+        {
+          "op": "observe",
+          "buffering": true
+        },
+        {
+          "op": "interrupt"
+        }
+      ],
+      "expectedPositionMs": null
+    },
+    {
+      "name": "old-generation-observation-is-ignored",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0,
+          "scope": "oldGeneration"
+        },
+        {
+          "op": "interrupt"
+        }
+      ],
+      "expectedPositionMs": 49000
+    },
+    {
+      "name": "foreign-process-observation-is-ignored",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0,
+          "scope": "foreignRun"
+        },
+        {
+          "op": "interrupt"
+        }
+      ],
+      "expectedPositionMs": 49000
+    },
+    {
+      "name": "different-duration-invalidates-checkpoint",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 0,
+          "durationMs": 90000
+        }
+      ],
+      "expectedPositionMs": null
+    },
+    {
+      "name": "ended-invalidates-checkpoint",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "positionMs": 60000,
+          "ended": true
+        }
+      ],
+      "expectedPositionMs": null
+    },
+    {
+      "name": "failed-invalidates-checkpoint",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "status": "failed",
+          "seekable": false
+        }
+      ],
+      "expectedPositionMs": null
+    },
+    {
+      "name": "dismiss-revoke-end-close-clear-checkpoint",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "clear"
+        },
+        {
+          "op": "interrupt"
+        }
+      ],
+      "expectedPositionMs": null
+    },
+    {
+      "name": "obsolete-native-sequence-is-ignored",
+      "steps": [
+        {
+          "op": "observe",
+          "positionMs": 50000,
+          "sequence": 10
+        },
+        {
+          "op": "observe",
+          "positionMs": 30000,
+          "sequence": 9
+        },
+        {
+          "op": "interrupt"
+        }
+      ],
+      "expectedPositionMs": 50000
+    },
+    {
+      "name": "loading-during-recovery-retains-checkpoint",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "observe",
+          "status": "loading",
+          "seekable": false,
+          "durationMs": null,
+          "available": false
+        },
+        {
+          "op": "observe",
+          "positionMs": 0
+        }
+      ],
+      "expectedPositionMs": 49000
+    },
+    {
+      "name": "new-interruption-after-explicit-choice",
+      "steps": [
+        {
+          "op": "observe"
+        },
+        {
+          "op": "interrupt"
+        },
+        {
+          "op": "clear"
+        },
+        {
+          "op": "observe",
+          "positionMs": 20000,
+          "sequence": 2
+        },
+        {
+          "op": "interrupt"
+        }
+      ],
+      "expectedPositionMs": 20000
+    },
+    {
+      "name": "unavailable-observation-cannot-seed-checkpoint",
+      "steps": [
+        {
+          "op": "observe",
+          "available": false
+        },
+        {
+          "op": "interrupt"
+        }
+      ],
+      "expectedPositionMs": null
+    }
+  ]
+}

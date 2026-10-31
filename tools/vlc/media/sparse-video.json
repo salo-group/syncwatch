@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "encoded": "sparse-video.b64",
+  "encoding": "base64+xz",
+  "bytes": 28271491,
+  "sha256": "960d42b1a4dec31194a281cd9f1585694049ac708dd01f0467f106de2871682a",
+  "durationMs": 60000,
+  "videoFramesPerSecond": 1,
+  "provenance": "First-party 320x180 I420 luminance frames, synthesized PCM tones and authored captions, losslessly muxed into Matroska; no third-party media. Sparse frames expose decoder reset retention of invalid-timestamp preview pictures."
+}

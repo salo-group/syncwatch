@@ -5,8 +5,9 @@ import os
 from pathlib import Path
 import subprocess
 
-from fixtures import create, encoded, external_tracks, embedded_tracks
+from fixtures import create, encoded, external_tracks, embedded_tracks, sparse_video
 from source_profile import ROOT, profile_data
+from package_report import validate_seek_reset
 
 
 def environment(package, target):
@@ -68,7 +69,30 @@ def verify(context, package):
             raise ValueError("Native media proof differs from its required behavior")
         results[name] = result
     effects = verify_effects(context, package, directory, media)
-    return {"media": results, "effects": effects}
+    return {"media": results, "effects": effects, "seekReset": verify_seek_reset(context, package, directory)}
+
+
+def verify_seek_reset(context, package, directory):
+    fixture = directory / "owned-sparse-video.mkv"
+    executable = directory / ("seek-reset-probe.exe" if context.target == "windows-x64" else "seek-reset-probe")
+    try:
+        fixture = sparse_video(directory)
+        executable, actual = compile_consumer(context, package, directory, "seek_probe.c", "seek-reset-probe")
+        output, errors = directory / "seek-reset-proof.json", directory / "seek-reset-stderr.log"
+        with output.open("wb") as log, errors.open("wb") as diagnostics:
+            process = subprocess.run([str(executable), str(fixture), str(actual)],
+                env=environment(package, context.target), stdin=subprocess.DEVNULL,
+                stdout=log, stderr=diagnostics, timeout=45)
+        if process.returncode:
+            raise ValueError("Native decoder seek reset failed: " + errors.read_text(errors="replace"))
+        result = json.loads(output.read_bytes())
+    finally:
+        # subprocess.run joins the child on failure and timeout as well.
+        for path in [fixture, executable]:
+            path.unlink(missing_ok=True)
+    result["temporaryFixturesRemoved"] = True
+    validate_seek_reset(result)
+    return result
 
 
 def verify_effects(context, package, directory, media):

@@ -1,0 +1,15 @@
+# Shared position recovery
+
+A Syncplay room can be removed when its last participant disconnects. Rejoining can therefore admit a newly created room paused at zero. A surviving participant can also deliberately choose zero. The client cannot infer room recreation from the observed position and must not automatically seek over another participant's timeline.
+
+Each new helper transport waits for its authenticated server timeline before announcing initial state. A native player retained across a transport must not advertise its previous global timestamp as the new connection's state. Syncplay continues to own first-state initialization, native corrections and acknowledgements.
+
+Each admitted native player retains its last seekable, nonbuffering observation in a scope-bound domain checkpoint. A transport interruption freezes that observation; retries and subsequent room corrections cannot overwrite it. The checkpoint has no timer, persistence, transport or playback authority. Foreign scopes and obsolete native sequences cannot seed it. Changed media duration, completion, native failure, revocation and player shutdown invalidate it.
+
+After the same helper has completed fresh identity and playback readiness, the common Apache-2.0 Design document offers the checkpoint time, **Return to this position**, and **Dismiss**. Return requires the current shared seek capability. It submits the existing Syncplay user seek and preserves the currently observed pause state. Dismiss only clears the offer. Neither action changes displayed playback facts or acknowledges a seek. The helper's existing action fence and native observation acknowledgement still govern publication and failure.
+
+An accepted ordinary Play/Pause/Seek choice also clears the offer. A synchronously rejected recovery request retains it; asynchronous failure follows the existing bounded helper failure path. End, revocation and a replacement player clear it. Returning to the library while retaining the same active player retains its checkpoint; a new process cannot resurrect a pending offer.
+
+All desktop implementations consume the same domain interruption corpus and Design action corpus on their own operating systems. Real acceptance additionally requires all-client loss, a surviving participant's valid zero/newer timeline, readiness interruption, terminal failure, stale room/media ownership, all six directed user seeks, same-package restart and resource cleanup. Component tests alone do not qualify those network scenarios.
+
+The common native playback adapter changes pause state without adding a seek on resume. An additional refill seek can strand native video picture queues even when the input reports Playing. Stream selection retains its existing local-clock refill; ordinary seeks issue one native request. Decoded PCM and subtitle callback checks cover retained streams after repeated paused seeks, while physical output remains a separate acceptance boundary. Real video-output acceptance must observe clock progress, a subsequent pause and normal close, rather than relying on a Playing flag alone.

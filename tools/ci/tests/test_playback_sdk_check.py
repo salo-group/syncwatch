@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -16,8 +17,16 @@ class PlaybackSdkCheckTests(unittest.TestCase):
         for name, data in {
             "native-proof.json": {"abiBytes": 80, "actualClock": True, "repeatedRelease": True, "physicalOutputAccepted": False},
             "media-input-proof.json": {"versionBytes": 64, "noHandleGrowth": True},
-            "player-input-proof.json": {"loadedContentHash": True, "positionalReadsPreservePlayback": True, "physicalOutputAccepted": False},
+            "player-input-proof.json": {"repeatedPausedSeekResume": 3, "loadedContentHash": True, "positionalReadsPreservePlayback": True, "physicalOutputAccepted": False},
             "external-input-proof.json": {"actualSelectedID": True, "externalAudioSelectedID": True, "repeatedRelease": True, "physicalOutputAccepted": False},
+            "decoded-output-proof.json": {
+                "success": True, "callbackSinksOnly": True, "physicalOutputAccepted": False,
+                "temporaryFixturesRemoved": True,
+                "nativeSourceSha256": hashlib.sha256((gate.ROOT / "packages/playback-native/src/playback.c").read_bytes()).hexdigest(),
+                "cases": {case: {"success": True, "cycles": 3, "alternateToneHz": 880,
+                                 "whiteSubtitlePixels": 100, "actualClock": True, "decodedVideoProgress": True, "selectedStreamsRetained": True,
+                                 "normalClose": True, "physicalOutputAccepted": False}
+                          for case in ["embedded", "external", "externalMatroska"]}},
         }.items():
             (output / name).write_text(json.dumps(data))
 
@@ -43,6 +52,19 @@ class PlaybackSdkCheckTests(unittest.TestCase):
             self.assertFalse((output / "owned-i420-pcm.avi").exists())
             self.assertFalse((output / "playback-probe").exists())
             self.assertFalse((output / "owned-input-test").exists())
+
+    def test_missing_resume_progress_evidence_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); package = root / "payload"; package.mkdir(); output = root / "consumer"
+            def missing(_, directory):
+                self.proofs(directory)
+                path = directory / "player-input-proof.json"
+                proof = json.loads(path.read_text()); del proof["repeatedPausedSeekResume"]
+                path.write_text(json.dumps(proof))
+            with patch.object(gate, "native_check", side_effect=missing):
+                with self.assertRaisesRegex(ValueError, "incomplete"):
+                    gate.verify(package, output)
+            self.assertFalse(json.loads((output / "first-party-proof.json").read_text())["success"])
 
     def test_native_failure_remains_failed_and_releases_owned_fixture(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -75,16 +97,39 @@ class PlaybackSdkCheckTests(unittest.TestCase):
     def test_changed_first_party_sources_invalidate_the_fresh_proof(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); package = root / "payload"; package.mkdir()
-            source = root / "input.c"; source.write_bytes(b"before")
+            source = root / "packages/playback-native/src/playback.c"
+            source.parent.mkdir(parents=True); source.write_bytes(b"before")
             output = root / "consumer"
             def mutate(_, directory):
                 self.proofs(directory)
                 source.write_bytes(b"after")
-            with patch.object(gate, "ROOT", root), patch.object(gate, "INPUTS", ["input.c"]), \
+            with patch.object(gate, "ROOT", root), patch.object(gate, "INPUTS", ["packages/playback-native/src/playback.c"]), \
                     patch.object(gate, "native_check", side_effect=mutate):
                 with self.assertRaisesRegex(ValueError, "changed during"):
                     gate.verify(package, output)
             self.assertFalse(json.loads((output / "first-party-proof.json").read_text())["success"])
+
+    def test_missing_decoded_output_and_wrong_native_source_fail_closed(self):
+        for failure in ["case", "source", "frequency", "caption", "clock", "frames", "close", "cleanup"]:
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); package = root / "payload"; package.mkdir(); output = root / "consumer"
+                def incomplete(_, directory):
+                    self.proofs(directory)
+                    path = directory / "decoded-output-proof.json"
+                    proof = json.loads(path.read_text())
+                    if failure == "case": del proof["cases"]["externalMatroska"]
+                    elif failure == "source": proof["nativeSourceSha256"] = "stale"
+                    elif failure == "cleanup": proof["temporaryFixturesRemoved"] = False
+                    else:
+                        field, value = {"frequency": ("alternateToneHz", 440),
+                                        "caption": ("whiteSubtitlePixels", 0), "clock": ("actualClock", False),
+                                        "frames": ("decodedVideoProgress", False), "close": ("normalClose", False)}[failure]
+                        proof["cases"]["embedded"][field] = value
+                    path.write_text(json.dumps(proof))
+                with patch.object(gate, "native_check", side_effect=incomplete):
+                    with self.assertRaisesRegex(ValueError, "incomplete"):
+                        gate.verify(package, output)
+                self.assertFalse(json.loads((output / "first-party-proof.json").read_text())["success"])
 
     def test_external_track_acknowledgement_and_release_are_required(self):
         for field in ["actualSelectedID", "externalAudioSelectedID", "repeatedRelease", "physicalOutputAccepted"]:

@@ -613,6 +613,9 @@ public enum SyncWatchCopy {
             "sharedWatchMediaMissing":
                 "Add the room movie to your library or choose its folder, select the matching file and try Start again.",
             "roomPeersMissingMedia": "A participant does not have the selected movie yet.",
+            "sharedPositionCheckpoint": "Position before connection loss",
+            "restoreSharedPosition": "Return to this position",
+            "dismissSharedPosition": "Dismiss",
         ],
         "ru": [
             "brand": "SyncWatch",
@@ -861,6 +864,9 @@ public enum SyncWatchCopy {
             "sharedWatchMediaMissing":
                 "Добавьте фильм из комнаты в библиотеку или выберите его папку, выберите подходящий файл и снова нажмите «Начать просмотр».",
             "roomPeersMissingMedia": "У одного из участников пока нет выбранного фильма.",
+            "sharedPositionCheckpoint": "Позиция до потери связи",
+            "restoreSharedPosition": "Вернуться к этой позиции",
+            "dismissSharedPosition": "Скрыть",
         ],
     ]
     public static func text(_ key: String, language: String = "en") -> String {
@@ -1038,6 +1044,8 @@ public enum SyncWatchPlayer {
         "selectAudio",
         "selectSubtitles",
         "openPlaylist",
+        "restoreSharedPosition",
+        "dismissSharedPosition",
     ]
     public static let completedNavigationActions: Set<String> = ["previousFile", "nextFile"]
     public static let inputVolumeStep = 0.05
@@ -2154,7 +2162,7 @@ public enum SyncWatchSelectionMenu {
 }
 
 public enum SyncWatchLayouts {
-    public static let sourceDigest = "6290c6f16c4fcde482b14b4d805ddbdfb4e80f6ed8a1d307990ea8f60551fc22"
+    public static let sourceDigest = "5cc59e04cbfa33103acccd2035409af9e72865479955fbdf61afeca746a01fe5"
     public static let coordinateSize = 20.0
     public static func themeColor(_ role: String, theme: SyncWatchTheme) -> Color? {
         switch role {
@@ -6137,6 +6145,128 @@ public enum SyncWatchLayouts {
                 "background": "theme.surfaceRaised",
             ],
             children: [playerRoomNoticeText])
+        let sharedCheckpointCaption = DesignNode(
+            id: "sharedCheckpointCaption", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~sharedPositionCheckpoint",
+                "foreground": "theme.text",
+                "width": "fill",
+            ],
+            children: [])
+        let sharedCheckpointTime = DesignNode(
+            id: "sharedCheckpointTime", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{sharedPositionText}",
+                "foreground": "theme.text",
+                "automation": "player.sharedPositionCheckpoint",
+            ],
+            children: [])
+        let restoreSharedPositionText = DesignNode(
+            id: "restoreSharedPositionText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~restoreSharedPosition",
+            ],
+            children: [])
+        let restoreSharedPositionButton = DesignNode(
+            id: "restoreSharedPositionButton", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.accent",
+                "foreground": "@color.dark.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "restoreSharedPosition",
+                "enabled": "$can.restoreSharedPosition",
+                "automation": "player.restoreSharedPosition",
+                "label": "~restoreSharedPosition",
+            ],
+            children: [restoreSharedPositionText])
+        let dismissSharedPositionText = DesignNode(
+            id: "dismissSharedPositionText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~dismissSharedPosition",
+            ],
+            children: [])
+        let dismissSharedPositionButton = DesignNode(
+            id: "dismissSharedPositionButton", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "dismissSharedPosition",
+                "enabled": "$can.dismissSharedPosition",
+                "automation": "player.dismissSharedPosition",
+                "label": "~dismissSharedPosition",
+            ],
+            children: [dismissSharedPositionText])
+        let sharedPositionRecovery = DesignNode(
+            id: "sharedPositionRecovery", kind: "row",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "when": "$hasSharedPosition",
+                "gap": "@control.compactGap",
+                "paddingX": "@layout.panelPadding",
+                "paddingY": "@control.compactGap",
+                "background": "theme.surfaceRaised",
+            ],
+            children: [
+                sharedCheckpointCaption,
+                sharedCheckpointTime,
+                restoreSharedPositionButton,
+                dismissSharedPositionButton,
+            ])
         let node114 = DesignNode(
             id: "node114", kind: "slot",
             props: [
@@ -6676,7 +6806,7 @@ public enum SyncWatchLayouts {
                 "foreground": "theme.text",
                 "gap": "0",
             ],
-            children: [node113, playerRoomNotice, node114, node144])
+            children: [node113, playerRoomNotice, sharedPositionRecovery, node114, node144])
         return node145
     }
     private static func makefield() -> DesignNode {

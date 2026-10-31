@@ -47,9 +47,10 @@ private fun playerInputChecks(root: Path) {
 private fun playerChecks(root: Path): Int {
     data class Event(val action: String, val value: Double?)
     val cases = corpus(root, "player-actions.json")
-    check(cases.size == 19)
+    check(cases.size == 27)
     for (fixture in cases) {
         val model = PlayerPresentation(
+            sharedPositionMs = (fixture["sharedPositionMs"] as? Number)?.toLong(),
             state = PlayerVisualState.valueOf(fixture.text("state")),
             positionMs = fixture.number("positionMs").toLong(), durationMs = fixture.number("durationMs").toLong(),
             volume = fixture.number("volume").toDouble(), skipSeconds = fixture.number("skipSeconds").toInt(),

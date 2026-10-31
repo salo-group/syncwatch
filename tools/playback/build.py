@@ -19,7 +19,9 @@ from source_profile import profile_data
 def build(directory):
     directory = directory.resolve()
     directory.mkdir(parents=True, exist_ok=True)
-    context = BuildContext(directory / "sdk", profile_data()["sourceDateEpoch"])
+    # This adapter consumes an existing SDK and compiles C directly. It does
+    # not regenerate a dependency's configure scripts or require Autotools.
+    context = BuildContext(directory / "sdk", profile_data()["sourceDateEpoch"], autotools=False)
     suffix = {"macos-arm64": ".dylib", "windows-x64": ".dll", "linux-x64": ".so"}[context.target]
     library = directory / ("syncwatch_playback" + suffix)
     sources = ROOT / "packages/playback-native/src"
@@ -92,6 +94,10 @@ def check(package, output):
                         str(library), str(libvlc.resolve()), profile_data()["sources"]["vlc"]["revision"],
                         str(media), str(output)], stdout=log, stderr=subprocess.STDOUT,
                        stdin=subprocess.DEVNULL, check=True, env=env, timeout=90)
+    spec = importlib.util.spec_from_file_location("syncwatch_playback_output", ROOT / "tools/playback/output_checks.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.check_outputs(context, package, output, env)
     print(json.dumps(proof, sort_keys=True))
     return library
 

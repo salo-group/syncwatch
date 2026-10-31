@@ -2683,6 +2683,93 @@
           ]
         },
         {
+          "id": "sharedPositionRecovery",
+          "kind": "row",
+          "styles": [],
+          "props": {
+            "when": "$hasSharedPosition",
+            "gap": "@control.compactGap",
+            "paddingX": "@layout.panelPadding",
+            "paddingY": "@control.compactGap",
+            "background": "theme.surfaceRaised"
+          },
+          "children": [
+            {
+              "id": "sharedCheckpointCaption",
+              "kind": "text",
+              "styles": [],
+              "props": {
+                "text": "~sharedPositionCheckpoint",
+                "foreground": "theme.text",
+                "width": "fill"
+              },
+              "children": []
+            },
+            {
+              "id": "sharedCheckpointTime",
+              "kind": "text",
+              "styles": [],
+              "props": {
+                "text": "{sharedPositionText}",
+                "foreground": "theme.text",
+                "automation": "player.sharedPositionCheckpoint"
+              },
+              "children": []
+            },
+            {
+              "id": "restoreSharedPositionButton",
+              "kind": "button",
+              "styles": [
+                "button",
+                "primary",
+                "compact"
+              ],
+              "props": {
+                "action": "restoreSharedPosition",
+                "enabled": "$can.restoreSharedPosition",
+                "automation": "player.restoreSharedPosition",
+                "label": "~restoreSharedPosition"
+              },
+              "children": [
+                {
+                  "id": "restoreSharedPositionText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~restoreSharedPosition"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "dismissSharedPositionButton",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "dismissSharedPosition",
+                "enabled": "$can.dismissSharedPosition",
+                "automation": "player.dismissSharedPosition",
+                "label": "~dismissSharedPosition"
+              },
+              "children": [
+                {
+                  "id": "dismissSharedPositionText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~dismissSharedPosition"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
           "id": "node114",
           "kind": "slot",
           "styles": [],
