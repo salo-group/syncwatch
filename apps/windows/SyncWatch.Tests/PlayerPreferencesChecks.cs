@@ -13,7 +13,8 @@ internal static class PlayerPreferencesChecks
         var initial = LocalState.CreateDefault() with
         {
             Preferences = LocalPreferences.CreateDefault() with { Language = "ru", MovieVolume = 0.4, SkipSeconds = 42 },
-            SelectedMediaId = "retained-film", ResumePositions = [new("retained-film", 12345)]
+            SelectedMediaId = "retained-film",
+            ResumePositions = [new("retained-film", 12345)]
         };
         try
         {

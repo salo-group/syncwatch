@@ -74,7 +74,8 @@ private final class TestStore: LocalStateStore {
     draft.cancel()
     #expect(preferences.state == initial && draft.values["skipSeconds"] == "42")
     draft.edit("skipSeconds", value: "30")
-    #expect(draft.save(using: preferences.savePlayerSettings))
+    let saved = draft.save(using: preferences.savePlayerSettings)
+    #expect(saved)
     var expected = initial
     expected.preferences.skipSeconds = 30
     #expect(preferences.state == expected)
@@ -89,9 +90,8 @@ private final class TestStore: LocalStateStore {
     let future = Data("{\"version\":2,\"future\":true}".utf8)
     try future.write(to: directory.appendingPathComponent("local-state.json"))
     #expect(!preferences.savePlayerSettings(["skipSeconds": "15"]))
-    #expect(
-        preferences.state == expected
-            && (try Data(contentsOf: directory.appendingPathComponent("local-state.json"))) == future)
+    let preserved = try Data(contentsOf: directory.appendingPathComponent("local-state.json"))
+    #expect(preferences.state == expected && preserved == future)
     let readonly = AppearancePreferences(store: disk)
     #expect(!readonly.playerSettingsEditor.canSave)
     #expect(!readonly.savePlayerSettings(["skipSeconds": "15"]))
@@ -103,7 +103,8 @@ private final class TestStore: LocalStateStore {
     store.failWrite = true
     var draft = preferences.playerSettingsEditor
     draft.edit("skipSeconds", value: "60")
-    #expect(!draft.save(using: preferences.savePlayerSettings))
+    let saved = draft.save(using: preferences.savePlayerSettings)
+    #expect(!saved)
     #expect(draft.message == "saveFailed" && preferences.state.preferences.skipSeconds == 10)
     #expect(store.writes == 0)
 }
