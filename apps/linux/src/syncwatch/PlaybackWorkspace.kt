@@ -294,7 +294,7 @@ internal class PlaybackController(
     val language = preferences.state.preferences.language
     val dark = when (preferences.state.preferences.theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }
     val theme = if (dark) SyncWatchTheme.dark else SyncWatchTheme.light
-    PlaybackPane(controller, language, theme, onClose, onFullscreen)
+    ConfiguredPlaybackPane(controller, preferences, theme, onClose, onFullscreen)
     LaunchedEffect(controller.failed) {
         if (controller.failed && !controller.acceptanceRequested) javax.swing.JOptionPane.showMessageDialog(null,
             SyncWatchCopy.text("playbackFailed", language), "SyncWatch", javax.swing.JOptionPane.ERROR_MESSAGE)
@@ -302,11 +302,19 @@ internal class PlaybackController(
 }
 
 @Composable internal fun PlaybackPane(controller: PlaybackController, language: String, theme: SyncWatchTheme,
-    onClose: () -> Unit, onFullscreen: () -> Unit, roomNotice: String = "") {
+    onClose: () -> Unit, onFullscreen: () -> Unit, roomNotice: String = "", skipSeconds: Int? = null,
+    onOpenSettings: (() -> Unit)? = null) {
     LaunchedEffect(controller) { controller.start() }
-    PlayerChrome(controller.playlist.presentation(controller.presentation).copy(roomNotice = roomNotice), language, theme,
+    val observed = controller.playlist.presentation(controller.presentation)
+    val configured = observed.copy(roomNotice = roomNotice, skipSeconds = skipSeconds ?: observed.skipSeconds,
+        enabledActions = observed.enabledActions + if (onOpenSettings != null) setOf("openPlayerSettings") else emptySet())
+    PlayerChrome(configured, language, theme,
         videoSurface = { NativePlayerSurface(controller.canvas) },
         selectionMenu = controller.playlist.menu ?: controller.tracks.menu, onSelection = controller::selectMenu,
         onDismissSelection = controller::dismissMenu,
-        onAction = { action, value -> controller.language = language; controller.action(action, value, onClose, onFullscreen) })
+        onAction = { action, value ->
+            controller.language = language
+            if (action == "openPlayerSettings" && onOpenSettings != null) { controller.dismissMenu(); onOpenSettings() }
+            else controller.action(action, value, onClose, onFullscreen)
+        })
 }

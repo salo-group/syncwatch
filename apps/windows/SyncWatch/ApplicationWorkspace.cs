@@ -53,6 +53,7 @@ internal sealed class ApplicationWorkspace : UserControl
         library.SelectionPresentation = watch.PlayerPresented ? null : catalog.Tracks.Menu;
         library.Render(shared.LibraryPresentation(watch.LibraryPresentation(catalog.Presentation)), preferences.State.Preferences.Language);
         watch.Player?.SetRoomNotice(shared.PlayerNotice);
+        watch.Player?.ConfigurePlayerSettings(preferences.State.Preferences.SkipSeconds, OpenPlayerSettings);
         chrome.SetPlayer(watch.Player); chrome.PresentPlayer(watch.PlayerPresented);
         if (WatchAcceptance.Requested) return;
         if ((catalog.ErrorKey ?? watch.ErrorKey ?? shared.ErrorKey) is not string key) return;
@@ -123,6 +124,18 @@ internal sealed class ApplicationWorkspace : UserControl
         ShowInTaskbar = false,
         WindowStartupLocation = WindowStartupLocation.CenterOwner
     };
+    private void OpenPlayerSettings()
+    {
+        var view = new Design.PlayerSettingsDialog(preferences.CreatePlayerSettingsEditor(), preferences.State.Preferences.Language);
+        var window = CreateDialog(view);
+        view.CloseRequested += window.Close; view.MoveRequested += window.DragMove;
+        view.Persist = values =>
+        {
+            if (!preferences.SavePlayerSettings(values)) return false;
+            watch.PreferencesChanged(); Refresh(); return true;
+        };
+        window.ShowDialog();
+    }
     private void OpenSettings()
     {
         var view = new Design.SettingsDialog(catalog.SettingsEditor(preferences.CreateEditor()), preferences.State.Preferences.Language);

@@ -42,6 +42,20 @@ public sealed class AppearancePreferences
         try { next.Validate(); store.Write(next); State = next; return true; }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or WatchException or ContractException) { return false; }
     }
+    public PlayerSettingsEditor CreatePlayerSettingsEditor() => new(
+        new Dictionary<string, string> { ["skipSeconds"] = State.Preferences.SkipSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+        CanWrite && !SavingWatchState ? ["skipSeconds"] : [], CanWrite && !SavingWatchState);
+
+    public bool SavePlayerSettings(IReadOnlyDictionary<string, string> values)
+    {
+        if (!CanWrite || SavingWatchState || !values.TryGetValue("skipSeconds", out var value)) return false;
+        var field = SyncWatchPlayerSettings.Fields.Single(f => f.Id == "skipSeconds");
+        if (!PlayerSettingsEditor.Valid(value, field) || !int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int seconds)) return false;
+        var next = State with { Preferences = State.Preferences with { SkipSeconds = seconds } };
+        try { next.Validate(); store.Write(next); State = next; return true; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or WatchException or ContractException) { return false; }
+    }
+
     public async Task<bool> PersistWatchStateAsync(LocalState value)
     {
         if (SavingWatchState) return false;

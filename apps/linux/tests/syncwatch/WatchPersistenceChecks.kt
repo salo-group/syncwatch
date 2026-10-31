@@ -37,6 +37,7 @@ internal suspend fun watchPersistenceChecks(scratch: Path) = coroutineScope {
         check(withContext(Dispatchers.IO) { gate.entered.await(15, TimeUnit.SECONDS) })
         check(preferences.savingWatchState && !preferences.editor().canSave)
         check(!preferences.save(mapOf("theme" to "dark", "language" to "ru")))
+        check(!preferences.playerSettingsEditor().canSave && !preferences.savePlayerSettings(mapOf("skipSeconds" to "30")))
         check(!preferences.persistWatchState(snapshot))
         gate.proceed.countDown()
         check(writing.await() && !preferences.savingWatchState)
