@@ -105,7 +105,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         return descriptor;
     }
     internal void RequireSharedAdmission() { requiresSharedAdmission = true; GateSharedActions(); RenderChrome(); }
-    internal void AdmitSharedPlayback(bool autoplay = false, double? initialVolume = null, Action<PlaybackScope, double>? onVolumeChanged = null)
+    internal void AdmitSharedPlayback(bool autoplay = false)
     {
         if (sharedSession is null || SharedState is not { Connection: HelperConnection.Connected, PlaybackReady: true } || sharedAuthority?.Invoke() == false)
             throw new InvalidOperationException("Shared playback unavailable");
@@ -163,7 +163,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     public PlaybackWorkspace(LocalPlaybackLaunch launch, string language, PlaybackScope? scope = null, long positionMs = 0,
         LibraryMediaSelection? selection = null, Action<PlaybackScope>? onLoaded = null,
         Action<PlaybackObservation>? onObservation = null, Action<string>? onNavigation = null, Action? onFailure = null,
-        Action? onFullscreen = null, bool requiresSharedAdmission = false, Action<WatchPlaylist>? onPlaylistUpdate = null, Action<string>? onPlaylistSelection = null, bool autoplay = false)
+        Action? onFullscreen = null, bool requiresSharedAdmission = false, Action<WatchPlaylist>? onPlaylistUpdate = null, Action<string>? onPlaylistSelection = null, bool autoplay = false, double? initialVolume = null, Action<PlaybackScope, double>? onVolumeChanged = null)
     {
         this.launch = launch; this.language = language;
         this.onPlaylistUpdate = onPlaylistUpdate; this.onPlaylistSelection = onPlaylistSelection;
