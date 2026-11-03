@@ -60,6 +60,8 @@ internal class PlaybackController(
     private val onPlaylistUpdate: ((WatchPlaylist) -> Unit)? = null,
     private val onPlaylistSelection: ((String) -> Unit)? = null,
     autoplay: Boolean = false,
+    private val initialVolume: Double? = null,
+    private val onVolumeChanged: ((PlaybackScope, Double) -> Unit)? = null,
 ) {
     private val ownerJob = SupervisorJob(parentScope.coroutineContext[Job])
     private val work = CoroutineScope(parentScope.coroutineContext + ownerJob)
@@ -166,6 +168,7 @@ internal class PlaybackController(
                         }
                     }
                     if (admissionPending && value.status == PlaybackStatus.ready) {
+                        initialVolume?.let { player.setVolume(it, false, scope) }
                         tracks.applyInitial(selection?.tracks ?: LocalTrackPreferences())
                         ensureActive()
                         if (closing) break
@@ -260,7 +263,10 @@ internal class PlaybackController(
                         when (accepted) {
                             "playPause" -> player.setPaused(presentation.playing, scope)
                             "seek" -> if (number != null) player.seek(number.toLong(), scope)
-                            "setMovieVolume" -> if (number != null) player.setVolume(number, presentation.muted, scope)
+                            "setMovieVolume" -> if (number != null) {
+                                player.setVolume(number, presentation.muted, scope)
+                                if (!closing) onVolumeChanged?.invoke(scope, number)
+                            }
                             "muteMovie" -> player.setVolume(presentation.volume, !presentation.muted, scope)
                         }
                     } catch (_: Exception) { /* Rejection does not acknowledge a changed observation. */ }

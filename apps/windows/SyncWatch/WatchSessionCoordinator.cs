@@ -137,7 +137,7 @@ internal sealed class WatchSessionCoordinator
             Player = new PlaybackWorkspace(new(selection.Media.File, media.Package, media.Bridge, null, false),
                 preferences.State.Preferences.Language, request.Scope, request.PositionMs, selection,
                 Loaded, Observed, action => { if (action == "showLibrary") ShowLibrary(); else if (action == "endWatching") { if (OnEndWatching is { } handler) handler(); else End(); } },
-                () => Failed(request.Scope), fullscreen, requiresSharedAdmission, value => OnPlaylistUpdate?.Invoke(value), id => OnPlaylistSelection?.Invoke(id), autoplay);
+                () => Failed(request.Scope), fullscreen, requiresSharedAdmission, value => OnPlaylistUpdate?.Invoke(value), id => OnPlaylistSelection?.Invoke(id), autoplay, preferences.OpeningMovieVolume, VolumeChanged);
             Changed?.Invoke();
         }
         catch (Exception) { Failed(request.Scope); }
@@ -161,6 +161,12 @@ internal sealed class WatchSessionCoordinator
         if (closing || owner != session.Scope || session.Phase != WatchPhase.Preparing) return;
         try { session.Loaded(owner); Changed?.Invoke(); }
         catch (WatchException) { Failed(owner); }
+    }
+    private void VolumeChanged(PlaybackScope owner, double value)
+    {
+        dispatcher.VerifyAccess();
+        if (closing || owner != session.Scope || session.Phase != WatchPhase.Active || !preferences.RememberMovieVolume(value)) return;
+        PreferencesChanged(); RequestCheckpoint();
     }
     private void Observed(PlaybackObservation value)
     {

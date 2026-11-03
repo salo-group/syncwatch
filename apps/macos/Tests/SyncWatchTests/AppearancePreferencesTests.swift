@@ -68,7 +68,7 @@ private final class TestStore: LocalStateStore {
     try disk.write(initial)
     let preferences = AppearancePreferences(store: disk)
     var draft = preferences.playerSettingsEditor
-    #expect(draft.editableFields == ["skipSeconds"])
+    #expect(draft.editableFields == ["skipSeconds", "defaultVolume", "rememberVolume"])
     #expect(draft.values["skipSeconds"] == "42" && !draft.isValid)
     draft.edit("skipSeconds", value: "30")
     draft.cancel()
@@ -78,6 +78,7 @@ private final class TestStore: LocalStateStore {
     #expect(saved)
     var expected = initial
     expected.preferences.skipSeconds = 30
+    expected.preferences.defaultMovieVolume = preferences.defaultMovieVolume
     #expect(preferences.state == expected)
     #expect(AppearancePreferences(store: disk).state == expected)
     // An older watch checkpoint must retain the just-saved local setting.
@@ -107,4 +108,41 @@ private final class TestStore: LocalStateStore {
     #expect(!saved)
     #expect(draft.message == "saveFailed" && preferences.state.preferences.skipSeconds == 10)
     #expect(store.writes == 0)
+}
+
+@MainActor @Test func movieVolumeSettingsAndAcknowledgedChangesRoundTrip() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let disk = FileLocalStateStore(url: directory.appendingPathComponent("local-state.json"))
+    var initial = LocalState()
+    initial.preferences.movieVolume = 0.4
+    initial.selectedMediaID = "retained-film"
+    initial.resumePositions = [ResumePosition(mediaID: "retained-film", positionMs: 9000)]
+    try disk.write(initial)
+    let preferences = AppearancePreferences(store: disk)
+    #expect(preferences.openingMovieVolume == 0.4)
+    var draft = preferences.playerSettingsEditor
+    draft.edit("skipSeconds", value: "10")
+    draft.edit("defaultVolume", value: "25")
+    draft.edit("rememberVolume", value: "false")
+    #expect(draft.save(using: preferences.savePlayerSettings))
+    #expect(preferences.openingMovieVolume == 0.25)
+    #expect(!preferences.rememberMovieVolume(0.6))
+    #expect(AppearancePreferences(store: disk).openingMovieVolume == 0.25)
+    draft = preferences.playerSettingsEditor
+    draft.edit("rememberVolume", value: "true")
+    #expect(draft.save(using: preferences.savePlayerSettings))
+    #expect(preferences.rememberMovieVolume(0.6))
+    #expect(!preferences.rememberMovieVolume(0.6))
+    #expect(!preferences.rememberMovieVolume(.nan) && !preferences.rememberMovieVolume(1.1))
+    #expect(await preferences.persistWatchState(initial))
+    let restored = AppearancePreferences(store: disk)
+    #expect(restored.openingMovieVolume == 0.6 && restored.defaultMovieVolume == 0.25)
+    #expect(restored.state.selectedMediaID == initial.selectedMediaID && restored.state.resumePositions == initial.resumePositions)
+    for value in ["-5", "101", "2", "NaN"] {
+        #expect(!preferences.savePlayerSettings(["skipSeconds": "10", "defaultVolume": value]))
+    }
+    var invalid = initial
+    invalid.preferences.defaultMovieVolume = .infinity
+    #expect(throws: WatchError.self) { try invalid.validate() }
 }

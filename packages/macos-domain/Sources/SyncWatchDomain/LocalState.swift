@@ -9,6 +9,7 @@ public struct LocalPreferences: Codable, Equatable, Sendable {
     public var previewsEnabled = true
     public var previewCacheMB = 150
     public var cursorHideDelayMs = 2500
+    public var defaultMovieVolume: Double?
     public var movieVolume = 1.0
     public var callVolume = 1.0
     public var rememberMovieVolume = true
@@ -25,6 +26,7 @@ public struct LocalPreferences: Codable, Equatable, Sendable {
         guard ["system", "dark", "light"].contains(theme), ["en", "ru"].contains(language),
             (1...600).contains(skipSeconds), (50...500).contains(previewCacheMB),
             (500...10_000).contains(cursorHideDelayMs),
+            defaultMovieVolume.map { $0.isFinite && (0...1).contains($0) } ?? true,
             movieVolume.isFinite, (0...1).contains(movieVolume),
             callVolume.isFinite, (0...1).contains(callVolume)
         else { throw WatchError.invalidLocalState }

@@ -49,6 +49,8 @@ struct LocalPlaybackLaunch {
     private var closing = false
     private var closed = false
     private let allocateScope: Bool
+    private let initialVolume: Double?
+    private let onVolumeChanged: (@MainActor (PlaybackScope, Double) -> Void)?
     private let initialPositionMs: Int64
     private var sharedResumePositionMs: Int64 = 0
     private var autoplayPending: Bool
@@ -67,13 +69,16 @@ struct LocalPlaybackLaunch {
         onObservation: @escaping @MainActor (PlaybackObservation) -> Void = { _ in },
         onNavigation: (@MainActor (String) -> Void)? = nil, onFailure: (@MainActor () -> Void)? = nil,
         onPlaylistUpdate: (@MainActor (WatchPlaylist) -> Void)? = nil,
-        onPlaylistSelection: (@MainActor (String) -> Void)? = nil
+        onPlaylistSelection: (@MainActor (String) -> Void)? = nil,
+        initialVolume: Double? = nil, onVolumeChanged: (@MainActor (PlaybackScope, Double) -> Void)? = nil
     ) {
         self.launch = launch
         self.runtime = runtime
         self.scope = scope ?? .fresh()
         allocateScope = scope == nil
         initialPositionMs = positionMs
+        self.initialVolume = initialVolume
+        self.onVolumeChanged = onVolumeChanged
         self.selection = selection
         self.requiresSharedAdmission = requiresSharedAdmission
         autoplayPending = autoplay && !requiresSharedAdmission
@@ -211,6 +216,7 @@ struct LocalPlaybackLaunch {
                         }
                     }
                     if admissionPending, observation.status == .ready {
+                        if let initialVolume { try await player.setVolume(initialVolume, muted: false, scope: scope) }
                         try await tracks.applyInitial(selection?.tracks ?? LocalTrackPreferences())
                         try Task.checkCancellation()
                         guard !closing else { break }
@@ -357,7 +363,11 @@ struct LocalPlaybackLaunch {
                     if let value, value.isFinite, value >= 0, value <= Double(WatchSession.maximumPositionMs) {
                         try await player.seek(to: Int64(value), scope: scope)
                     }
-                case "setMovieVolume": if let value { try await player.setVolume(value, muted: muted, scope: scope) }
+                case "setMovieVolume":
+                    if let value {
+                        try await player.setVolume(value, muted: muted, scope: scope)
+                        if !closing { onVolumeChanged?(scope, value) }
+                    }
                 case "muteMovie": try await player.setVolume(volume, muted: !muted, scope: scope)
                 default: break
                 }

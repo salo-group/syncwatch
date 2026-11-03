@@ -67,6 +67,7 @@ class FileLocalStateStore(path: Path) : LocalStateStore {
                 int(p["previewCacheMB"]), int(p["cursorHideDelayMs"]), decimal(p["movieVolume"]), decimal(p["callVolume"]),
                 flag(p["rememberMovieVolume"]), flag(p["duckMovieDuringSpeech"]), flag(p["cameraEnabled"]), flag(p["microphoneEnabled"]),
                 p["scanSubfolders"]?.let(::flag), p["automaticRefresh"]?.let(::flag),
+                p["defaultMovieVolume"]?.let(::decimal),
             )
             val resumes = root["resumePositions"] as? List<*> ?: throw WatchFailure("invalidLocalState")
             val selected = root["selectedMediaId"]?.let(::text)
@@ -79,7 +80,7 @@ class FileLocalStateStore(path: Path) : LocalStateStore {
             return mapOf("version" to state.version, "selectedMediaId" to state.selectedMediaId,
                 "preferences" to mapOf("theme" to p.theme, "language" to p.language, "skipSeconds" to p.skipSeconds,
                     "previewsEnabled" to p.previewsEnabled, "previewCacheMB" to p.previewCacheMB, "cursorHideDelayMs" to p.cursorHideDelayMs,
-                    "movieVolume" to p.movieVolume, "callVolume" to p.callVolume, "rememberMovieVolume" to p.rememberMovieVolume,
+                    "defaultMovieVolume" to p.defaultMovieVolume, "movieVolume" to p.movieVolume, "callVolume" to p.callVolume, "rememberMovieVolume" to p.rememberMovieVolume,
                     "duckMovieDuringSpeech" to p.duckMovieDuringSpeech, "cameraEnabled" to p.cameraEnabled, "microphoneEnabled" to p.microphoneEnabled,
                     "scanSubfolders" to p.scanSubfolders, "automaticRefresh" to p.automaticRefresh).filterValues { it != null },
                 "resumePositions" to state.resumePositions.map { mapOf("mediaId" to it.mediaId, "positionMs" to it.positionMs) })

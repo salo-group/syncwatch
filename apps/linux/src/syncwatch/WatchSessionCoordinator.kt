@@ -115,7 +115,8 @@ internal class WatchSessionCoordinator(
                     selection = selection, requiresSharedAdmission = requiresSharedAdmission, onLoaded = ::loaded, onObservation = ::observed,
                     onNavigation = { if (it == "showLibrary") showLibrary() else if (it == "endWatching") { onEndWatching?.invoke() ?: end() } },
                     onFailure = { failed(request.scope) }, onPlaylistUpdate = { onPlaylistUpdate?.invoke(it) },
-                    onPlaylistSelection = { onPlaylistSelection?.invoke(it) }, autoplay = autoplay)
+                    onPlaylistSelection = { onPlaylistSelection?.invoke(it) }, autoplay = autoplay,
+                    initialVolume = preferences.openingMovieVolume, onVolumeChanged = ::volumeChanged)
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { failed(request.scope) }
             finally { if (pendingScope == request.scope) { pendingScope = null; pendingLoad = null } }
@@ -141,6 +142,10 @@ internal class WatchSessionCoordinator(
     private fun loaded(owner: PlaybackScope) {
         if (closing || owner != session.scope || phase != WatchPhase.preparing) return
         try { session.loaded(owner); publish() } catch (_: WatchFailure) { failed(owner) }
+    }
+    private fun volumeChanged(owner: PlaybackScope, value: Double) {
+        if (closing || owner != session.scope || session.phase != WatchPhase.active || !preferences.rememberMovieVolume(value)) return
+        preferencesChanged(); requestCheckpoint()
     }
     private fun observed(value: PlaybackObservation) {
         if (closing || value.scope != session.scope || phase != WatchPhase.active || value.status != PlaybackStatus.ready) return

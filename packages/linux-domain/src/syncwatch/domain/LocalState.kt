@@ -10,10 +10,12 @@ data class LocalPreferences(
     val cameraEnabled: Boolean = true, val microphoneEnabled: Boolean = true,
     // Missing in older state files; the selected folder supplies legacy values until Settings saves them.
     val scanSubfolders: Boolean? = null, val automaticRefresh: Boolean? = null,
+    val defaultMovieVolume: Double? = null,
 ) {
     fun validate() {
         if (theme !in setOf("system", "dark", "light") || language !in setOf("en", "ru") || skipSeconds !in 1..600
             || previewCacheMB !in 50..500 || cursorHideDelayMs !in 500..10000
+            || (defaultMovieVolume != null && (!defaultMovieVolume.isFinite() || defaultMovieVolume !in 0.0..1.0))
             || !movieVolume.isFinite() || movieVolume !in 0.0..1.0 || !callVolume.isFinite() || callVolume !in 0.0..1.0
         ) throw WatchFailure("invalidLocalState")
     }
