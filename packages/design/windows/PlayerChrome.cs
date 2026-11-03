@@ -12,6 +12,7 @@ public sealed record PlayerPresentation
     public PlayerVisualState State { get; init; }
     public string Title { get; init; } = "";
     public string RoomNotice { get; init; } = "";
+    public long? SharedPositionMs { get; init; }
     public long PositionMs { get; init; }
     public long DurationMs { get; init; }
     public double Volume { get; init; } = 1;
@@ -21,6 +22,7 @@ public sealed record PlayerPresentation
     public bool HasNext { get; init; }
     public IReadOnlySet<string> EnabledActions { get; init; } = new HashSet<string>();
     public bool IsValid => DurationMs is >= 0 and <= SyncWatchPlayer.MaximumPositionMs && PositionMs >= 0 && PositionMs <= DurationMs && double.IsFinite(Volume) && Volume is >= 0 and <= 1 && SkipSeconds is >= 1 and <= 600;
+    private bool ValidSharedPosition => IsValid && SharedPositionMs is long position && position >= 0 && position <= DurationMs;
     public bool Playing => State is PlayerVisualState.Playing or PlayerVisualState.Fullscreen;
     public double DisplayedDuration => Math.Clamp(DurationMs, 0, SyncWatchPlayer.MaximumPositionMs);
     public double DisplayedPosition => Math.Clamp(PositionMs, 0, DisplayedDuration);
@@ -29,6 +31,8 @@ public sealed record PlayerPresentation
         if (!EnabledActions.Contains(action) || !SyncWatchPlayer.Actions.Contains(action)) return false;
         return action switch
         {
+            "restoreSharedPosition" => Allows("seek") && ValidSharedPosition,
+            "dismissSharedPosition" => ValidSharedPosition,
             "playPause" or "seek" or "skip" or "previousFile" or "nextFile" or "selectAudio" or "selectSubtitles" => IsValid && (State is PlayerVisualState.Paused or PlayerVisualState.Playing or PlayerVisualState.Fullscreen || State == PlayerVisualState.Ended && SyncWatchPlayer.CompletedNavigationActions.Contains(action)) && (action switch
             {
                 "seek" or "skip" => DurationMs > 0,

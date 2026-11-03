@@ -604,6 +604,9 @@ public static class SyncWatchCopy
         ("en", "externalTrackUnavailable") => "Could not open that track",
         ("en", "sharedWatchMediaMissing") => "Add the room movie to your library or choose its folder, select the matching file and try Start again.",
         ("en", "roomPeersMissingMedia") => "A participant does not have the selected movie yet.",
+        ("en", "sharedPositionCheckpoint") => "Position before connection loss",
+        ("en", "restoreSharedPosition") => "Return to this position",
+        ("en", "dismissSharedPosition") => "Dismiss",
         ("ru", "brand") => "SyncWatch",
         ("ru", "room") => "Смотрим вместе",
         ("ru", "library") => "Библиотека фильмов",
@@ -844,6 +847,9 @@ public static class SyncWatchCopy
         ("ru", "externalTrackUnavailable") => "Не удалось открыть дорожку",
         ("ru", "sharedWatchMediaMissing") => "Добавьте фильм из комнаты в библиотеку или выберите его папку, выберите подходящий файл и снова нажмите «Начать просмотр».",
         ("ru", "roomPeersMissingMedia") => "У одного из участников пока нет выбранного фильма.",
+        ("ru", "sharedPositionCheckpoint") => "Позиция до потери связи",
+        ("ru", "restoreSharedPosition") => "Вернуться к этой позиции",
+        ("ru", "dismissSharedPosition") => "Скрыть",
         _ when language != "en" => Text(key, "en"),
         _ => key,
     };
@@ -925,7 +931,7 @@ public sealed record PlayerInputBinding(string Key, string Action, double? Value
 public static class SyncWatchPlayer
 {
     public static string[] States => ["loading", "paused", "playing", "buffering", "fullscreen", "connectionInterrupted", "ended"];
-    public static string[] Actions => ["playPause", "seek", "skip", "previousFile", "nextFile", "setMovieVolume", "muteMovie", "showLibrary", "endWatching", "openCall", "toggleFullscreen", "openPlayerSettings", "selectAudio", "selectSubtitles", "openPlaylist"];
+    public static string[] Actions => ["playPause", "seek", "skip", "previousFile", "nextFile", "setMovieVolume", "muteMovie", "showLibrary", "endWatching", "openCall", "toggleFullscreen", "openPlayerSettings", "selectAudio", "selectSubtitles", "openPlaylist", "restoreSharedPosition", "dismissSharedPosition"];
     public static string[] CompletedNavigationActions => ["previousFile", "nextFile"];
     public const double InputVolumeStep = 0.05;
     public static PlayerInputBinding[] InputBindings => [
@@ -1075,7 +1081,7 @@ public static class SyncWatchSelectionMenu
 
 public static class SyncWatchLayouts
 {
-    public const string SourceDigest = "6290c6f16c4fcde482b14b4d805ddbdfb4e80f6ed8a1d307990ea8f60551fc22";
+    public const string SourceDigest = "5cc59e04cbfa33103acccd2035409af9e72865479955fbdf61afeca746a01fe5";
     public const double CoordinateSize = 20;
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults { get; } = new System.Collections.Generic.Dictionary<string, string>
     {
@@ -3795,6 +3801,109 @@ public static class SyncWatchLayouts
             ["paddingY"] = "@control.compactGap",
             ["background"] = "theme.surfaceRaised",
         }, [playerRoomNoticeText]);
+        var sharedCheckpointCaption = new DesignNode("sharedCheckpointCaption", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~sharedPositionCheckpoint",
+            ["foreground"] = "theme.text",
+            ["width"] = "fill",
+        }, []);
+        var sharedCheckpointTime = new DesignNode("sharedCheckpointTime", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{sharedPositionText}",
+            ["foreground"] = "theme.text",
+            ["automation"] = "player.sharedPositionCheckpoint",
+        }, []);
+        var restoreSharedPositionText = new DesignNode("restoreSharedPositionText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~restoreSharedPosition",
+        }, []);
+        var restoreSharedPositionButton = new DesignNode("restoreSharedPositionButton", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.accent",
+            ["foreground"] = "@color.dark.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "restoreSharedPosition",
+            ["enabled"] = "$can.restoreSharedPosition",
+            ["automation"] = "player.restoreSharedPosition",
+            ["label"] = "~restoreSharedPosition",
+        }, [restoreSharedPositionText]);
+        var dismissSharedPositionText = new DesignNode("dismissSharedPositionText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~dismissSharedPosition",
+        }, []);
+        var dismissSharedPositionButton = new DesignNode("dismissSharedPositionButton", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "dismissSharedPosition",
+            ["enabled"] = "$can.dismissSharedPosition",
+            ["automation"] = "player.dismissSharedPosition",
+            ["label"] = "~dismissSharedPosition",
+        }, [dismissSharedPositionText]);
+        var sharedPositionRecovery = new DesignNode("sharedPositionRecovery", "row", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["when"] = "$hasSharedPosition",
+            ["gap"] = "@control.compactGap",
+            ["paddingX"] = "@layout.panelPadding",
+            ["paddingY"] = "@control.compactGap",
+            ["background"] = "theme.surfaceRaised",
+        }, [sharedCheckpointCaption, sharedCheckpointTime, restoreSharedPositionButton, dismissSharedPositionButton]);
         var node114 = new DesignNode("node114", "slot", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -4270,7 +4379,7 @@ public static class SyncWatchLayouts
             ["fontSize"] = "@type.playerLabelSize",
             ["foreground"] = "theme.text",
             ["gap"] = "0",
-        }, [node113, playerRoomNotice, node114, node144]);
+        }, [node113, playerRoomNotice, sharedPositionRecovery, node114, node144]);
         return node145;
     }
     private static DesignNode Makefield()

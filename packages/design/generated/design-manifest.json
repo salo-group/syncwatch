@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
   "units": "logical",
-  "sourceDigest": "3276c826a2b3c8e12e4858c50a37e63be11b0e79539e0c633e319aba28d879a0",
+  "sourceDigest": "b27f0d04f53affe41acd1a615f72af447aebf918b21d042bf9aafc777ac264b7",
   "sources": {
     "tokens/geometry.json": "83534a4d3b484f7a810a4c67f1f8ee58b2f2f4a14db4e4df404381e936a78a4b",
     "tokens/palette.json": "bb4dabce249ffe75a20192d8ccf523630432a3d1f3ca8dcba45fa787a7028a2c",
     "themes.json": "1a0a77546aeb1c96aaad53408a0a2e14e4be38298b50cfeb2700fd9a18b42b50",
-    "components.json": "d60d49a5c818be6959d1a90c0be4356a64d2e0d0249400a18b867b43971831c2",
-    "copy.json": "8e1b1fa6581c17a5146879c61540d11634f2532ea7519a742e3a5316b2aefde4",
+    "components.json": "858e396faa12caf3c1de8c1166ef99cfba48a893faeee5cba9a57565cc4a75f5",
+    "copy.json": "4a54071b2537d76c17ff8b418dc0793344bccd238fad88f99645f47ae2ae1e6c",
     "settings.json": "5871fefd13955a2ed51fb989cc35177c2940aca4c3905ec117ad894a81c041f2",
     "room.json": "84189acaeef566dfcdb6282eec0080e10afe045fb9a220d98ecc86ea5d33d96b",
-    "player.json": "c7cc1a1b559ec70b9337af1bc3a69669a0a10f6fe2319fc573417035c54923ec",
+    "player.json": "5cf83f28cc332de38632059c39e19669159a04ca2d2c0515f277b7667e83d9f3",
     "call.json": "a26821925540d925182355af12c02a40780c84c051e53610b300934536186a01",
     "player-settings.json": "ce2d79c36e1557ddee4cedd4db931042fdd7aa0f96969580e0a815c89a95c38a",
     "selection-menu.json": "86ff7683d675213327acd83ebc38174dbcfea37235b454e0afe37671c59d1502",
-    "layouts.json": "ac4f55de7bcfd25bde0e66cad0a368e8a03b572a557fc52079be2e42dfb33ea8",
+    "layouts.json": "d8a441a651662f62eb8f48b6eddf21954f5c616048430d67a5f591c7489b54d9",
     "package.json": "49e278398b736b490a57f3ec73bfdcdcc863d63be73788115f41b6db6bee5165"
   },
   "generatorRevision": "6ab5fb9eee4ac8af1a2db6d1be0ef5763cf2162991416018568238f84d8701da",
@@ -328,7 +328,10 @@
         "openSubtitles": "Subtitles…",
         "externalTrackUnavailable": "Could not open that track",
         "sharedWatchMediaMissing": "Add the room movie to your library or choose its folder, select the matching file and try Start again.",
-        "roomPeersMissingMedia": "A participant does not have the selected movie yet."
+        "roomPeersMissingMedia": "A participant does not have the selected movie yet.",
+        "sharedPositionCheckpoint": "Position before connection loss",
+        "restoreSharedPosition": "Return to this position",
+        "dismissSharedPosition": "Dismiss"
       },
       "ru": {
         "brand": "SyncWatch",
@@ -570,7 +573,10 @@
         "openSubtitles": "Субтитры…",
         "externalTrackUnavailable": "Не удалось открыть дорожку",
         "sharedWatchMediaMissing": "Добавьте фильм из комнаты в библиотеку или выберите его папку, выберите подходящий файл и снова нажмите «Начать просмотр».",
-        "roomPeersMissingMedia": "У одного из участников пока нет выбранного фильма."
+        "roomPeersMissingMedia": "У одного из участников пока нет выбранного фильма.",
+        "sharedPositionCheckpoint": "Позиция до потери связи",
+        "restoreSharedPosition": "Вернуться к этой позиции",
+        "dismissSharedPosition": "Скрыть"
       }
     },
     "gallery": {
@@ -857,7 +863,9 @@
       "openPlayerSettings",
       "selectAudio",
       "selectSubtitles",
-      "openPlaylist"
+      "openPlaylist",
+      "restoreSharedPosition",
+      "dismissSharedPosition"
     ],
     "completedNavigationActions": [
       "previousFile",
@@ -4951,6 +4959,93 @@
                   "automation": "player.roomNotice"
                 },
                 "children": []
+              }
+            ]
+          },
+          {
+            "id": "sharedPositionRecovery",
+            "kind": "row",
+            "styles": [],
+            "props": {
+              "when": "$hasSharedPosition",
+              "gap": "@control.compactGap",
+              "paddingX": "@layout.panelPadding",
+              "paddingY": "@control.compactGap",
+              "background": "theme.surfaceRaised"
+            },
+            "children": [
+              {
+                "id": "sharedCheckpointCaption",
+                "kind": "text",
+                "styles": [],
+                "props": {
+                  "text": "~sharedPositionCheckpoint",
+                  "foreground": "theme.text",
+                  "width": "fill"
+                },
+                "children": []
+              },
+              {
+                "id": "sharedCheckpointTime",
+                "kind": "text",
+                "styles": [],
+                "props": {
+                  "text": "{sharedPositionText}",
+                  "foreground": "theme.text",
+                  "automation": "player.sharedPositionCheckpoint"
+                },
+                "children": []
+              },
+              {
+                "id": "restoreSharedPositionButton",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "primary",
+                  "compact"
+                ],
+                "props": {
+                  "action": "restoreSharedPosition",
+                  "enabled": "$can.restoreSharedPosition",
+                  "automation": "player.restoreSharedPosition",
+                  "label": "~restoreSharedPosition"
+                },
+                "children": [
+                  {
+                    "id": "restoreSharedPositionText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~restoreSharedPosition"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "dismissSharedPositionButton",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "dismissSharedPosition",
+                  "enabled": "$can.dismissSharedPosition",
+                  "automation": "player.dismissSharedPosition",
+                  "label": "~dismissSharedPosition"
+                },
+                "children": [
+                  {
+                    "id": "dismissSharedPositionText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~dismissSharedPosition"
+                    },
+                    "children": []
+                  }
+                ]
               }
             ]
           },

@@ -20,6 +20,13 @@ class EmbeddedFixtureChecks(unittest.TestCase):
             path = fixtures.embedded_tracks(Path(temporary))
             self.assertEqual(path.read_bytes()[:4], bytes.fromhex("1a45dfa3"))
 
+    def test_sparse_fixture_is_a_separate_bounded_authored_matroska(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = fixtures.sparse_video(Path(temporary))
+            self.assertEqual(path.name, "owned-sparse-video.mkv")
+            self.assertEqual(path.read_bytes()[:4], bytes.fromhex("1a45dfa3"))
+            self.assertFalse((Path(temporary) / "owned-embedded-tracks.mkv").exists())
+
     def test_corrupt_truncated_and_trailing_streams_fail_without_publishing_media(self):
         content = b"authored bytes"
         compressed = lzma.compress(content)

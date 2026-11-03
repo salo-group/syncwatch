@@ -13,6 +13,7 @@ data class PlayerPresentation(
     val state: PlayerVisualState = PlayerVisualState.loading,
     val title: String = "",
     val roomNotice: String = "",
+    val sharedPositionMs: Long? = null,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
     val volume: Double = 1.0,
@@ -23,10 +24,13 @@ data class PlayerPresentation(
     val enabledActions: Set<String> = emptySet(),
 ) {
     val isValid: Boolean get() = durationMs in 0..SyncWatchPlayer.maximumPositionMs && positionMs in 0..durationMs.coerceAtLeast(0) && volume.isFinite() && volume in 0.0..1.0 && skipSeconds in 1..600
+    private val validSharedPosition: Boolean get() = isValid && sharedPositionMs != null && sharedPositionMs in 0..durationMs
     val playing: Boolean get() = state == PlayerVisualState.playing || state == PlayerVisualState.fullscreen
     val displayedDuration: Double get() = durationMs.coerceIn(0, SyncWatchPlayer.maximumPositionMs).toDouble()
     val displayedPosition: Double get() = positionMs.coerceAtLeast(0).toDouble().coerceAtMost(displayedDuration)
     fun allows(action: String): Boolean = action in enabledActions && action in SyncWatchPlayer.actions && when (action) {
+        "restoreSharedPosition" -> allows("seek") && validSharedPosition
+        "dismissSharedPosition" -> validSharedPosition
         "playPause", "seek", "skip", "previousFile", "nextFile", "selectAudio", "selectSubtitles" -> isValid && (state in setOf(PlayerVisualState.paused, PlayerVisualState.playing, PlayerVisualState.fullscreen) || state == PlayerVisualState.ended && action in SyncWatchPlayer.completedNavigationActions) && when (action) {
             "seek", "skip" -> durationMs > 0
             "previousFile" -> hasPrevious

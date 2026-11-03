@@ -433,6 +433,9 @@ object SyncWatchCopy {
         "en" to "externalTrackUnavailable" -> "Could not open that track"
         "en" to "sharedWatchMediaMissing" -> "Add the room movie to your library or choose its folder, select the matching file and try Start again."
         "en" to "roomPeersMissingMedia" -> "A participant does not have the selected movie yet."
+        "en" to "sharedPositionCheckpoint" -> "Position before connection loss"
+        "en" to "restoreSharedPosition" -> "Return to this position"
+        "en" to "dismissSharedPosition" -> "Dismiss"
         "ru" to "brand" -> "SyncWatch"
         "ru" to "room" -> "Смотрим вместе"
         "ru" to "library" -> "Библиотека фильмов"
@@ -673,6 +676,9 @@ object SyncWatchCopy {
         "ru" to "externalTrackUnavailable" -> "Не удалось открыть дорожку"
         "ru" to "sharedWatchMediaMissing" -> "Добавьте фильм из комнаты в библиотеку или выберите его папку, выберите подходящий файл и снова нажмите «Начать просмотр»."
         "ru" to "roomPeersMissingMedia" -> "У одного из участников пока нет выбранного фильма."
+        "ru" to "sharedPositionCheckpoint" -> "Позиция до потери связи"
+        "ru" to "restoreSharedPosition" -> "Вернуться к этой позиции"
+        "ru" to "dismissSharedPosition" -> "Скрыть"
         else -> if (language != "en") text(key, "en") else key
     }
     val galleryStates = listOf("empty", "scanning", "selected", "missingMedia", "reconnecting")
@@ -746,7 +752,7 @@ data class PlayerInputBinding(val key: String, val action: String, val value: Do
 
 object SyncWatchPlayer {
     val states = listOf("loading", "paused", "playing", "buffering", "fullscreen", "connectionInterrupted", "ended")
-    val actions = setOf("playPause", "seek", "skip", "previousFile", "nextFile", "setMovieVolume", "muteMovie", "showLibrary", "endWatching", "openCall", "toggleFullscreen", "openPlayerSettings", "selectAudio", "selectSubtitles", "openPlaylist")
+    val actions = setOf("playPause", "seek", "skip", "previousFile", "nextFile", "setMovieVolume", "muteMovie", "showLibrary", "endWatching", "openCall", "toggleFullscreen", "openPlayerSettings", "selectAudio", "selectSubtitles", "openPlaylist", "restoreSharedPosition", "dismissSharedPosition")
     val completedNavigationActions = setOf("previousFile", "nextFile")
     const val inputVolumeStep = 0.05
     val inputBindings = listOf(
@@ -887,7 +893,7 @@ object SyncWatchSelectionMenu {
 }
 
 object SyncWatchLayouts {
-    const val sourceDigest = "6290c6f16c4fcde482b14b4d805ddbdfb4e80f6ed8a1d307990ea8f60551fc22"
+    const val sourceDigest = "5cc59e04cbfa33103acccd2035409af9e72865479955fbdf61afeca746a01fe5"
     const val coordinateSize = 20.0f
     fun themeColor(role: String, theme: SyncWatchTheme): Long? = when (role) {
         "background" -> theme.background
@@ -3424,6 +3430,102 @@ object SyncWatchLayouts {
             "paddingY" to "@control.compactGap",
             "background" to "theme.surfaceRaised",
         ), listOf(playerRoomNoticeText))
+        val sharedCheckpointCaption = DesignNode("sharedCheckpointCaption", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~sharedPositionCheckpoint",
+            "foreground" to "theme.text",
+            "width" to "fill",
+        ), listOf())
+        val sharedCheckpointTime = DesignNode("sharedCheckpointTime", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{sharedPositionText}",
+            "foreground" to "theme.text",
+            "automation" to "player.sharedPositionCheckpoint",
+        ), listOf())
+        val restoreSharedPositionText = DesignNode("restoreSharedPositionText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~restoreSharedPosition",
+        ), listOf())
+        val restoreSharedPositionButton = DesignNode("restoreSharedPositionButton", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.accent",
+            "foreground" to "@color.dark.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "restoreSharedPosition",
+            "enabled" to "\$can.restoreSharedPosition",
+            "automation" to "player.restoreSharedPosition",
+            "label" to "~restoreSharedPosition",
+        ), listOf(restoreSharedPositionText))
+        val dismissSharedPositionText = DesignNode("dismissSharedPositionText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~dismissSharedPosition",
+        ), listOf())
+        val dismissSharedPositionButton = DesignNode("dismissSharedPositionButton", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "dismissSharedPosition",
+            "enabled" to "\$can.dismissSharedPosition",
+            "automation" to "player.dismissSharedPosition",
+            "label" to "~dismissSharedPosition",
+        ), listOf(dismissSharedPositionText))
+        val sharedPositionRecovery = DesignNode("sharedPositionRecovery", "row", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "when" to "\$hasSharedPosition",
+            "gap" to "@control.compactGap",
+            "paddingX" to "@layout.panelPadding",
+            "paddingY" to "@control.compactGap",
+            "background" to "theme.surfaceRaised",
+        ), listOf(sharedCheckpointCaption, sharedCheckpointTime, restoreSharedPositionButton, dismissSharedPositionButton))
         val node114 = DesignNode("node114", "slot", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -3867,7 +3969,7 @@ object SyncWatchLayouts {
             "fontSize" to "@type.playerLabelSize",
             "foreground" to "theme.text",
             "gap" to "0",
-        ), listOf(node113, playerRoomNotice, node114, node144))
+        ), listOf(node113, playerRoomNotice, sharedPositionRecovery, node114, node144))
         return node145
     }
     private fun makefield(): DesignNode {

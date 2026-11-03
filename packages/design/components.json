@@ -73,7 +73,9 @@
         "endWatching",
         "toggleFullscreen",
         "openPlayerSettings",
-        "openPlaylist"
+        "openPlaylist",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
       ],
       "overlays": [
         "timelinePreview",
@@ -98,7 +100,9 @@
         "openPlayerSettings",
         "selectAudio",
         "selectSubtitles",
-        "openPlaylist"
+        "openPlaylist",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
       ]
     },
     "SettingsDialog": {
