@@ -26,7 +26,7 @@ public struct LocalPreferences: Codable, Equatable, Sendable {
         guard ["system", "dark", "light"].contains(theme), ["en", "ru"].contains(language),
             (1...600).contains(skipSeconds), (50...500).contains(previewCacheMB),
             (500...10_000).contains(cursorHideDelayMs),
-            defaultMovieVolume.map { $0.isFinite && (0...1).contains($0) } ?? true,
+            defaultMovieVolume.map({ $0.isFinite && (0...1).contains($0) }) ?? true,
             movieVolume.isFinite, (0...1).contains(movieVolume),
             callVolume.isFinite, (0...1).contains(callVolume)
         else { throw WatchError.invalidLocalState }

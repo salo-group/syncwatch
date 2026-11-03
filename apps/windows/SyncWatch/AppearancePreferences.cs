@@ -51,8 +51,12 @@ public sealed class AppearancePreferences
         State = State with { Preferences = State.Preferences with { MovieVolume = value } }; return true;
     }
     public PlayerSettingsEditor CreatePlayerSettingsEditor() => new(
-        new Dictionary<string, string> { ["skipSeconds"] = State.Preferences.SkipSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            ["defaultVolume"] = PlayerSettingsEditor.Canonical(DefaultMovieVolume * 100), ["rememberVolume"] = State.Preferences.RememberMovieVolume ? "true" : "false" },
+        new Dictionary<string, string>
+        {
+            ["skipSeconds"] = State.Preferences.SkipSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["defaultVolume"] = PlayerSettingsEditor.Canonical(DefaultMovieVolume * 100),
+            ["rememberVolume"] = State.Preferences.RememberMovieVolume ? "true" : "false"
+        },
         CanWrite && !SavingWatchState ? ["skipSeconds", "defaultVolume", "rememberVolume"] : [], CanWrite && !SavingWatchState);
 
     public bool SavePlayerSettings(IReadOnlyDictionary<string, string> values)
