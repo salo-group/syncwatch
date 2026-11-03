@@ -47,6 +47,34 @@ class CandidateTreeTests(unittest.TestCase):
             self.assertEqual(TREE.inventory(relocated / "contents/SyncWatch/Media"), before)
             self.assertFalse(any(path.name.startswith(".stage-") for path in relocated.iterdir()))
 
+    @unittest.skipUnless(os.name == "nt", "Published NTFS access is checked on Windows")
+    def test_windows_publication_inherits_destination_reader_access(self):
+        sid = subprocess.check_output(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             "[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value"], text=True, timeout=10).strip()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            # Model a destination readable by the same account's ordinary token,
+            # even when the packaging process has an elevated administrator token.
+            subprocess.run(["icacls", str(root), "/grant", f"*{sid}:(OI)(CI)(RX)", "/Q"],
+                           check=True, capture_output=True, timeout=10)
+            source = self.fixture(root)
+            output = root / "candidate"
+            self.assemble(output, [TREE.Component(source, "SyncWatch/Media")])
+            script = r"""$ErrorActionPreference='Stop'
+$wanted=[System.Security.AccessControl.FileSystemRights]::ReadAndExecute
+$paths=@(Get-Item -LiteralPath $env:SYNCWATCH_ACCESS_ROOT)+@(Get-ChildItem -LiteralPath $env:SYNCWATCH_ACCESS_ROOT -Recurse -Force)
+foreach($path in $paths){
+ $rules=(Get-Acl -LiteralPath $path.FullName).GetAccessRules($true,$true,[System.Security.Principal.SecurityIdentifier])
+ $allowed=@($rules | Where-Object { $_.IdentityReference.Value -eq $env:SYNCWATCH_ACCESS_SID -and $_.AccessControlType -eq 'Allow' -and ($_.FileSystemRights -band $wanted) -eq $wanted })
+ if($allowed.Count -eq 0){throw ('Published path lost destination reader access: '+$path.FullName)}
+}
+"""
+            result = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+                                    env=os.environ | {"SYNCWATCH_ACCESS_ROOT": str(output / "contents"),
+                                                      "SYNCWATCH_ACCESS_SID": sid}, capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_existing_output_and_user_data_are_never_adopted_or_removed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); source = self.fixture(root); output = root / "candidate"

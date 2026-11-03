@@ -81,6 +81,7 @@ private actor LibraryRecordIO {
         }
     }
     func rescan() { if let grant { run({ grant }, persistAccess: false) } }
+    var folderPath: String { grant?.url.path ?? "" }
     var canConfigure: Bool { !closed && presentation.state != .scanning }
     func settingsEditor(_ base: SettingsEditor) -> SettingsEditor {
         SettingsEditor(

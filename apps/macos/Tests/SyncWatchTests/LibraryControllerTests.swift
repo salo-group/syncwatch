@@ -51,6 +51,7 @@ import Testing
     await model.settled()
     #expect(model.errorKey == nil && model.presentation.entries.isEmpty)
     #expect(model.selectedMedia() == nil && selectedAccess != nil)
+    #expect(URL(fileURLWithPath: model.folderPath).resolvingSymlinksInPath() == empty.resolvingSymlinksInPath())
     if case .loaded(let record) = try store.read() {
         #expect(URL(fileURLWithPath: record.rootPath).resolvingSymlinksInPath() == empty.resolvingSymlinksInPath())
     } else {

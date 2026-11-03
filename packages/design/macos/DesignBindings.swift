@@ -76,7 +76,9 @@ enum DesignBindings {
         ]) { _, v in v }
         return DesignContext(values)
     }
-    static func settings(_ editor: SettingsEditor, section: String) -> DesignContext {
+    static func settings(
+        _ editor: SettingsEditor, section: String, folderPath: String = "", canChooseFolder: Bool = false
+    ) -> DesignContext {
         let fields = SyncWatchSettings.fields.filter { $0.section == section }.map { field in
             let options = field.options.map { option in
                 DesignContext(["id": option, "label": "option" + option.prefix(1).uppercased() + option.dropFirst()])
@@ -84,8 +86,9 @@ enum DesignBindings {
             return DesignContext(
                 [
                     "id": field.id, "label": field.label,
-                    "kind": ["choice", "boolean"].contains(field.kind) ? field.kind : "text",
-                    "value": editor.values[field.id] ?? "",
+                    "kind": ["choice", "boolean", "folder"].contains(field.kind) ? field.kind : "text",
+                    "value": field.kind == "folder" ? folderPath : editor.values[field.id] ?? "",
+                    "canChooseFolder": String(canChooseFolder && editor.canSave),
                     "editable": String(editor.editableFields.contains(field.id)), "isRange": "false",
                 ], collections: ["options": options])
         }
@@ -99,7 +102,9 @@ enum DesignBindings {
                 "interfaceSection": String(section == "interface"),
                 "unavailable": String(
                     !SyncWatchSettings.fields.contains {
-                        $0.section == section && editor.editableFields.contains($0.id)
+                        $0.section == section
+                            && (editor.editableFields.contains($0.id)
+                                || ($0.kind == "folder" && canChooseFolder && editor.canSave))
                     }),
             ], collections: ["sections": sections(SyncWatchSettings.sections, selected: section), "fields": fields])
     }

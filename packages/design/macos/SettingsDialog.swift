@@ -26,7 +26,9 @@ public struct SettingsEditor: Sendable {
     }
 
     public mutating func edit(_ id: String, value: String) {
-        guard editableFields.contains(id), SyncWatchSettings.fields.contains(where: { $0.id == id }) else { return }
+        guard editableFields.contains(id),
+            SyncWatchSettings.fields.contains(where: { $0.id == id && $0.kind != "folder" })
+        else { return }
         values[id] = value
         state = .editing
         message = ""
@@ -76,24 +78,36 @@ public struct SettingsDialog: View {
     public var language: String
     public var onSave: ([String: String]) -> Bool
     public var onClose: () -> Void
+    public var folderPath: String
+    public var canChooseFolder: Bool
+    public var onChooseFolder: () -> Void
     @State private var section: String
     public init(
         editor: Binding<SettingsEditor>, language: String = "en", section: String = "interface",
+        folderPath: String = "", canChooseFolder: Bool = false, onChooseFolder: @escaping () -> Void = {},
         onSave: @escaping ([String: String]) -> Bool = { _ in false }, onClose: @escaping () -> Void = {}
     ) {
         _editor = editor
         self.language = language
         self.onSave = onSave
         self.onClose = onClose
+        self.folderPath = folderPath
+        self.canChooseFolder = canChooseFolder
+        self.onChooseFolder = onChooseFolder
         _section = State(initialValue: SyncWatchSettings.sections.contains(section) ? section : "interface")
     }
     public var body: some View {
-        DesignSurface("Settings", context: DesignBindings.settings(editor, section: section), language: language) {
+        DesignSurface(
+            "Settings",
+            context: DesignBindings.settings(
+                editor, section: section, folderPath: folderPath, canChooseFolder: canChooseFolder), language: language
+        ) {
             event in
             switch event.action {
             case "selectSection":
                 if let value = event.value, SyncWatchSettings.sections.contains(value) { section = value }
             case "editField": if let id = event.payload, let value = event.value { editor.edit(id, value: value) }
+            case "chooseFolder": if canChooseFolder && editor.canSave { onChooseFolder() }
             case "save": editor.save(using: onSave)
             case "close", "cancel":
                 editor.cancel()

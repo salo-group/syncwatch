@@ -61,6 +61,7 @@ internal sealed class LibraryController(ILibraryAccessStore store, Dispatcher di
         Start(token => Task.Run<LibraryFolderAccess?>(() => LibraryFolderAccess.Selected(path, recursive, refresh), token));
     }
     public void Rescan() { if (grant is not null) { var owner = grant; Start(_ => Task.FromResult<LibraryFolderAccess?>(owner), persistAccess: false); } }
+    public string FolderPath => grant?.RootPath ?? "";
     public bool CanConfigure => !closed && Presentation.State != LibraryVisualState.Scanning;
     public SettingsEditor SettingsEditor(SettingsEditor basis)
     {
