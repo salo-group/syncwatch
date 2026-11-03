@@ -845,6 +845,226 @@
         }
       ],
       "expected": []
+    },
+    {
+      "name": "recovery requests preserve actual zero and paused state",
+      "state": "paused",
+      "positionMs": 0,
+      "durationMs": 60000,
+      "volume": 0.7,
+      "skipSeconds": 10,
+      "hasPrevious": false,
+      "hasNext": false,
+      "enabledActions": [
+        "seek",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
+      ],
+      "sharedPositionMs": 49000,
+      "requests": [
+        {
+          "action": "restoreSharedPosition"
+        },
+        {
+          "action": "dismissSharedPosition"
+        }
+      ],
+      "expected": [
+        {
+          "action": "restoreSharedPosition"
+        },
+        {
+          "action": "dismissSharedPosition"
+        }
+      ]
+    },
+    {
+      "name": "recovery restore requires current seek authority",
+      "state": "paused",
+      "positionMs": 0,
+      "durationMs": 60000,
+      "volume": 0.7,
+      "skipSeconds": 10,
+      "hasPrevious": false,
+      "hasNext": false,
+      "enabledActions": [
+        "restoreSharedPosition",
+        "dismissSharedPosition"
+      ],
+      "sharedPositionMs": 49000,
+      "requests": [
+        {
+          "action": "restoreSharedPosition"
+        },
+        {
+          "action": "dismissSharedPosition"
+        }
+      ],
+      "expected": [
+        {
+          "action": "dismissSharedPosition"
+        }
+      ]
+    },
+    {
+      "name": "recovery negative target rejected",
+      "state": "paused",
+      "positionMs": 0,
+      "durationMs": 60000,
+      "volume": 0.7,
+      "skipSeconds": 10,
+      "hasPrevious": false,
+      "hasNext": false,
+      "enabledActions": [
+        "seek",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
+      ],
+      "sharedPositionMs": -1,
+      "requests": [
+        {
+          "action": "restoreSharedPosition"
+        },
+        {
+          "action": "dismissSharedPosition"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "name": "recovery oversized target rejected",
+      "state": "paused",
+      "positionMs": 0,
+      "durationMs": 60000,
+      "volume": 0.7,
+      "skipSeconds": 10,
+      "hasPrevious": false,
+      "hasNext": false,
+      "enabledActions": [
+        "seek",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
+      ],
+      "sharedPositionMs": 60001,
+      "requests": [
+        {
+          "action": "restoreSharedPosition"
+        },
+        {
+          "action": "dismissSharedPosition"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "name": "recovery missing target rejected",
+      "state": "paused",
+      "positionMs": 0,
+      "durationMs": 60000,
+      "volume": 0.7,
+      "skipSeconds": 10,
+      "hasPrevious": false,
+      "hasNext": false,
+      "enabledActions": [
+        "seek",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
+      ],
+      "sharedPositionMs": null,
+      "requests": [
+        {
+          "action": "restoreSharedPosition"
+        },
+        {
+          "action": "dismissSharedPosition"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "name": "recovery buffering gates seek but permits dismiss",
+      "state": "buffering",
+      "positionMs": 0,
+      "durationMs": 60000,
+      "volume": 0.7,
+      "skipSeconds": 10,
+      "hasPrevious": false,
+      "hasNext": false,
+      "enabledActions": [
+        "seek",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
+      ],
+      "sharedPositionMs": 49000,
+      "requests": [
+        {
+          "action": "restoreSharedPosition"
+        },
+        {
+          "action": "dismissSharedPosition"
+        }
+      ],
+      "expected": [
+        {
+          "action": "dismissSharedPosition"
+        }
+      ]
+    },
+    {
+      "name": "recovery completed media gates seek",
+      "state": "ended",
+      "positionMs": 0,
+      "durationMs": 60000,
+      "volume": 0.7,
+      "skipSeconds": 10,
+      "hasPrevious": false,
+      "hasNext": false,
+      "enabledActions": [
+        "seek",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
+      ],
+      "sharedPositionMs": 49000,
+      "requests": [
+        {
+          "action": "restoreSharedPosition"
+        },
+        {
+          "action": "dismissSharedPosition"
+        }
+      ],
+      "expected": [
+        {
+          "action": "dismissSharedPosition"
+        }
+      ]
+    },
+    {
+      "name": "recovery actions reject supplied values",
+      "state": "paused",
+      "positionMs": 0,
+      "durationMs": 60000,
+      "volume": 0.7,
+      "skipSeconds": 10,
+      "hasPrevious": false,
+      "hasNext": false,
+      "enabledActions": [
+        "seek",
+        "restoreSharedPosition",
+        "dismissSharedPosition"
+      ],
+      "sharedPositionMs": 49000,
+      "requests": [
+        {
+          "action": "restoreSharedPosition",
+          "value": 5
+        },
+        {
+          "action": "dismissSharedPosition",
+          "value": 5
+        }
+      ],
+      "expected": []
     }
   ]
 }

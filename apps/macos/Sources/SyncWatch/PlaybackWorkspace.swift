@@ -24,6 +24,7 @@ struct LocalPlaybackLaunch {
     @Published private(set) var presentation = PlayerPresentation()
     @Published private(set) var failed = false
     @Published private(set) var sharedState: HelperSessionState?
+    private var checkpoint: SharedPlaybackCheckpoint?
     private var sharedSession: HelperSession?
     private var requiresSharedAdmission: Bool
     private var sharedMediaPreparation = SharedMediaPreparation()
@@ -109,6 +110,7 @@ struct LocalPlaybackLaunch {
         if autoplay { try sharedSession?.play(from: sharedResumePositionMs) }
     }
     func revokeShared(releaseAdmission: Bool = false) async {
+        checkpoint?.clear()
         requireSharedAdmission()
         sharedAuthority = nil
         let session = sharedSession
@@ -140,6 +142,7 @@ struct LocalPlaybackLaunch {
                 endpoint: endpoint, media: media, revision: revision,
                 requireDeclaredIdentity: requiresSharedAdmission || requireDeclaredIdentity
             ) { [weak self] state in
+                if state.connection == .reconnecting { self?.checkpoint?.interrupt() }
                 self?.sharedState = state
                 self?.gateSharedActions()
             }
@@ -152,7 +155,19 @@ struct LocalPlaybackLaunch {
             throw error
         }
     }
+    private var sharedPlaybackAvailable: Bool {
+        !closing && sharedSession != nil && sharedAuthority?() != false
+            && sharedState?.connection == .connected && sharedState?.playbackReady == true
+    }
     private func gateSharedActions() {
+        if sharedAuthority?() == false { checkpoint?.clear() }
+        presentation.enabledActions.subtract(["restoreSharedPosition", "dismissSharedPosition"])
+        presentation.sharedPositionMs =
+            sharedPlaybackAvailable
+            ? checkpoint?.position(durationMs: presentation.durationMs) : nil
+        if presentation.sharedPositionMs != nil {
+            presentation.enabledActions.formUnion(["restoreSharedPosition", "dismissSharedPosition"])
+        }
         if (requiresSharedAdmission || sharedSession != nil)
             && (sharedAuthority?() == false || sharedState?.connection != .connected
                 || (requiresSharedAdmission && sharedState?.playbackReady != true))
@@ -167,6 +182,7 @@ struct LocalPlaybackLaunch {
         polling = Task { [self] in
             do {
                 if allocateScope { scope = try scope.replacingMedia() }
+                checkpoint = SharedPlaybackCheckpoint(scope: scope)
                 let address = UInt(bitPattern: Unmanaged.passUnretained(view).toOpaque())
                 if let runtime {
                     try await player.open(runtime: runtime, appKitSurfaceAddress: address)
@@ -242,6 +258,7 @@ struct LocalPlaybackLaunch {
         tracks.dismissMenu()
     }
     private func apply(_ value: PlaybackObservation) {
+        checkpoint?.observe(value, available: sharedPlaybackAvailable)
         presentation.state =
             value.ended
             ? .ended
@@ -266,6 +283,20 @@ struct LocalPlaybackLaunch {
         gateSharedActions()
         refreshPlaylist()
         guard presentation.enabledActions.contains(action) else { return }
+        if action == "restoreSharedPosition" || action == "dismissSharedPosition" {
+            guard value == nil, presentation.allows(action) else { return }
+            do {
+                if action == "restoreSharedPosition" {
+                    guard let sharedSession, let position = presentation.sharedPositionMs else { return }
+                    try sharedSession.seek(position)
+                }
+                checkpoint?.clear()
+                gateSharedActions()
+            } catch {
+                // A rejected request retains the offer; observations remain authoritative.
+            }
+            return
+        }
         if action == "openPlaylist" {
             tracks.dismiss()
             playlist.open()
@@ -308,6 +339,8 @@ struct LocalPlaybackLaunch {
                 } else if let value, value.isFinite, value >= 0, value <= Double(WatchSession.maximumPositionMs) {
                     try sharedSession.seek(Int64(value))
                 }
+                checkpoint?.clear()
+                gateSharedActions()
             } catch {
                 // A rejected shared intent leaves the observation authoritative.
             }
@@ -343,6 +376,8 @@ struct LocalPlaybackLaunch {
     func close() async {
         guard !closed else { return }
         closing = true
+        checkpoint?.clear()
+        presentation.sharedPositionMs = nil
         playlist.close()
         presentation.enabledActions = []
         polling?.cancel()

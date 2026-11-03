@@ -40,12 +40,14 @@ def check(payload, output, *, toolchain_root=ROOT):
     report = {"schemaVersion": 1, "hostTarget": jdk.current_target(), "kotlinDomainCompiled": True,
               "sharedDomainAccepted": True, "stateCases": 31, "lifecycleScenarios": 7,
               "nativeActionScenarios": len(json.loads((ROOT / "contracts/fixtures/playback-authority.json").read_text())["cases"]),
+              "checkpointScenarios": len(json.loads((ROOT / "contracts/fixtures/shared-playback-checkpoint.json").read_text())["cases"]),
               "mediaAgreementScenarios": len(json.loads((ROOT / "contracts/fixtures/media-agreement.json").read_text())["cases"]),
               "applicationBuilt": False, "guiAccepted": False, "physicalOutputAccepted": False,
               "transcript": transcript.strip(),
               "sourceFiles": {p.relative_to(ROOT).as_posix(): digest(p.read_bytes()) for p in
                               [*java_sources, *kotlin_sources, ROOT / "contracts/fixtures/local-domain.json",
-                               ROOT / "contracts/fixtures/playback-authority.json", ROOT / "contracts/fixtures/media-agreement.json"]},
+                               ROOT / "contracts/fixtures/playback-authority.json", ROOT / "contracts/fixtures/media-agreement.json",
+                               ROOT / "contracts/fixtures/shared-playback-checkpoint.json"]},
               "runtimeSha256": digest(binary.read_bytes())}
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(transcript.strip())

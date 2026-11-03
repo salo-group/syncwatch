@@ -47,9 +47,10 @@ private fun playerInputChecks(root: Path) {
 private fun playerChecks(root: Path): Int {
     data class Event(val action: String, val value: Double?)
     val cases = corpus(root, "player-actions.json")
-    check(cases.size == 19)
+    check(cases.size == 27)
     for (fixture in cases) {
         val model = PlayerPresentation(
+            sharedPositionMs = (fixture["sharedPositionMs"] as? Number)?.toLong(),
             state = PlayerVisualState.valueOf(fixture.text("state")),
             positionMs = fixture.number("positionMs").toLong(), durationMs = fixture.number("durationMs").toLong(),
             volume = fixture.number("volume").toDouble(), skipSeconds = fixture.number("skipSeconds").toInt(),
@@ -186,6 +187,16 @@ private fun settingsChecks(root: Path): Int {
     check(!SettingsEditor(editableFields = setOf("username"), canSave = true).edit("username", "bad\u007F").isValid)
     check(!SettingsEditor(values = mapOf("unexpected" to "value"), canSave = true).isValid)
     check(SettingsVisualState.entries.map { it.name } == SyncWatchSettings.states)
+
+    val folderPath = "/Movies/Кино " + "long-path/".repeat(70)
+    for (canSave in listOf(false, true)) for (canChoose in listOf(false, true)) {
+        val draft = SettingsEditor(editableFields = setOf("theme", "folder"), canSave = canSave).edit("theme", "dark").edit("folder", "ungranted")
+        val folder = DesignBindings.settings(draft, "library", folderPath, canChoose).collections.getValue("fields").single { it.values["id"] == "folder" }
+        check(folder.values["kind"] == "folder" && folder.values["value"] == folderPath)
+        check(folder.values["canChooseFolder"] == (canSave && canChoose).toString())
+        check(draft.isValid && draft.values["theme"] == "dark" && draft.values["folder"] == "")
+        if (canSave) check(draft.save { it["folder"] == "" && it["theme"] == "dark" }.second)
+    }
 
     val fields = Json.parse(Files.readString(root.resolve("player-settings.json"))).record()["fields"].rows()
     check(fields.map { it.text("id") }.toSet() == SyncWatchPlayerSettings.defaults.keys)

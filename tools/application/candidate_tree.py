@@ -1,10 +1,12 @@
 """Stage immutable native application inputs without modifying SDKs or existing outputs."""
 
 from dataclasses import dataclass
+from contextlib import contextmanager
 import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import secrets
 import shutil
 import stat
 import tempfile
@@ -14,6 +16,23 @@ import tempfile
 class Component:
     source: Path
     destination: str
+
+
+@contextmanager
+def staging_directory(destination, platform):
+    if platform == "windows-x64":
+        # A private TemporaryDirectory DACL would survive publication and can
+        # exclude the account's ordinary token after an elevated package build.
+        # Atomically reserve a fresh directory inheriting the chosen destination.
+        staging = destination / (".stage-" + secrets.token_hex(16))
+        staging.mkdir()
+        try:
+            yield staging
+        finally:
+            shutil.rmtree(staging)
+    else:
+        with tempfile.TemporaryDirectory(prefix=".stage-", dir=destination) as temporary:
+            yield Path(temporary)
 
 
 def relative_path(value):
@@ -99,7 +118,7 @@ def assemble(destination, components, *, platform, source_commit, source_inputs=
     # A previously existing output is never adopted, replaced or removed.
     destination.mkdir(parents=False, exist_ok=False)
     try:
-        with tempfile.TemporaryDirectory(prefix=".stage-", dir=destination) as temporary:
+        with staging_directory(destination, platform) as temporary:
             stage = Path(temporary) / "contents"
             stage.mkdir()
             for source, path, expected in zip(sources, paths, before, strict=True):
