@@ -36,6 +36,7 @@ internal static class PlayerAssertions
             var p = new PlayerPresentation
             {
                 State = Enum.Parse<PlayerVisualState>(fixture.GetProperty("state").GetString()!, true),
+                SharedPositionMs = fixture.TryGetProperty("sharedPositionMs", out var sharedPosition) && sharedPosition.ValueKind != JsonValueKind.Null ? sharedPosition.GetInt64() : null,
                 PositionMs = fixture.GetProperty("positionMs").GetInt64(),
                 DurationMs = fixture.GetProperty("durationMs").GetInt64(),
                 Volume = fixture.GetProperty("volume").GetDouble(),
@@ -53,7 +54,7 @@ internal static class PlayerAssertions
             Check(p.PositionMs == fixture.GetProperty("positionMs").GetInt64() && p.State == Enum.Parse<PlayerVisualState>(fixture.GetProperty("state").GetString()!, true), "requests cannot acknowledge themselves");
             Check(p.DisplayedPosition >= 0 && p.DisplayedPosition <= p.DisplayedDuration, "invalid observations have safe display bounds"); scenarios++;
         }
-        Check(scenarios == 19, "shared corpus coverage");
+        Check(scenarios == 27, "shared corpus coverage");
         var ready = PlayerPresentation.Gallery(PlayerVisualState.Paused);
         int invalidEvents = 0;
         foreach (double value in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })

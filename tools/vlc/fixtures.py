@@ -102,8 +102,16 @@ def encoded(directory):
 
 
 def embedded_tracks(directory):
+    return _authored_matroska(directory, "embedded-tracks.json", "owned-embedded-tracks.mkv")
+
+
+def sparse_video(directory):
+    return _authored_matroska(directory, "sparse-video.json", "owned-sparse-video.mkv")
+
+
+def _authored_matroska(directory, metadata_name, filename):
     root = Path(__file__).resolve().parent / "media"
-    metadata = json.loads((root / "embedded-tracks.json").read_text())
+    metadata = json.loads((root / metadata_name).read_text())
     encoded = (root / metadata["encoded"]).read_bytes()
     if (metadata["schemaVersion"] != 1 or metadata["encoding"] != "base64+xz"
             or len(encoded) > 131072 or not 0 < metadata["bytes"] <= 32 * 1024 * 1024):
@@ -114,7 +122,7 @@ def embedded_tracks(directory):
     if (not decoder.eof or decoder.unused_data or len(data) != metadata["bytes"]
             or hashlib.sha256(data).hexdigest() != metadata["sha256"]):
         raise ValueError("Authored embedded-track fixture changed")
-    path = directory / "owned-embedded-tracks.mkv"
+    path = directory / filename
     path.write_bytes(data)
     return path
 

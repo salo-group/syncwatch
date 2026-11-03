@@ -64,6 +64,8 @@ enum DesignBindings {
         var values = capabilities(SyncWatchPlayer.actions, allows: p.allows)
         values.merge([
             "namespace": "player", "title": p.title, "state": p.state.rawValue,
+            "hasSharedPosition": String(p.allows("dismissSharedPosition")),
+            "sharedPositionText": PlayerPresentation.time(Double(p.sharedPositionMs ?? 0)),
             "roomNotice": p.roomNotice, "hasRoomNotice": String(!p.roomNotice.isEmpty),
             "position": String(p.displayedPosition), "duration": String(p.displayedDuration),
             "positionText": PlayerPresentation.time(p.displayedPosition),

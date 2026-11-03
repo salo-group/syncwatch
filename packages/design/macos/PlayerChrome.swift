@@ -9,6 +9,7 @@ public struct PlayerPresentation: Sendable {
     public var state: PlayerVisualState = .loading
     public var title = ""
     public var roomNotice = ""
+    public var sharedPositionMs: Int64?
     public var positionMs: Int64 = 0
     public var durationMs: Int64 = 0
     public var volume = 1.0
@@ -24,12 +25,17 @@ public struct PlayerPresentation: Sendable {
             && (0...max(0, durationMs)).contains(positionMs)
             && volume.isFinite && (0...1).contains(volume) && (1...600).contains(skipSeconds)
     }
+    private var validSharedPosition: Bool {
+        sharedPositionMs.map { isValid && (0...durationMs).contains($0) } ?? false
+    }
     public var playing: Bool { state == .playing || state == .fullscreen }
     public var displayedPosition: Double { min(Double(max(0, positionMs)), displayedDuration) }
     public var displayedDuration: Double { Double(min(max(0, durationMs), SyncWatchPlayer.maximumPositionMs)) }
     public func allows(_ action: String) -> Bool {
         guard enabledActions.contains(action), SyncWatchPlayer.actions.contains(action) else { return false }
         switch action {
+        case "restoreSharedPosition": return allows("seek") && validSharedPosition
+        case "dismissSharedPosition": return validSharedPosition
         case "playPause", "seek", "skip", "previousFile", "nextFile", "selectAudio", "selectSubtitles":
             guard isValid,
                 [.paused, .playing, .fullscreen].contains(state)

@@ -30,6 +30,7 @@ internal object DesignBindings {
     }
     fun player(p: PlayerPresentation) = DesignContext(capabilities(SyncWatchPlayer.actions,p::allows)+mapOf(
         "namespace" to "player","title" to p.title,"state" to p.state.name,
+        "hasSharedPosition" to p.allows("dismissSharedPosition").toString(),"sharedPositionText" to PlayerPresentation.time((p.sharedPositionMs ?: 0).toDouble()),
         "roomNotice" to p.roomNotice,"hasRoomNotice" to p.roomNotice.isNotEmpty().toString(),"position" to p.displayedPosition.toString(),"duration" to p.displayedDuration.toString(),
         "positionText" to PlayerPresentation.time(p.displayedPosition),"durationText" to PlayerPresentation.time(p.displayedDuration),"volume" to (if(p.isValid)p.volume else 0.0).toString(),
         "playIcon" to if(p.playing)"player.pause"else"player.play","playLabel" to if(p.playing)"pause"else"play","volumeIcon" to if(p.muted)"player.muted"else"player.volume","volumeLabel" to if(p.muted)"unmuteMovie"else"muteMovie"))
