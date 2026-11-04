@@ -44,6 +44,8 @@ private final class GatedDiskStore: LocalStateStore, @unchecked Sendable {
     #expect(entered)
     #expect(preferences.savingWatchState && !preferences.editor.canSave)
     #expect(!preferences.save(["theme": "dark", "language": "ru"]))
+    #expect(!preferences.playerSettingsEditor.canSave)
+    #expect(!preferences.savePlayerSettings(["skipSeconds": "30"]))
     #expect(!(await preferences.persistWatchState(snapshot)))
     gate.proceed.signal()
     #expect(await writing.value)
