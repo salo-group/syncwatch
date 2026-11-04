@@ -22,7 +22,8 @@ internal static class LocalVolumeCheckpointTests
                     Scope = new(owner == "foreignRun" ? "run-2" : "run-1", owner == "oldGeneration" ? 1UL : 2UL),
                     Sequence = step.GetProperty("sequence").GetUInt64(),
                     Status = status == "loading" ? PlaybackStatus.Loading : status == "failed" ? PlaybackStatus.Failed : PlaybackStatus.Ready,
-                    DurationMs = 60_000, Paused = true,
+                    DurationMs = 60_000,
+                    Paused = true,
                     Volume = volume.ValueKind == JsonValueKind.Null ? null : volume.GetDouble(),
                     Muted = step.TryGetProperty("muted", out var muted) && muted.GetBoolean(),
                 };
