@@ -10,6 +10,7 @@ import zipfile
 from candidate_tree import Component
 from receipts import ROOT, clients, desktop_classpath, jvm, renderer, require_host
 from runtime_media import qualify
+import account_store_linux
 
 
 def prepare(arguments, work):
@@ -43,6 +44,7 @@ def prepare(arguments, work):
     for name in ("syncwatch_playback.so", "syncwatch_playback_jni.so"):
         shutil.copy2(arguments.bridge / name, application / name)
     shutil.copy2(ROOT / "LICENSE", application / "LICENSE")
+    account_store_linux.build(application / "syncwatch-account-store", arguments.renderer, arguments.cc)
     options = ["--enable-native-access=ALL-UNNAMED", "-Dskiko.library.path=Renderer/runtime",
                "-cp", "application.jar:" + ":".join(relative), "syncwatch.MainKt"]
     (application / "launch.args").write_text("\n".join('"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"' for value in options) + "\n", encoding="utf-8")

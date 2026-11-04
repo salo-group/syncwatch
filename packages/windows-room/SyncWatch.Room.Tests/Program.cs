@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using SyncWatch.Room;
 
+AccountCredentialVaultChecks.Run();
+
 using var fixture = JsonDocument.Parse(File.ReadAllBytes(args[0]));
 var identity = new RoomIdentity("run-room-client", "Room User");
 var bootstrap = RoomBootstrap.Decode(Encoding.UTF8.GetBytes(fixture.RootElement.GetProperty("catalogBootstrap").GetString()!));
