@@ -29,7 +29,8 @@ Callbacks carry the `PlaybackScope` that initiated their work. A different proce
 | Skip interval | 10 seconds | Integer 1–600 seconds |
 | Timeline previews / cache | Enabled / 150 MB | Boolean / integer 50–500 MB |
 | Cursor hide delay | 2500 ms | Integer 500–10000 ms |
-| Movie / call volume | 1 / 1 | Finite values from 0 to 1 |
+| Default movie volume | Shared Design default when absent | Optional finite value from 0 to 1; older files remain readable |
+| Remembered movie / call volume | New application movie level follows shared Design; call level is 1 | Finite values from 0 to 1; older saved movie levels are retained |
 | Remember movie volume | Enabled | Boolean |
 | Movie ducking | Disabled | Boolean |
 | Camera / microphone preference | Enabled / enabled | Boolean |

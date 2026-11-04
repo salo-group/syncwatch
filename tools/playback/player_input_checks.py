@@ -31,6 +31,7 @@ def check_player_input(library, libvlc, revision, fixture, output):
         "sw_playback_observe": [handle, generation, ctypes.POINTER(Observation)],
         "sw_playback_seek": [handle, generation, ctypes.c_int64],
         "sw_playback_pause": [handle, generation, ctypes.c_int],
+        "sw_playback_volume": [handle, generation, ctypes.c_double, ctypes.c_int],
         "sw_playback_stop": [handle, generation],
     }
     for name, arguments in signatures.items():
@@ -64,7 +65,15 @@ def check_player_input(library, libvlc, revision, fixture, output):
 
         def load(scope):
             assert api.sw_playback_load(player, scope, encoded) == 0
-            return ready(scope)
+            value = ready(scope)
+            # Stop releases the audio output on every replacement. Setting the
+            # opening level must work while still paused, before any audio plays.
+            # Dummy output cannot prove the audible gain; native GUI does that.
+            for level, muted in ((.5, 0), (0, 1), (.25, 0)):
+                assert api.sw_playback_volume(player, scope, level, muted) == 0
+                after = observation(scope)
+                assert after.paused and after.position_ms == value.position_ms
+            return value
 
         def version(scope, expected=0):
             value = Version()
@@ -169,6 +178,7 @@ def check_player_input(library, libvlc, revision, fixture, output):
             version(3, 2)
             read(3, 0, expected=2)
             proof["stoppedContentUnavailable"] = True
+            proof["pausedOpeningVolumeAfterEveryLoad"] = True
         finally:
             if player:
                 api.sw_playback_close(player)

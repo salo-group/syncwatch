@@ -1,6 +1,6 @@
 # Local playback preferences
 
-The player opens the common Apache-2.0 Design settings dialog from its settings action. The native application currently enables the skip interval. Field definitions, choices, labels, themes, geometry and validation belong to Design; unavailable playback features remain disabled.
+The player opens the common Apache-2.0 Design settings dialog from its settings action. The native application enables the skip interval, default movie volume and remembered movie volume. Field definitions, choices, labels, themes, geometry and validation belong to Design; unavailable playback features remain disabled.
 
 Each open dialog starts with a fresh local draft. Save validates the supported choice and writes the complete local-state snapshot before publishing a changed interval. A write failure leaves the applied interval unchanged and shows the shared failure state. Cancel or closing the dialog discards unsaved changes. Reset affects only supported fields in the selected section.
 
@@ -9,3 +9,11 @@ The saved interval is applied to the current player and subsequent sessions. Key
 The existing local-state owner serializes writes and retains unrelated preferences, selection and resume positions. A stale watch checkpoint merges the latest saved preferences. A checkpoint already writing makes preference saves unavailable; unsupported state versions remain read-only. Older valid intervals outside the current Design choices are retained until a supported interval is explicitly saved.
 
 Native component and persistence checks do not replace actual settings-window, keyboard/button, six-direction shared-watch and same-package restart acceptance on macOS, Windows and Linux.
+
+New application state starts at the common Design default (50percent). Existing saved levels are retained. Default movie volume is an optional normalized field in version1 local state. Its absence in an older file resolves through the common Design default; the stored remembered movie volume is preserved. A new playback scope applies remembered volume when enabled, otherwise the configured default, before readiness, shared admission and autoplay. Mute remains transient.
+
+The common native playback adapter recreates its fixed audio output after VLC stop releases it, before starting each paused input. The public VLC output API permits the opening volume to be set without first playing audio. Playback readiness alone does not imply that an audio output exists. Native observations remain authoritative for the actual level; a queued command is not a remembered-volume observation.
+
+Only a successfully acknowledged local volume command followed by a ready native observation can update remembered volume. The observed level and monotonic observation sequence prevent quantization drift and late callbacks from overwriting a newer confirmed level. The owning watch coordinator rejects callbacks from an old scope and coalesces accepted changes through its existing serialized checkpoint. Room commands do not carry volume. Turning remembering off retains the last saved value while subsequent scopes use the configured default. Enabling it during a ready watch atomically captures the currently observed local level with the setting. Changing default volume affects subsequent scopes.
+
+The scope-bound local volume checkpoint starts observing after a successful local command. Both the immediate read and subsequent normal polling feed it, so delayed engine changes are retained. Native volume and mute events advance the observation sequence. Duplicate levels, stale sequences, unready outputs and other scopes cannot publish a remembered level. The same shared fixture corpus exercises all three domain implementations on their own operating systems.

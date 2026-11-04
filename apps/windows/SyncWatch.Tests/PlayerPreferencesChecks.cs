@@ -21,13 +21,13 @@ internal static class PlayerPreferencesChecks
             disk.Write(initial);
             var preferences = new AppearancePreferences(disk);
             var draft = preferences.CreatePlayerSettingsEditor();
-            Require(draft.EditableFields.SetEquals(["skipSeconds"]) && draft.Values["skipSeconds"] == "42" && !draft.IsValid);
+            Require(draft.EditableFields.SetEquals(["skipSeconds", "defaultVolume", "rememberVolume"]) && draft.Values["skipSeconds"] == "42" && !draft.IsValid);
             draft.Edit("skipSeconds", "30"); draft.Cancel();
             Require(preferences.State.Preferences.SkipSeconds == 42 && draft.Values["skipSeconds"] == "42");
             draft.Edit("skipSeconds", "30"); Require(draft.Save(preferences.SavePlayerSettings));
             Require(await preferences.PersistWatchStateAsync(initial));
             var restored = new AppearancePreferences(disk).State;
-            Require(restored.Preferences == (initial.Preferences with { SkipSeconds = 30 }));
+            Require(restored.Preferences == (initial.Preferences with { SkipSeconds = 30, DefaultMovieVolume = preferences.DefaultMovieVolume }));
             Require(restored.SelectedMediaId == initial.SelectedMediaId && restored.ResumePositions.SequenceEqual(initial.ResumePositions));
             foreach (string value in new[] { "", "0", "42", "600", "30.0", "+30", " 30", "30\n" })
                 Require(!preferences.SavePlayerSettings(new Dictionary<string, string> { ["skipSeconds"] = value }));
@@ -50,6 +50,25 @@ internal static class PlayerPreferencesChecks
                 Require(!concurrent.SavePlayerSettings(new Dictionary<string, string> { ["skipSeconds"] = "30" }));
             }
             finally { gate.Proceed.Set(); await writing; }
+            var volumeDisk = new FileLocalStateStore(Path.Combine(root, "volume.json")); volumeDisk.Write(initial);
+            Require(new AppearancePreferences(new FileLocalStateStore(Path.Combine(root, "fresh-volume.json"))).OpeningMovieVolume == 0.5);
+            var volume = new AppearancePreferences(volumeDisk);
+            Require(volume.OpeningMovieVolume == 0.4);
+            var volumeDraft = volume.CreatePlayerSettingsEditor(); volumeDraft.Edit("skipSeconds", "10");
+            volumeDraft.Edit("defaultVolume", "25"); volumeDraft.Edit("rememberVolume", "false");
+            Require(volumeDraft.Save(volume.SavePlayerSettings) && volume.OpeningMovieVolume == 0.25);
+            Require(!volume.RememberMovieVolume(0.6) && new AppearancePreferences(volumeDisk).OpeningMovieVolume == 0.25);
+            volumeDraft = volume.CreatePlayerSettingsEditor(); volumeDraft.Edit("rememberVolume", "true");
+            Require(volumeDraft.Save(values => volume.SavePlayerSettings(values, 0.55)) && new AppearancePreferences(volumeDisk).OpeningMovieVolume == 0.55 && volume.RememberMovieVolume(0.6));
+            Require(!volume.RememberMovieVolume(0.6) && !volume.RememberMovieVolume(double.NaN) && !volume.RememberMovieVolume(1.1));
+            Require(await volume.PersistWatchStateAsync(initial));
+            var volumeRestored = new AppearancePreferences(volumeDisk);
+            Require(volumeRestored.OpeningMovieVolume == 0.6 && volumeRestored.DefaultMovieVolume == 0.25);
+            Require(volumeRestored.State.SelectedMediaId == initial.SelectedMediaId && volumeRestored.State.ResumePositions.SequenceEqual(initial.ResumePositions));
+            foreach (string value in new[] { "-5", "101", "2", "NaN" })
+                Require(!volume.SavePlayerSettings(new Dictionary<string, string> { ["skipSeconds"] = "10", ["defaultVolume"] = value }));
+            try { (initial.Preferences with { DefaultMovieVolume = double.PositiveInfinity }).Validate(); throw new InvalidOperationException("invalid volume accepted"); }
+            catch (WatchException) { }
             Console.WriteLine("SYNCWATCH_PLAYER_PREFERENCES_OK transactional write, checkpoint serialization, restart, future version and failure");
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }

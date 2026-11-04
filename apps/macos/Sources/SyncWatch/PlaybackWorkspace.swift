@@ -49,6 +49,9 @@ struct LocalPlaybackLaunch {
     private var closing = false
     private var closed = false
     private let allocateScope: Bool
+    private var volumeCheckpoint: LocalVolumeCheckpoint?
+    private let initialVolume: Double?
+    private let onVolumeChanged: (@MainActor (PlaybackScope, Double) -> Void)?
     private let initialPositionMs: Int64
     private var sharedResumePositionMs: Int64 = 0
     private var autoplayPending: Bool
@@ -67,13 +70,16 @@ struct LocalPlaybackLaunch {
         onObservation: @escaping @MainActor (PlaybackObservation) -> Void = { _ in },
         onNavigation: (@MainActor (String) -> Void)? = nil, onFailure: (@MainActor () -> Void)? = nil,
         onPlaylistUpdate: (@MainActor (WatchPlaylist) -> Void)? = nil,
-        onPlaylistSelection: (@MainActor (String) -> Void)? = nil
+        onPlaylistSelection: (@MainActor (String) -> Void)? = nil,
+        initialVolume: Double? = nil, onVolumeChanged: (@MainActor (PlaybackScope, Double) -> Void)? = nil
     ) {
         self.launch = launch
         self.runtime = runtime
         self.scope = scope ?? .fresh()
         allocateScope = scope == nil
         initialPositionMs = positionMs
+        self.initialVolume = initialVolume
+        self.onVolumeChanged = onVolumeChanged
         self.selection = selection
         self.requiresSharedAdmission = requiresSharedAdmission
         autoplayPending = autoplay && !requiresSharedAdmission
@@ -183,6 +189,7 @@ struct LocalPlaybackLaunch {
             do {
                 if allocateScope { scope = try scope.replacingMedia() }
                 checkpoint = SharedPlaybackCheckpoint(scope: scope)
+                volumeCheckpoint = LocalVolumeCheckpoint(scope: scope)
                 let address = UInt(bitPattern: Unmanaged.passUnretained(view).toOpaque())
                 if let runtime {
                     try await player.open(runtime: runtime, appKitSurfaceAddress: address)
@@ -211,6 +218,7 @@ struct LocalPlaybackLaunch {
                         }
                     }
                     if admissionPending, observation.status == .ready {
+                        if let initialVolume { try await player.setVolume(initialVolume, muted: false, scope: scope) }
                         try await tracks.applyInitial(selection?.tracks ?? LocalTrackPreferences())
                         try Task.checkCancellation()
                         guard !closing else { break }
@@ -218,6 +226,7 @@ struct LocalPlaybackLaunch {
                         onLoaded(scope)
                         continue
                     }
+                    rememberVolume(observation)
                     apply(observation)
                     onObservation(observation)
                     if autoplayPending, observation.status == .ready, !observation.ended {
@@ -357,7 +366,12 @@ struct LocalPlaybackLaunch {
                     if let value, value.isFinite, value >= 0, value <= Double(WatchSession.maximumPositionMs) {
                         try await player.seek(to: Int64(value), scope: scope)
                     }
-                case "setMovieVolume": if let value { try await player.setVolume(value, muted: muted, scope: scope) }
+                case "setMovieVolume":
+                    if let value {
+                        try await player.setVolume(value, muted: muted, scope: scope)
+                        volumeCheckpoint?.submitted()
+                        rememberVolume(try await player.observe(scope))
+                    }
                 case "muteMovie": try await player.setVolume(volume, muted: !muted, scope: scope)
                 default: break
                 }
@@ -365,6 +379,10 @@ struct LocalPlaybackLaunch {
                 // A rejected request does not acknowledge a different state.
             }
         }
+    }
+    private func rememberVolume(_ value: PlaybackObservation) {
+        guard !closing, let actual = volumeCheckpoint?.observe(value) else { return }
+        onVolumeChanged?(scope, actual)
     }
     func detach(_ surface: NSView) {
         let ownedWindow = surface.window ?? window

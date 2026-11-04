@@ -1572,7 +1572,7 @@ public enum SyncWatchPlayerSettings {
         "contrast": "0",
         "saturation": "0",
         "hue": "0",
-        "defaultVolume": "100",
+        "defaultVolume": "50",
         "rememberVolume": "true",
         "normalizeAudio": "false",
         "smoothScaling": "true",

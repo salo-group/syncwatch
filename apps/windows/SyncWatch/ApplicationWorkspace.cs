@@ -130,7 +130,7 @@ internal sealed class ApplicationWorkspace : UserControl
         view.CloseRequested += window.Close; view.MoveRequested += window.DragMove;
         view.Persist = values =>
         {
-            if (!preferences.SavePlayerSettings(values)) return false;
+            if (!preferences.SavePlayerSettings(values, watch.Player?.ObservedMovieVolume)) return false;
             watch.PreferencesChanged(); Refresh(); return true;
         };
         window.ShowDialog();

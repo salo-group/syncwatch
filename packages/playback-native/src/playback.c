@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 static const char *const video_outputs[] = {"dummy", "macosx", "direct3d11", "xcb_x11"};
-static const char *const audio_options[] = {"--aout=dummy", "--aout=auhal", "--aout=mmdevice", "--aout=pulse"};
+static const char *const audio_outputs[] = {"adummy", "auhal", "mmdevice", "pulse"};
 
 struct sw_runtime {
     sw_vlc_api api;
@@ -41,7 +41,8 @@ static const libvlc_event_type_t event_types[] = {
     libvlc_MediaPlayerEncounteredError, libvlc_MediaPlayerTimeChanged,
     libvlc_MediaPlayerLengthChanged, libvlc_MediaPlayerSeekableChanged,
     libvlc_MediaPlayerVout, libvlc_MediaPlayerESAdded, libvlc_MediaPlayerESDeleted,
-    libvlc_MediaPlayerESSelected
+    libvlc_MediaPlayerESSelected, libvlc_MediaPlayerAudioVolume,
+    libvlc_MediaPlayerMuted, libvlc_MediaPlayerUnmuted
 };
 static void changed(const libvlc_event_t *event, void *opaque) {
     (void)event;
@@ -103,11 +104,12 @@ int sw_runtime_open(const char *path, const char *revision, int output, sw_runti
     }
     if (!sw_library_prepare_output(path, output)) { sw_runtime_close(p); return SW_UNAVAILABLE; }
     /* Never silently select hardware paths whose controls are unqualified. */
-    char video[32];
+    char video[32], audio[32];
     snprintf(video, sizeof(video), "--vout=%s", video_outputs[output]);
+    snprintf(audio, sizeof(audio), "--aout=%s", audio_outputs[output]);
     const char *options[] = {"--quiet", "--ignore-config", "--no-video-title-show", "--no-osd", "--no-snapshot-preview", "--no-plugins-cache",
         "--avcodec-hw=none", "--no-media-library", "--no-sub-autodetect-file",
-        video, audio_options[output]};
+        video, audio};
     p->instance = p->api.libvlc_new(sizeof(options) / sizeof(options[0]), options);
     if (!p->instance) { sw_runtime_close(p); return SW_ENGINE; }
     *result = p;
@@ -184,6 +186,13 @@ int sw_playback_load(sw_playback *p, uint64_t generation, const char *path) {
     p->generation = generation;
     p->loaded = 0;
     p->failed = 0;
+    /* Stop destroys VLC's audio output, including the one created with the
+     * player. Recreate our fixed backend before starting the paused input so
+     * volume can be applied before the first audible frame. The public setter
+     * creates an idle output; it neither resumes playback nor selects a device. */
+    if (p->api.libvlc_audio_output_set(p->player, audio_outputs[p->output])) {
+        p->failed = 1; return SW_ENGINE;
+    }
     if (sw_media_input_open(path, &p->input) != SW_INPUT_OK) { p->failed = 1; return SW_ENGINE; }
     int descriptor = sw_media_input_descriptor(p->input);
     if (descriptor < 0) { release_input(p); p->failed = 1; return SW_ENGINE; }

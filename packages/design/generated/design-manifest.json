@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "units": "logical",
-  "sourceDigest": "72229c2be99af36d970c63f66b051b79cbcc3c63048d8e85508e9a14cf0447f7",
+  "sourceDigest": "62f1f8db395fc0812163da74191f66732349bb6500e817cd28422806f2069095",
   "sources": {
     "tokens/geometry.json": "83534a4d3b484f7a810a4c67f1f8ee58b2f2f4a14db4e4df404381e936a78a4b",
     "tokens/palette.json": "bb4dabce249ffe75a20192d8ccf523630432a3d1f3ca8dcba45fa787a7028a2c",
@@ -12,7 +12,7 @@
     "room.json": "84189acaeef566dfcdb6282eec0080e10afe045fb9a220d98ecc86ea5d33d96b",
     "player.json": "5cf83f28cc332de38632059c39e19669159a04ca2d2c0515f277b7667e83d9f3",
     "call.json": "a26821925540d925182355af12c02a40780c84c051e53610b300934536186a01",
-    "player-settings.json": "ce2d79c36e1557ddee4cedd4db931042fdd7aa0f96969580e0a815c89a95c38a",
+    "player-settings.json": "ff81d15018deb6d25b2f43bf268d478acdfa63102596522e352e29e6a7fdecdc",
     "selection-menu.json": "86ff7683d675213327acd83ebc38174dbcfea37235b454e0afe37671c59d1502",
     "layouts.json": "45ad72b900ec71ebd1f47632effab28a49d2f03659dfbe7a2d11b193cf0e80c8",
     "package.json": "49e278398b736b490a57f3ec73bfdcdcc863d63be73788115f41b6db6bee5165"
@@ -1760,7 +1760,7 @@
       "contrast": "0",
       "saturation": "0",
       "hue": "0",
-      "defaultVolume": "100",
+      "defaultVolume": "50",
       "rememberVolume": "true",
       "normalizeAudio": "false",
       "smoothScaling": "true",

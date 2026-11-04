@@ -60,6 +60,8 @@ internal class PlaybackController(
     private val onPlaylistUpdate: ((WatchPlaylist) -> Unit)? = null,
     private val onPlaylistSelection: ((String) -> Unit)? = null,
     autoplay: Boolean = false,
+    private val initialVolume: Double? = null,
+    private val onVolumeChanged: ((PlaybackScope, Double) -> Unit)? = null,
 ) {
     private val ownerJob = SupervisorJob(parentScope.coroutineContext[Job])
     private val work = CoroutineScope(parentScope.coroutineContext + ownerJob)
@@ -72,6 +74,7 @@ internal class PlaybackController(
     internal fun libraryPresentation(source: LibraryPresentation) = tracks.libraryPresentation(source)
     internal val loaded = CompletableDeferred<Unit>()
     internal val acceptanceRequested = launch.report != null
+    private val volumeCheckpoint = LocalVolumeCheckpoint(scope)
     private var autoplayPending = autoplay && !requiresSharedAdmission
     private var started = false
     private var closing = false
@@ -166,12 +169,14 @@ internal class PlaybackController(
                         }
                     }
                     if (admissionPending && value.status == PlaybackStatus.ready) {
+                        initialVolume?.let { player.setVolume(it, false, scope) }
                         tracks.applyInitial(selection?.tracks ?: LocalTrackPreferences())
                         ensureActive()
                         if (closing) break
                         admissionPending = false; loaded.complete(Unit); onLoaded?.invoke(scope)
                         continue
                     }
+                    rememberVolume(value)
                     apply(value)
                     onObservation?.invoke(value)
                     if (autoplayPending && value.status == PlaybackStatus.ready && !value.ended) {
@@ -260,13 +265,22 @@ internal class PlaybackController(
                         when (accepted) {
                             "playPause" -> player.setPaused(presentation.playing, scope)
                             "seek" -> if (number != null) player.seek(number.toLong(), scope)
-                            "setMovieVolume" -> if (number != null) player.setVolume(number, presentation.muted, scope)
+                            "setMovieVolume" -> if (number != null) {
+                                player.setVolume(number, presentation.muted, scope)
+                                volumeCheckpoint.submitted()
+                                rememberVolume(player.observe(scope))
+                            }
                             "muteMovie" -> player.setVolume(presentation.volume, !presentation.muted, scope)
                         }
                     } catch (_: Exception) { /* Rejection does not acknowledge a changed observation. */ }
                 }
             }
         }
+    }
+
+    private fun rememberVolume(value: PlaybackObservation) {
+        if (closing) return
+        volumeCheckpoint.observe(value)?.let { onVolumeChanged?.invoke(scope, it) }
     }
 
     private fun closeNative(): CompletableFuture<Void> {

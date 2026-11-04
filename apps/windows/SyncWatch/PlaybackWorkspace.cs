@@ -36,6 +36,9 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     private readonly NativeVideoHost surface;
     private readonly LocalPlaybackLaunch launch;
     private string language;
+    private readonly LocalVolumeCheckpoint volumeCheckpoint;
+    private readonly double? initialVolume;
+    private readonly Action<PlaybackScope, double>? onVolumeChanged;
     private readonly long initialPositionMs;
     private long sharedResumePositionMs;
     private LibraryMediaSelection? selection;
@@ -47,6 +50,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     private HashSet<string> NavigationActions => onNavigation is null ? ["endWatching", "toggleFullscreen"] : ["endWatching", "toggleFullscreen", "showLibrary"];
     private readonly CancellationTokenSource cancellation = new();
     private PlayerPresentation presentation = new();
+    internal double? ObservedMovieVolume => presentation.EnabledActions.Contains("setMovieVolume") ? presentation.Volume : null;
     private string roomNotice = "";
     private int? skipSeconds;
     private Action? openPlayerSettings;
@@ -161,13 +165,15 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     public PlaybackWorkspace(LocalPlaybackLaunch launch, string language, PlaybackScope? scope = null, long positionMs = 0,
         LibraryMediaSelection? selection = null, Action<PlaybackScope>? onLoaded = null,
         Action<PlaybackObservation>? onObservation = null, Action<string>? onNavigation = null, Action? onFailure = null,
-        Action? onFullscreen = null, bool requiresSharedAdmission = false, Action<WatchPlaylist>? onPlaylistUpdate = null, Action<string>? onPlaylistSelection = null, bool autoplay = false)
+        Action? onFullscreen = null, bool requiresSharedAdmission = false, Action<WatchPlaylist>? onPlaylistUpdate = null, Action<string>? onPlaylistSelection = null, bool autoplay = false, double? initialVolume = null, Action<PlaybackScope, double>? onVolumeChanged = null)
     {
         this.launch = launch; this.language = language;
         this.onPlaylistUpdate = onPlaylistUpdate; this.onPlaylistSelection = onPlaylistSelection;
         this.scope = scope ?? PlaybackScope.Create().ReplacingMedia(); initialPositionMs = positionMs;
         checkpoint = new(this.scope);
+        volumeCheckpoint = new(this.scope);
         tracks = new(player, this.scope, RenderTracks, new ExternalTrackPicker(() => Window.GetWindow(this)));
+        this.initialVolume = initialVolume; this.onVolumeChanged = onVolumeChanged;
         this.selection = selection; this.onLoaded = onLoaded; this.onObservation = onObservation;
         this.onNavigation = onNavigation; this.onFailure = onFailure;
         this.onFullscreen = onFullscreen;
@@ -212,12 +218,14 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
                 }
                 if (admissionPending && value.Status == PlaybackStatus.Ready)
                 {
+                    if (initialVolume is double volume) await player.SetVolumeAsync(volume, false, scope, cancellation.Token);
                     await tracks.ApplyInitialAsync(selection?.Tracks ?? new(), cancellation.Token);
                     cancellation.Token.ThrowIfCancellationRequested();
                     if (closing) break;
                     admissionPending = false; onLoaded?.Invoke(scope);
                     continue;
                 }
+                RememberVolume(value);
                 checkpoint.Observe(value, SharedPlaybackAvailable);
                 HashSet<string> enabled = NavigationActions; enabled.Add("playPause");
                 if (value.Seekable) enabled.UnionWith(["seek", "skip"]);
@@ -318,11 +326,19 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
             {
                 case "playPause": await player.SetPausedAsync(presentation.Playing, scope, cancellation.Token); break;
                 case "seek" when value is double seek: await player.SeekAsync(checked((long)seek), scope, cancellation.Token); break;
-                case "setMovieVolume" when value is double volume: await player.SetVolumeAsync(volume, presentation.Muted, scope, cancellation.Token); break;
+                case "setMovieVolume" when value is double volume:
+                    await player.SetVolumeAsync(volume, presentation.Muted, scope, cancellation.Token);
+                    volumeCheckpoint.Submitted();
+                    RememberVolume(await player.ObserveAsync(scope, cancellation.Token));
+                    break;
                 case "muteMovie": await player.SetVolumeAsync(presentation.Volume, !presentation.Muted, scope, cancellation.Token); break;
             }
         }
         catch (Exception) { /* A rejected request never changes the observation. */ }
+    }
+    private void RememberVolume(PlaybackObservation value)
+    {
+        if (!closing && volumeCheckpoint.Observe(value) is double actual) onVolumeChanged?.Invoke(scope, actual);
     }
     public Task CloseAsync() => shutdown ??= CloseCoreAsync();
     private async Task CloseCoreAsync()

@@ -20,7 +20,7 @@ import syncwatch.design.*
         DialogWindow(onCloseRequest = { open = false }, title = SyncWatchCopy.text("playerSettings", language),
             state = rememberDialogState(width = SyncWatchTokens.layoutSettingsWidth.dp, height = SyncWatchTokens.layoutPlayerSettingsHeight.dp)) {
             PlayerSettingsDialog(editor, { editor = it }, language = language, theme = theme,
-                onSave = { values -> preferences.savePlayerSettings(values).also { if (it) onSaved() } },
+                onSave = { values -> preferences.savePlayerSettings(values, controller.presentation.takeIf { "setMovieVolume" in it.enabledActions }?.volume).also { if (it) onSaved() } },
                 onClose = { open = false })
         }
     }

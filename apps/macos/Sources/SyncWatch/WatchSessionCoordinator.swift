@@ -182,7 +182,9 @@ import SyncWatchPlayback
                 },
                 onFailure: { [weak self] in self?.failed(request.scope) },
                 onPlaylistUpdate: { [weak self] in self?.onPlaylistUpdate?($0) },
-                onPlaylistSelection: { [weak self] in self?.onPlaylistSelection?($0) })
+                onPlaylistSelection: { [weak self] in self?.onPlaylistSelection?($0) },
+                initialVolume: preferences.openingMovieVolume,
+                onVolumeChanged: { [weak self] in self?.volumeChanged($0, value: $1) })
         }
     }
     private func release(_ owner: PlaybackScope) {
@@ -201,6 +203,11 @@ import SyncWatchPlayback
             try session.loaded(owner)
             publish()
         } catch { failed(owner) }
+    }
+    private func volumeChanged(_ owner: PlaybackScope, value: Double) {
+        guard !closing, owner == session.scope, phase == .active, preferences.rememberMovieVolume(value) else { return }
+        preferencesChanged()
+        requestCheckpoint()
     }
     private func observed(_ value: PlaybackObservation) {
         guard !closing, value.scope == session.scope, phase == .active, value.status == .ready else { return }

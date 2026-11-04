@@ -1,0 +1,244 @@
+{
+  "cases": [
+    {
+      "name": "opening alone does not remember",
+      "steps": [
+        {
+          "op": "observe",
+          "sequence": 1,
+          "volume": 0.25,
+          "expected": null
+        }
+      ]
+    },
+    {
+      "name": "actual gain can arrive after command return",
+      "steps": [
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 1,
+          "volume": 0.5,
+          "expected": 0.5
+        },
+        {
+          "op": "observe",
+          "sequence": 2,
+          "volume": 0.55,
+          "expected": 0.55
+        }
+      ]
+    },
+    {
+      "name": "unchanged level does not checkpoint each clock tick",
+      "steps": [
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 1,
+          "volume": 0.5,
+          "expected": 0.5
+        },
+        {
+          "op": "observe",
+          "sequence": 2,
+          "volume": 0.5,
+          "expected": null
+        },
+        {
+          "op": "observe",
+          "sequence": 3,
+          "volume": 0.5,
+          "expected": null
+        }
+      ]
+    },
+    {
+      "name": "late and duplicate observations cannot overwrite",
+      "steps": [
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 10,
+          "volume": 0.6,
+          "expected": 0.6
+        },
+        {
+          "op": "observe",
+          "sequence": 9,
+          "volume": 0.2,
+          "expected": null
+        },
+        {
+          "op": "observe",
+          "sequence": 10,
+          "volume": 0.3,
+          "expected": null
+        },
+        {
+          "op": "observe",
+          "sequence": 11,
+          "volume": 0.55,
+          "expected": 0.55
+        }
+      ]
+    },
+    {
+      "name": "another scope cannot poison ordering",
+      "steps": [
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 100,
+          "volume": 0.9,
+          "expected": null,
+          "owner": "foreignRun"
+        },
+        {
+          "op": "observe",
+          "sequence": 100,
+          "volume": 0.8,
+          "expected": null,
+          "owner": "oldGeneration"
+        },
+        {
+          "op": "observe",
+          "sequence": 1,
+          "volume": 0.4,
+          "expected": 0.4
+        }
+      ]
+    },
+    {
+      "name": "unknown or unready output remains unacknowledged",
+      "steps": [
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 100,
+          "volume": null,
+          "expected": null
+        },
+        {
+          "op": "observe",
+          "sequence": 100,
+          "volume": 0.8,
+          "expected": null,
+          "status": "loading"
+        },
+        {
+          "op": "observe",
+          "sequence": 100,
+          "volume": 0.8,
+          "expected": null,
+          "status": "failed"
+        },
+        {
+          "op": "observe",
+          "sequence": 1,
+          "volume": 0.45,
+          "expected": 0.45
+        }
+      ]
+    },
+    {
+      "name": "mute remains separate from remembered gain",
+      "steps": [
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 1,
+          "volume": 0.5,
+          "expected": 0.5
+        },
+        {
+          "op": "observe",
+          "sequence": 2,
+          "volume": 0.5,
+          "expected": null,
+          "muted": true
+        },
+        {
+          "op": "observe",
+          "sequence": 3,
+          "volume": 0.55,
+          "expected": 0.55,
+          "muted": true
+        },
+        {
+          "op": "observe",
+          "sequence": 4,
+          "volume": 0.55,
+          "expected": null
+        }
+      ]
+    },
+    {
+      "name": "repeated successful commands retain ordering",
+      "steps": [
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 10,
+          "volume": 0.6,
+          "expected": 0.6
+        },
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 9,
+          "volume": 0.9,
+          "expected": null
+        },
+        {
+          "op": "observe",
+          "sequence": 11,
+          "volume": 0.35,
+          "expected": 0.35
+        }
+      ]
+    },
+    {
+      "name": "quantized endpoints are actual values",
+      "steps": [
+        {
+          "op": "submitted"
+        },
+        {
+          "op": "observe",
+          "sequence": 1,
+          "volume": 0,
+          "expected": 0
+        },
+        {
+          "op": "observe",
+          "sequence": 2,
+          "volume": 1,
+          "expected": 1
+        },
+        {
+          "op": "observe",
+          "sequence": 3,
+          "volume": 0.56,
+          "expected": 0.56
+        }
+      ]
+    }
+  ]
+}

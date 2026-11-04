@@ -18,7 +18,10 @@ internal class AppearancePreferences(store: LocalStateStore) {
             val loaded = this.store.read()
             when (loaded.status) {
                 LocalStateStatus.loaded -> { state = loaded.state!!; canWrite = true }
-                LocalStateStatus.missing, LocalStateStatus.invalid -> canWrite = true
+                LocalStateStatus.missing, LocalStateStatus.invalid -> {
+                    canWrite = true
+                    state = state.copy(preferences = state.preferences.copy(movieVolume = defaultMovieVolume))
+                }
                 LocalStateStatus.unsupportedVersion -> Unit
             }
         } catch (_: java.io.IOException) { }
@@ -39,17 +42,40 @@ internal class AppearancePreferences(store: LocalStateStore) {
         catch (_: java.io.IOException) { false }
         catch (_: WatchFailure) { false }
     }
+    val defaultMovieVolume get() = state.preferences.defaultMovieVolume ?: SyncWatchPlayerSettings.defaults.getValue("defaultVolume").toDouble() / 100
+    val openingMovieVolume get() = if (state.preferences.rememberMovieVolume) state.preferences.movieVolume else defaultMovieVolume
+    /** The watch checkpoint coalesces this acknowledged local change with current playback history. */
+    fun rememberMovieVolume(value: Double): Boolean {
+        if (!canWrite || !state.preferences.rememberMovieVolume || !value.isFinite() || value !in 0.0..1.0 || value == state.preferences.movieVolume) return false
+        state = state.copy(preferences = state.preferences.copy(movieVolume = value)); return true
+    }
     fun playerSettingsEditor() = PlayerSettingsEditor(
-        values = mapOf("skipSeconds" to state.preferences.skipSeconds.toString()),
-        editableFields = if (canWrite && !savingWatchState) setOf("skipSeconds") else emptySet(),
+        values = mapOf("skipSeconds" to state.preferences.skipSeconds.toString(),
+            "defaultVolume" to PlayerSettingsEditor.canonical(defaultMovieVolume * 100),
+            "rememberVolume" to state.preferences.rememberMovieVolume.toString()),
+        editableFields = if (canWrite && !savingWatchState) setOf("skipSeconds", "defaultVolume", "rememberVolume") else emptySet(),
         canSave = canWrite && !savingWatchState)
-    fun savePlayerSettings(values: Map<String, String>): Boolean {
+    fun savePlayerSettings(values: Map<String, String>): Boolean = savePlayerSettings(values, null)
+    fun savePlayerSettings(values: Map<String, String>, currentMovieVolume: Double?): Boolean {
         if (!canWrite || savingWatchState) return false
         val value = values["skipSeconds"] ?: return false
         val field = SyncWatchPlayerSettings.fields.single { it.id == "skipSeconds" }
         if (!PlayerSettingsEditor.valid(value, field)) return false
         val seconds = value.toIntOrNull() ?: return false
-        val next = state.copy(preferences = state.preferences.copy(skipSeconds = seconds))
+        var updated = state.preferences.copy(skipSeconds = seconds)
+        values["defaultVolume"]?.let { volume ->
+            if (!PlayerSettingsEditor.valid(volume, SyncWatchPlayerSettings.fields.single { it.id == "defaultVolume" })) return false
+            updated = updated.copy(defaultMovieVolume = volume.toDouble() / 100)
+        }
+        values["rememberVolume"]?.let { remember ->
+            val flag = remember.toBooleanStrictOrNull() ?: return false
+            if (flag && !state.preferences.rememberMovieVolume && currentMovieVolume != null) {
+                if (!currentMovieVolume.isFinite() || currentMovieVolume !in 0.0..1.0) return false
+                updated = updated.copy(movieVolume = currentMovieVolume)
+            }
+            updated = updated.copy(rememberMovieVolume = flag)
+        }
+        val next = state.copy(preferences = updated)
         return try { next.validate(); store.write(next); state = next; true }
         catch (_: java.io.IOException) { false }
         catch (_: WatchFailure) { false }

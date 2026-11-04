@@ -13,6 +13,7 @@ public sealed record LocalPreferences
     public required bool PreviewsEnabled { get; init; }
     public required int PreviewCacheMB { get; init; }
     public required int CursorHideDelayMs { get; init; }
+    public double? DefaultMovieVolume { get; init; }
     public required double MovieVolume { get; init; }
     public required double CallVolume { get; init; }
     public required bool RememberMovieVolume { get; init; }
@@ -44,6 +45,7 @@ public sealed record LocalPreferences
         if (Theme is not ("system" or "dark" or "light") || Language is not ("en" or "ru")
             || SkipSeconds is < 1 or > 600 || PreviewCacheMB is < 50 or > 500
             || CursorHideDelayMs is < 500 or > 10_000
+            || (DefaultMovieVolume is double initial && (!double.IsFinite(initial) || initial is < 0 or > 1))
             || !double.IsFinite(MovieVolume) || MovieVolume is < 0 or > 1
             || !double.IsFinite(CallVolume) || CallVolume is < 0 or > 1)
         {

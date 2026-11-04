@@ -14,6 +14,7 @@ private fun requireCase(value: Boolean, name: String) { check(value) { name } }
 /** Executes the same language-neutral state and lifecycle corpus as macOS and Windows. */
 fun main(arguments: Array<String>) {
     sharedPlaybackCheckpointChecks(Path.of(arguments[0]).toAbsolutePath().parent)
+    localVolumeCheckpointChecks(Path.of(arguments[0]).toAbsolutePath().parent)
     mediaAgreementChecks(Path.of(arguments[0]).toAbsolutePath().parent)
     val corpus = Json.`object`(Json.parse(Files.readString(Path.of(arguments.single()))))
     actionFenceChecks(Path.of(arguments.single()).parent)

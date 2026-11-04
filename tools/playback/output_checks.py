@@ -19,7 +19,7 @@ def check_outputs(context, package, output, environment):
         # the headless sinks so the probe can measure decoded frames and PCM.
         source = (ROOT / "packages/playback-native/src/playback.c").read_text()
         replacements = [('"dummy", "macosx"', '"vmem", "macosx"'),
-                        ('"--aout=dummy"', '"--aout=amem"')]
+                        ('"adummy", "auhal"', '"amem", "auhal"')]
         for before, after in replacements:
             if source.count(before) != 1:
                 raise ValueError("Native callback-output instrumentation changed")

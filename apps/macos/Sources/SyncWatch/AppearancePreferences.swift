@@ -24,7 +24,9 @@ import SyncWatchLibrary
                 try value.validate()
                 state = value
                 canWrite = true
-            case .missing, .invalid: canWrite = true
+            case .missing, .invalid:
+                canWrite = true
+                state.preferences.movieVolume = defaultMovieVolume
             case .unsupportedVersion: break
             }
         } catch { canWrite = false }
@@ -59,20 +61,56 @@ import SyncWatchLibrary
         } catch { return false }
     }
 
+    var defaultMovieVolume: Double {
+        state.preferences.defaultMovieVolume ?? Double(SyncWatchPlayerSettings.defaults["defaultVolume"]!)! / 100
+    }
+    var openingMovieVolume: Double {
+        state.preferences.rememberMovieVolume ? state.preferences.movieVolume : defaultMovieVolume
+    }
+    /// The watch checkpoint coalesces this acknowledged local change with current playback history.
+    func rememberMovieVolume(_ value: Double) -> Bool {
+        guard canWrite, state.preferences.rememberMovieVolume, value.isFinite, (0...1).contains(value),
+            value != state.preferences.movieVolume
+        else { return false }
+        state.preferences.movieVolume = value
+        return true
+    }
+
     var playerSettingsEditor: PlayerSettingsEditor {
         PlayerSettingsEditor(
-            values: ["skipSeconds": String(state.preferences.skipSeconds)],
-            editableFields: canWrite && !savingWatchState ? ["skipSeconds"] : [],
+            values: [
+                "skipSeconds": String(state.preferences.skipSeconds),
+                "defaultVolume": PlayerSettingsEditor.canonical(defaultMovieVolume * 100),
+                "rememberVolume": String(state.preferences.rememberMovieVolume),
+            ],
+            editableFields: canWrite && !savingWatchState ? ["skipSeconds", "defaultVolume", "rememberVolume"] : [],
             canSave: canWrite && !savingWatchState)
     }
 
     func savePlayerSettings(_ values: [String: String]) -> Bool {
+        savePlayerSettings(values, currentMovieVolume: nil)
+    }
+    func savePlayerSettings(_ values: [String: String], currentMovieVolume: Double?) -> Bool {
         guard canWrite, !savingWatchState, let value = values["skipSeconds"],
             let field = SyncWatchPlayerSettings.fields.first(where: { $0.id == "skipSeconds" }),
             PlayerSettingsEditor.valid(value, for: field), let seconds = Int(value)
         else { return false }
         var next = state
         next.preferences.skipSeconds = seconds
+        if let volume = values["defaultVolume"] {
+            guard let field = SyncWatchPlayerSettings.fields.first(where: { $0.id == "defaultVolume" }),
+                PlayerSettingsEditor.valid(volume, for: field), let number = Double(volume)
+            else { return false }
+            next.preferences.defaultMovieVolume = number / 100
+        }
+        if let remember = values["rememberVolume"] {
+            guard ["true", "false"].contains(remember) else { return false }
+            if remember == "true", !state.preferences.rememberMovieVolume, let currentMovieVolume {
+                guard currentMovieVolume.isFinite, (0...1).contains(currentMovieVolume) else { return false }
+                next.preferences.movieVolume = currentMovieVolume
+            }
+            next.preferences.rememberMovieVolume = remember == "true"
+        }
         do {
             try next.validate()
             try store.write(next)
