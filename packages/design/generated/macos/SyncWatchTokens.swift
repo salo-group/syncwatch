@@ -636,6 +636,8 @@ public enum SyncWatchCopy {
             "accountConfirmationFailed": "The code could not be verified. Check it, or cancel and sign in again.",
             "accountBrowserProofRequired": "Enter the confirmation code shown in the browser to check the account.",
             "accountVerifyBrowserProof": "Check account",
+            "accountBrowserUnavailable":
+                "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in.",
         ],
         "ru": [
             "brand": "SyncWatch",
@@ -907,6 +909,8 @@ public enum SyncWatchCopy {
             "accountConfirmationFailed": "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
             "accountBrowserProofRequired": "Введите код из браузера, чтобы проверить аккаунт.",
             "accountVerifyBrowserProof": "Проверить аккаунт",
+            "accountBrowserUnavailable":
+                "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход.",
         ],
     ]
     public static func text(_ key: String, language: String = "en") -> String {
@@ -2203,7 +2207,7 @@ public enum SyncWatchSelectionMenu {
 }
 
 public enum SyncWatchLayouts {
-    public static let sourceDigest = "9f80e03f50807243d479012a528e8be7ddbe4858ed3b7bd1d05fff53ab39d38e"
+    public static let sourceDigest = "2e6b57b21350b652a0061d97b61fe5776d7529b22ea61ed35df272c57a75a7de"
     public static let coordinateSize = 20.0
     public static func themeColor(_ role: String, theme: SyncWatchTheme) -> Color? {
         switch role {
@@ -3389,6 +3393,43 @@ public enum SyncWatchLayouts {
                 "lines": "1",
             ],
             children: [])
+        let libraryOpenAccountLabel = DesignNode(
+            id: "libraryOpenAccountLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~openAccount",
+            ],
+            children: [])
+        let libraryOpenAccount = DesignNode(
+            id: "libraryOpenAccount", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "openAccount",
+                "automation": "{namespace}.openAccount",
+                "enabled": "$can.openAccount",
+                "label": "~openAccount",
+            ],
+            children: [libraryOpenAccountLabel])
         let node68 = DesignNode(
             id: "node68", kind: "text",
             props: [
@@ -3442,7 +3483,7 @@ public enum SyncWatchLayouts {
                 "height": "@layout.headerHeight",
                 "paddingX": "@layout.workspacePadding",
             ],
-            children: [node62, node63, node64, node65, node66, libraryFriendStatus, node67, node69])
+            children: [node62, node63, node64, node65, node66, libraryFriendStatus, node67, libraryOpenAccount, node69])
         let node71 = DesignNode(
             id: "node71", kind: "text",
             props: [
@@ -4847,43 +4888,6 @@ public enum SyncWatchLayouts {
                 "label": "~openRoom",
             ],
             children: [libraryOpenRoomLabel])
-        let accountEntrylibraryOpenRoomLabel = DesignNode(
-            id: "accountEntrylibraryOpenRoomLabel", kind: "text",
-            props: [
-                "disabledOpacity": "0.4",
-                "pressedOpacity": "0.75",
-                "focusBorder": "theme.accentSoft",
-                "hoverBorder": "theme.accent",
-                "focusWidth": "@control.borderWidth",
-                "align": "leading",
-                "text": "~openAccount",
-            ],
-            children: [])
-        let accountEntrylibraryOpenRoom = DesignNode(
-            id: "accountEntrylibraryOpenRoom", kind: "button",
-            props: [
-                "disabledOpacity": "0.4",
-                "pressedOpacity": "0.75",
-                "focusBorder": "theme.accentSoft",
-                "hoverBorder": "theme.accent",
-                "focusWidth": "@control.borderWidth",
-                "paddingX": "@layout.settingsCardPadding",
-                "minHeight": "0",
-                "radius": "@control.buttonRadius",
-                "border": "theme.border",
-                "borderWidth": "@control.borderWidth",
-                "background": "theme.surfaceRaised",
-                "foreground": "theme.text",
-                "fontSize": "@type.settingsBodySize",
-                "weight": "normal",
-                "contentAlign": "center",
-                "height": "@layout.settingsControlHeight",
-                "action": "openAccount",
-                "automation": "{namespace}.openAccount",
-                "enabled": "$can.openAccount",
-                "label": "~openAccount",
-            ],
-            children: [accountEntrylibraryOpenRoomLabel])
         let node94 = DesignNode(
             id: "node94", kind: "column",
             props: [
@@ -4903,7 +4907,7 @@ public enum SyncWatchLayouts {
                 "width": "fill",
                 "height": "fill",
             ],
-            children: [node89, node90, node91, node93, libraryOpenRoom, accountEntrylibraryOpenRoom])
+            children: [node89, node90, node91, node93, libraryOpenRoom])
         let node95 = DesignNode(
             id: "node95", kind: "text",
             props: [

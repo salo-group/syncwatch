@@ -32,13 +32,14 @@ internal sealed class AccountController
                 using Process? process = Process.Start(new ProcessStartInfo(attempt.BrowserUri.AbsoluteUri) { UseShellExecute = true });
                 Presentation.State = "authorizing";
             }
-            catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException) { Presentation.Status = "accountFailed"; }
+            catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException) { Presentation.Status = "accountBrowserUnavailable"; }
             Changed?.Invoke();
         }
         else if (action == "accountVerifyBrowserProof" && Presentation.State == "browserConfirmationRequired") work = VerifyBrowser();
         else if (action == "accountConfirm" && Presentation.State == "confirmAccount") work = Confirm();
         else if (action == "accountCancel")
         {
+            Presentation.State = "working"; Presentation.Status = "accountWorking"; Changed?.Invoke();
             generation++; stop.Cancel(); Task previous = work;
             work = CancelAfter(previous);
         }

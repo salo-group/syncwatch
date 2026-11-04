@@ -455,6 +455,7 @@ object SyncWatchCopy {
         "en" to "accountConfirmationFailed" -> "The code could not be verified. Check it, or cancel and sign in again."
         "en" to "accountBrowserProofRequired" -> "Enter the confirmation code shown in the browser to check the account."
         "en" to "accountVerifyBrowserProof" -> "Check account"
+        "en" to "accountBrowserUnavailable" -> "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in."
         "ru" to "brand" -> "SyncWatch"
         "ru" to "room" -> "Смотрим вместе"
         "ru" to "library" -> "Библиотека фильмов"
@@ -717,6 +718,7 @@ object SyncWatchCopy {
         "ru" to "accountConfirmationFailed" -> "Не удалось проверить код. Проверьте его или отмените вход и начните снова."
         "ru" to "accountBrowserProofRequired" -> "Введите код из браузера, чтобы проверить аккаунт."
         "ru" to "accountVerifyBrowserProof" -> "Проверить аккаунт"
+        "ru" to "accountBrowserUnavailable" -> "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход."
         else -> if (language != "en") text(key, "en") else key
     }
     val galleryStates = listOf("empty", "scanning", "selected", "missingMedia", "reconnecting")
@@ -931,7 +933,7 @@ object SyncWatchSelectionMenu {
 }
 
 object SyncWatchLayouts {
-    const val sourceDigest = "9f80e03f50807243d479012a528e8be7ddbe4858ed3b7bd1d05fff53ab39d38e"
+    const val sourceDigest = "2e6b57b21350b652a0061d97b61fe5776d7529b22ea61ed35df272c57a75a7de"
     const val coordinateSize = 20.0f
     fun themeColor(role: String, theme: SyncWatchTheme): Long? = when (role) {
         "background" -> theme.background
@@ -1224,6 +1226,37 @@ object SyncWatchLayouts {
             "text" to "~callInactive",
             "lines" to "1",
         ), listOf())
+        val libraryOpenAccountLabel = DesignNode("libraryOpenAccountLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~openAccount",
+        ), listOf())
+        val libraryOpenAccount = DesignNode("libraryOpenAccount", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "openAccount",
+            "automation" to "{namespace}.openAccount",
+            "enabled" to "\$can.openAccount",
+            "label" to "~openAccount",
+        ), listOf(libraryOpenAccountLabel))
         val node68 = DesignNode("node68", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -1268,7 +1301,7 @@ object SyncWatchLayouts {
             "gap" to "@layout.panelGap",
             "height" to "@layout.headerHeight",
             "paddingX" to "@layout.workspacePadding",
-        ), listOf(node62, node63, node64, node65, node66, libraryFriendStatus, node67, node69))
+        ), listOf(node62, node63, node64, node65, node66, libraryFriendStatus, node67, libraryOpenAccount, node69))
         val node71 = DesignNode("node71", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -2393,37 +2426,6 @@ object SyncWatchLayouts {
             "enabled" to "\$can.openRoom",
             "label" to "~openRoom",
         ), listOf(libraryOpenRoomLabel))
-        val accountEntrylibraryOpenRoomLabel = DesignNode("accountEntrylibraryOpenRoomLabel", "text", mapOf(
-            "disabledOpacity" to "0.4",
-            "pressedOpacity" to "0.75",
-            "focusBorder" to "theme.accentSoft",
-            "hoverBorder" to "theme.accent",
-            "focusWidth" to "@control.borderWidth",
-            "align" to "leading",
-            "text" to "~openAccount",
-        ), listOf())
-        val accountEntrylibraryOpenRoom = DesignNode("accountEntrylibraryOpenRoom", "button", mapOf(
-            "disabledOpacity" to "0.4",
-            "pressedOpacity" to "0.75",
-            "focusBorder" to "theme.accentSoft",
-            "hoverBorder" to "theme.accent",
-            "focusWidth" to "@control.borderWidth",
-            "paddingX" to "@layout.settingsCardPadding",
-            "minHeight" to "0",
-            "radius" to "@control.buttonRadius",
-            "border" to "theme.border",
-            "borderWidth" to "@control.borderWidth",
-            "background" to "theme.surfaceRaised",
-            "foreground" to "theme.text",
-            "fontSize" to "@type.settingsBodySize",
-            "weight" to "normal",
-            "contentAlign" to "center",
-            "height" to "@layout.settingsControlHeight",
-            "action" to "openAccount",
-            "automation" to "{namespace}.openAccount",
-            "enabled" to "\$can.openAccount",
-            "label" to "~openAccount",
-        ), listOf(accountEntrylibraryOpenRoomLabel))
         val node94 = DesignNode("node94", "column", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -2440,7 +2442,7 @@ object SyncWatchLayouts {
             "padding" to "@layout.panelPadding",
             "width" to "fill",
             "height" to "fill",
-        ), listOf(node89, node90, node91, node93, libraryOpenRoom, accountEntrylibraryOpenRoom))
+        ), listOf(node89, node90, node91, node93, libraryOpenRoom))
         val node95 = DesignNode("node95", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",

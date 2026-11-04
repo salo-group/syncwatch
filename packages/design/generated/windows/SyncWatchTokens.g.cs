@@ -626,6 +626,7 @@ public static class SyncWatchCopy
         ("en", "accountConfirmationFailed") => "The code could not be verified. Check it, or cancel and sign in again.",
         ("en", "accountBrowserProofRequired") => "Enter the confirmation code shown in the browser to check the account.",
         ("en", "accountVerifyBrowserProof") => "Check account",
+        ("en", "accountBrowserUnavailable") => "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in.",
         ("ru", "brand") => "SyncWatch",
         ("ru", "room") => "Смотрим вместе",
         ("ru", "library") => "Библиотека фильмов",
@@ -888,6 +889,7 @@ public static class SyncWatchCopy
         ("ru", "accountConfirmationFailed") => "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
         ("ru", "accountBrowserProofRequired") => "Введите код из браузера, чтобы проверить аккаунт.",
         ("ru", "accountVerifyBrowserProof") => "Проверить аккаунт",
+        ("ru", "accountBrowserUnavailable") => "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход.",
         _ when language != "en" => Text(key, "en"),
         _ => key,
     };
@@ -1119,7 +1121,7 @@ public static class SyncWatchSelectionMenu
 
 public static class SyncWatchLayouts
 {
-    public const string SourceDigest = "9f80e03f50807243d479012a528e8be7ddbe4858ed3b7bd1d05fff53ab39d38e";
+    public const string SourceDigest = "2e6b57b21350b652a0061d97b61fe5776d7529b22ea61ed35df272c57a75a7de";
     public const double CoordinateSize = 20;
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults { get; } = new System.Collections.Generic.Dictionary<string, string>
     {
@@ -1408,6 +1410,39 @@ public static class SyncWatchLayouts
             ["text"] = "~callInactive",
             ["lines"] = "1",
         }, []);
+        var libraryOpenAccountLabel = new DesignNode("libraryOpenAccountLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~openAccount",
+        }, []);
+        var libraryOpenAccount = new DesignNode("libraryOpenAccount", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "openAccount",
+            ["automation"] = "{namespace}.openAccount",
+            ["enabled"] = "$can.openAccount",
+            ["label"] = "~openAccount",
+        }, [libraryOpenAccountLabel]);
         var node68 = new DesignNode("node68", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -1455,7 +1490,7 @@ public static class SyncWatchLayouts
             ["gap"] = "@layout.panelGap",
             ["height"] = "@layout.headerHeight",
             ["paddingX"] = "@layout.workspacePadding",
-        }, [node62, node63, node64, node65, node66, libraryFriendStatus, node67, node69]);
+        }, [node62, node63, node64, node65, node66, libraryFriendStatus, node67, libraryOpenAccount, node69]);
         var node71 = new DesignNode("node71", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -2673,39 +2708,6 @@ public static class SyncWatchLayouts
             ["enabled"] = "$can.openRoom",
             ["label"] = "~openRoom",
         }, [libraryOpenRoomLabel]);
-        var accountEntrylibraryOpenRoomLabel = new DesignNode("accountEntrylibraryOpenRoomLabel", "text", new()
-        {
-            ["disabledOpacity"] = "0.4",
-            ["pressedOpacity"] = "0.75",
-            ["focusBorder"] = "theme.accentSoft",
-            ["hoverBorder"] = "theme.accent",
-            ["focusWidth"] = "@control.borderWidth",
-            ["align"] = "leading",
-            ["text"] = "~openAccount",
-        }, []);
-        var accountEntrylibraryOpenRoom = new DesignNode("accountEntrylibraryOpenRoom", "button", new()
-        {
-            ["disabledOpacity"] = "0.4",
-            ["pressedOpacity"] = "0.75",
-            ["focusBorder"] = "theme.accentSoft",
-            ["hoverBorder"] = "theme.accent",
-            ["focusWidth"] = "@control.borderWidth",
-            ["paddingX"] = "@layout.settingsCardPadding",
-            ["minHeight"] = "0",
-            ["radius"] = "@control.buttonRadius",
-            ["border"] = "theme.border",
-            ["borderWidth"] = "@control.borderWidth",
-            ["background"] = "theme.surfaceRaised",
-            ["foreground"] = "theme.text",
-            ["fontSize"] = "@type.settingsBodySize",
-            ["weight"] = "normal",
-            ["contentAlign"] = "center",
-            ["height"] = "@layout.settingsControlHeight",
-            ["action"] = "openAccount",
-            ["automation"] = "{namespace}.openAccount",
-            ["enabled"] = "$can.openAccount",
-            ["label"] = "~openAccount",
-        }, [accountEntrylibraryOpenRoomLabel]);
         var node94 = new DesignNode("node94", "column", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -2723,7 +2725,7 @@ public static class SyncWatchLayouts
             ["padding"] = "@layout.panelPadding",
             ["width"] = "fill",
             ["height"] = "fill",
-        }, [node89, node90, node91, node93, libraryOpenRoom, accountEntrylibraryOpenRoom]);
+        }, [node89, node90, node91, node93, libraryOpenRoom]);
         var node95 = new DesignNode("node95", "text", new()
         {
             ["disabledOpacity"] = "0.4",

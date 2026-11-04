@@ -33,12 +33,14 @@ import SyncWatchRoom
             if NSWorkspace.shared.open(attempt.browserURI) {
                 presentation.state = "authorizing"
             } else {
-                presentation.status = "accountFailed"
+                presentation.status = "accountBrowserUnavailable"
             }
         case "accountVerifyBrowserProof": verifyBrowser()
         case "accountConfirm": confirm()
         case "accountCancel":
             generation = UUID()
+            presentation.state = "working"
+            presentation.status = "accountWorking"
             let previous = work
             previous?.cancel()
             work = Task {

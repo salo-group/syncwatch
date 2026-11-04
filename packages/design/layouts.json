@@ -483,6 +483,31 @@
               "children": []
             },
             {
+              "id": "libraryOpenAccount",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "openAccount",
+                "automation": "{namespace}.openAccount",
+                "enabled": "$can.openAccount",
+                "label": "~openAccount"
+              },
+              "children": [
+                {
+                  "id": "libraryOpenAccountLabel",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~openAccount"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
               "id": "node69",
               "kind": "button",
               "styles": [
@@ -1661,31 +1686,6 @@
                               "styles": [],
                               "props": {
                                 "text": "~openRoom"
-                              },
-                              "children": []
-                            }
-                          ]
-                        },
-                        {
-                          "id": "accountEntrylibraryOpenRoom",
-                          "kind": "button",
-                          "styles": [
-                            "button",
-                            "compact"
-                          ],
-                          "props": {
-                            "action": "openAccount",
-                            "automation": "{namespace}.openAccount",
-                            "enabled": "$can.openAccount",
-                            "label": "~openAccount"
-                          },
-                          "children": [
-                            {
-                              "id": "accountEntrylibraryOpenRoomLabel",
-                              "kind": "text",
-                              "styles": [],
-                              "props": {
-                                "text": "~openAccount"
                               },
                               "children": []
                             }

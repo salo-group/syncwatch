@@ -263,7 +263,8 @@
       "accountBrowserProof": "Confirmation code from the browser",
       "accountConfirmationFailed": "The code could not be verified. Check it, or cancel and sign in again.",
       "accountBrowserProofRequired": "Enter the confirmation code shown in the browser to check the account.",
-      "accountVerifyBrowserProof": "Check account"
+      "accountVerifyBrowserProof": "Check account",
+      "accountBrowserUnavailable": "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in."
     },
     "ru": {
       "brand": "SyncWatch",
@@ -527,7 +528,8 @@
       "accountBrowserProof": "Код подтверждения из браузера",
       "accountConfirmationFailed": "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
       "accountBrowserProofRequired": "Введите код из браузера, чтобы проверить аккаунт.",
-      "accountVerifyBrowserProof": "Проверить аккаунт"
+      "accountVerifyBrowserProof": "Проверить аккаунт",
+      "accountBrowserUnavailable": "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход."
     }
   },
   "gallery": {

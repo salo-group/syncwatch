@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
   "units": "logical",
-  "sourceDigest": "b089896485224a63f66113599882566d383418b33c1560258eb089d8b596c037",
+  "sourceDigest": "72bb69655a2553a5f85e7c513ee0b3dbc5b6447343796e9e1ba446dda14dff8a",
   "sources": {
     "tokens/geometry.json": "83534a4d3b484f7a810a4c67f1f8ee58b2f2f4a14db4e4df404381e936a78a4b",
     "tokens/palette.json": "bb4dabce249ffe75a20192d8ccf523630432a3d1f3ca8dcba45fa787a7028a2c",
     "themes.json": "1a0a77546aeb1c96aaad53408a0a2e14e4be38298b50cfeb2700fd9a18b42b50",
     "components.json": "5200125732e44ac5b1a8b39c7993d0def1e6e84a40bf6f6de1130650fb76e729",
-    "copy.json": "6926257e69037425e65ab828af2916e23930985cd7b0838f219bef7c14b10b16",
+    "copy.json": "950b0ca2435e47a5224a966dcc815c8c8faacd2ceb6250a19869697956bbbef6",
     "settings.json": "5c6a9033f9bf3df9e09f094996e75fd5432ac07f69f01120d4517eacce9973d8",
     "room.json": "84189acaeef566dfcdb6282eec0080e10afe045fb9a220d98ecc86ea5d33d96b",
     "player.json": "5cf83f28cc332de38632059c39e19669159a04ca2d2c0515f277b7667e83d9f3",
     "call.json": "a26821925540d925182355af12c02a40780c84c051e53610b300934536186a01",
     "player-settings.json": "ff81d15018deb6d25b2f43bf268d478acdfa63102596522e352e29e6a7fdecdc",
     "selection-menu.json": "86ff7683d675213327acd83ebc38174dbcfea37235b454e0afe37671c59d1502",
-    "layouts.json": "b0effffbb7c217d6017a56ad68e98ae79ae8c8bc724916882f0000bc2695ca0b",
+    "layouts.json": "ed78988a983df766a5dc7ea4105cf804078d84b148f23aff98fb0d3478ba7aff",
     "package.json": "49e278398b736b490a57f3ec73bfdcdcc863d63be73788115f41b6db6bee5165"
   },
   "generatorRevision": "9add2a388c3ba959dc1f260b44f97eebc2563d8200be065ee6abc25db2a61c96",
@@ -350,7 +350,8 @@
         "accountBrowserProof": "Confirmation code from the browser",
         "accountConfirmationFailed": "The code could not be verified. Check it, or cancel and sign in again.",
         "accountBrowserProofRequired": "Enter the confirmation code shown in the browser to check the account.",
-        "accountVerifyBrowserProof": "Check account"
+        "accountVerifyBrowserProof": "Check account",
+        "accountBrowserUnavailable": "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in."
       },
       "ru": {
         "brand": "SyncWatch",
@@ -614,7 +615,8 @@
         "accountBrowserProof": "Код подтверждения из браузера",
         "accountConfirmationFailed": "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
         "accountBrowserProofRequired": "Введите код из браузера, чтобы проверить аккаунт.",
-        "accountVerifyBrowserProof": "Проверить аккаунт"
+        "accountVerifyBrowserProof": "Проверить аккаунт",
+        "accountBrowserUnavailable": "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход."
       }
     },
     "gallery": {
@@ -2802,6 +2804,31 @@
                 "children": []
               },
               {
+                "id": "libraryOpenAccount",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "openAccount",
+                  "automation": "{namespace}.openAccount",
+                  "enabled": "$can.openAccount",
+                  "label": "~openAccount"
+                },
+                "children": [
+                  {
+                    "id": "libraryOpenAccountLabel",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~openAccount"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
                 "id": "node69",
                 "kind": "button",
                 "styles": [
@@ -3980,31 +4007,6 @@
                                 "styles": [],
                                 "props": {
                                   "text": "~openRoom"
-                                },
-                                "children": []
-                              }
-                            ]
-                          },
-                          {
-                            "id": "accountEntrylibraryOpenRoom",
-                            "kind": "button",
-                            "styles": [
-                              "button",
-                              "compact"
-                            ],
-                            "props": {
-                              "action": "openAccount",
-                              "automation": "{namespace}.openAccount",
-                              "enabled": "$can.openAccount",
-                              "label": "~openAccount"
-                            },
-                            "children": [
-                              {
-                                "id": "accountEntrylibraryOpenRoomLabel",
-                                "kind": "text",
-                                "styles": [],
-                                "props": {
-                                  "text": "~openAccount"
                                 },
                                 "children": []
                               }

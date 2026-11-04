@@ -23,11 +23,14 @@ internal class AccountController(private val scope: CoroutineScope) {
             "accountSignIn" -> start()
             "accountOpenBrowser" -> if (presentation.state == "pending") attempt?.let {
                 try { java.awt.Desktop.getDesktop().browse(it.browserUri); presentation = presentation.copy(state = "authorizing") }
-                catch (_: Exception) { presentation = presentation.copy(status = "accountFailed") }
+                catch (_: Exception) { presentation = presentation.copy(status = "accountBrowserUnavailable") }
             }
             "accountVerifyBrowserProof" -> if (presentation.state == "browserConfirmationRequired") verifyBrowser()
             "accountConfirm" -> if (presentation.state == "confirmAccount") confirm()
-            "accountCancel" -> { generation++; val previous = work; previous?.cancel(); work = scope.launch { previous?.join(); cancel() } }
+            "accountCancel" -> {
+                presentation = presentation.copy(state = "working", status = "accountWorking")
+                generation++; val previous = work; previous?.cancel(); work = scope.launch { previous?.join(); cancel() }
+            }
             "accountSignOut" -> if (presentation.state == "signedIn") signOut()
         }
     }
