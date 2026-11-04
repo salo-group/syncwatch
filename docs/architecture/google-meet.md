@@ -1,61 +1,59 @@
 # Google Meet integration
 
-The SyncWatch call architecture uses a separate application-owned window. The application manages its frame and lifecycle; a Google Meet surface handles the meeting. Call hosting is not implemented in the current native shells.
+## Selected calling mode
 
-The target [account and room architecture](accounts-and-rooms.md) uses Google sign-in for every shared-room participant, one SyncWatch invitation, and organizer-authorized automatic Meet creation. It defines separate account, room, synchronization, and call authorities, including revocation and provider termination limits. This flow is not implemented by the current native shells or v1 room service.
+Google Meet remains the call provider. SyncWatch owns Google sign-in, room membership, meeting creation, invitations, and the action that opens the room's meeting. Meet runs in a supported browser or its official Progressive Web App (PWA). Prefer the PWA experience where available so the call has its own window; retain the supported-browser path. This is a separate Google-managed window, not a native surface embedded in SyncWatch.
+
+Google documents the Meet PWA for macOS, Windows, and Linux. It requires Chrome and has the same Meet features as the web client. Opening a meeting in the PWA may require the browser's **Open app** action. Do not assume an undocumented launch flag or a universal PWA deep-link API. [Meet PWA](https://support.google.com/meet/answer/10708569?hl=en).
+
+This is the selected target, not a delivered call implementation. The current native clients have no working room-to-browser call handoff or account/Meet provisioning. See the [account and room architecture](accounts-and-rooms.md) and [Google setup](../google-meet-setup.md).
+
+## User experience
+
+1. Sign in to SyncWatch through Google and join an authorized room.
+2. The organizer requests a call and grants the narrow Meet permission when needed. The server creates one associated space and publishes its URI to admitted members.
+3. **Open call** in Library or Player opens that room's canonical URI through the supported HTTPS handler. Confirm the account, devices, permissions, and **Join** in Meet.
+4. Movie playback continues in SyncWatch. Camera/microphone, local preview, device selection, and local hangup are controlled in Meet. A call failure does not stop the movie.
+5. An organizer-only **End call for everyone** can use the backend's authorized REST operation once implemented. It is never a substitute for a participant's local hangup.
+
+Keep the application design and add account/call-entry state through the common Apache-2.0 Design library. Google's meeting surface and window chrome belong to Google. Do not duplicate their controls unless a reliable integration can perform and observe the corresponding operation.
+
+Closing SyncWatch, leaving its room, or revoking its device session does not prove that an external Meet window stopped capture/audio. Explain this and provide a route back to Meet. Closing/ending in Meet must be tested separately. Never terminate a shared browser process, close unrelated windows, reparent the browser, inject scripts/cookies, or request Accessibility permissions to impersonate native ownership.
+
+The browser's Google account is independent of SyncWatch OAuth. Successful app sign-in does not sign Meet in automatically. Make account selection/admission in Meet explicit; a guest display name is not verified room identity.
 
 ## Provider interfaces
 
-| Interface or constraint | Architectural consequence |
-|---|---|
-| Meet REST API manages spaces and conference metadata | It can support meeting setup but does not supply a native two-way call renderer. [REST overview](https://developers.google.com/workspace/meet/api/guides/overview) |
-| `spaces.create` creates a meeting space | The target room workflow creates a space with the organizer's explicit OAuth grant and shares it with admitted room members. REST creation does not establish call participation. [API reference](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/create) |
-| Meet Media API is deprecated and its preview will not reach general availability | Google announced retirement on October 28, 2026, with endpoint shutdown on January 15, 2027. Do not adopt it for the calling baseline. The Meet REST API and Add-ons SDK remain supported, but do not supply a native two-way call renderer. [Release notes](https://developers.google.com/workspace/meet/release-notes), [Meet developer overview](https://developers.google.com/workspace/meet) |
-| Meet add-ons run applications inside Meet | They do not establish that Meet can be embedded in a native application. [Add-ons overview](https://developers.google.com/workspace/meet/add-ons/guides/overview) |
-| Google lists supported browsers | Embedded hosts still require their own feasibility test. [Meet requirements](https://support.google.com/meet/answer/7317473?hl=en) |
-| OAuth restricts embedded user agents | API authorization uses a supported external-user-agent flow. An API token does not automatically establish a Meet web session. [Native OAuth](https://developers.google.com/identity/protocols/oauth2/native-app), [embedded webview policy](https://developers.googleblog.com/upcoming-security-changes-to-googles-oauth-20-authorization-endpoint-in-embedded-webviews/) |
-
-These interfaces do not supply a complete native call-control contract. Successful navigation alone does not establish call participation or native control support.
-
-## Call window host
-
-The following hosts are candidates, not implemented calling support. Provider status was checked against the official sources above on October 31, 2026.
-
-| Desktop | Native owner and host boundary |
+| Interface | Consequence |
 | --- | --- |
-| macOS | Swift/AppKit owns the `NSWindow`; top-level WKWebView navigation is a feasibility candidate. |
-| Windows | C#/WPF owns the window; CEF/CefSharp is an open-source feasibility candidate. |
-| Linux | Kotlin owns the desktop call window. Its embedded host remains to be selected and qualified on Linux; a Windows host or macOS check cannot supply this evidence. |
+| Meet REST manages spaces and conferences | Supports provisioning, not a native renderer or control of a participant's browser. [Overview](https://developers.google.com/workspace/meet/api/guides/overview) |
+| `spaces.create` | Backend uses the organizer's explicit grant; only admitted members receive the result. [Create](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/create) |
+| `spaces.endActiveConference` | A global organizer action; does not delete the space, permanently revoke its URI, or close browser windows. [End](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/endActiveConference) |
+| OAuth prohibits developer-controlled embedded user agents | Use a supported authorization flow without importing tokens/cookies into a WebView. [Policy](https://developers.google.com/identity/protocols/oauth2/policies) |
+| Supported browsers and PWA | Qualify actual handler and meeting behavior on all three OSes. [Requirements](https://support.google.com/meet/answer/7317473?hl=en) |
+| Add-ons embed applications inside Meet | Do not implement Meet inside a native app. [Add-ons](https://developers.google.com/workspace/meet/add-ons/guides/overview) |
+| Meet Media API is discontinued | New enrollment is closed; endpoints shut down January 15, 2027. Do not adopt it. [Developer overview](https://developers.google.com/workspace/meet) |
 
-Browser-host compatibility remains unresolved. Any adopted external host and its complete [source dependency graph](dependencies.md) must be pinned under `3rdparty/`. Before investing in a browser SDK, establish a supported account or guest path, actual two-way media and complete shutdown in the intended host. A REST authorization token does not establish a Meet web session, and restricted embedded OAuth must not be bypassed by user-agent changes or cookie transfer.
+The installed browser/PWA is an external user agent, not a bundled runtime or application library. SyncWatch does not distribute or silently install it. Adopted libraries still require pinned Git submodules and complete source/license closure under `3rdparty/`. No CEF, CefSharp, WebKitGTK, or private Embed SDK is selected for this mode.
 
-The native shell owns move, resize, pin, minimize, restore, fullscreen, and failure presentation. The content area displays Google Meet. Do not depend on iframe embedding, user-agent spoofing, imported browser cookies, or unstable DOM selectors for production controls.
+## Desktop adapters
 
-Provider content receives only the permissions necessary for the call. Do not expose native file access, playback control, or room credentials to the provider page. Use an application-specific browser profile and constrain privileged navigation. Handle account access failures explicitly; API authorization alone does not solve web authentication.
+Swift/macOS, C#/Windows, and Kotlin/Linux validate the admitted URI and request the registered HTTPS handler through their native platform boundary. Do not execute server-supplied commands or browser argument strings. The browser/PWA owns its window, account, devices, preview, capture, and hangup.
+
+Accept only a canonical HTTPS `meet.google.com` meeting URI from the current authenticated room. Reject userinfo, nondefault ports, query/fragment data, malformed meeting codes, foreign hosts, arbitrary schemes, stale epochs, and actions after leave/cancellation. Never log the URI. A missing/failed handler produces a common localized retry action; retry opens the same space without creating another meeting.
+
+Opening is explicit, never a side effect of join, reconnect, snapshot refresh, or restart. Single-flight requests prevent rapid duplicate launches. Invalidate pending work on meeting/room replacement, leave, logout, and close. A late completion cannot reactivate an obsolete flow.
 
 ## State and capabilities
 
-The host can represent `idle`, `opening`, `webSurfaceReady`, `userActionRequired`, `failed`, and `closed`. Represent joined state, camera/microphone state, remote video availability, and speaking activity only when the integration provides a reliable signal.
+Proposed handoff states are `unavailable`, `available`, `opening`, `handedOff`, and `failed`, bound to room epoch and meeting identity. `handedOff` means the OS accepted an open request; it does not prove a visible window, joined participant, or active capture. Version these proposed contracts before implementation; they are not new values in the existing v1 call-host schema.
 
-| Call behavior | Host responsibility |
-|---|---|
-| Open and restore the call window | Native window lifecycle independent of meeting navigation |
-| Two-way camera and microphone | Provider participation and device capture |
-| Device selection and native media controls | Available provider interfaces |
-| Hangup and close | Capture and participation stop, including when the window closes |
-| Remote video | A usable video presentation within the application-owned window |
-| Local camera thumbnail | Compact actual self-view alongside remote video, with active, disabled, denied, and unavailable states |
-| Initial camera state | Enabled camera starts on first join with permission granted, without an off/on workaround |
-| Independent call volume | Zero/mute, intermediate, and full values affect only received call output; movie, microphone, other applications, and peers remain unchanged |
-| Inactive call audio | No received audio before join or after hangup, close, failed join, or teardown; synchronization-room membership alone does not open audio |
-| Remote-speaking notification | A reliable signal for movie ducking |
-| Camera quality | Actual selectable provider/host capability |
-| Compact call layout | A usable minimum viewport with functioning meeting controls |
+`canObserveJoin`, `canMuteFromNativeUI`, `canSelectDevicesFromNativeUI`, `canSetCallVolume`, `canObserveRemoteSpeaking`, and `canConfirmHangup` remain false in ordinary browser/PWA mode. Conference-level REST metadata is not this device's joined state. Do not persist fake camera/microphone state or acknowledge a native mute/hangup request that merely changes a label.
 
-Capabilities such as `canObserveJoin`, `canMuteFromNativeUI`, `canSelectDevicesFromNativeUI`, `canSetCallVolume`, `canObserveRemoteSpeaking`, and `canConfirmHangup` default to false. Only a reliable provider integration can advertise support.
+Independent received-call gain in SyncWatch, remote-speaking ducking, automatic local browser hangup, native self-view, app-controlled pin/size/layout, and a shared Google web session remain unmet capabilities. Selecting external Meet does not implicitly satisfy or remove those requirements. Existing native call-shell galleries are design references, not this mode's production call surface.
 
-The existing six-field capability schema has no local-preview or initial-camera fields. Native actions for these features need an explicit versioned capability boundary. A loaded page or open audio path is not equivalent to a joined call.
+## Acceptance
 
-## Known limitations
+Deliver the same complete room-to-call journey on all three desktops. Verify browser handoff and the PWA path where available: Library/Player entry, no handler, wrong account, permission denial, duplicate clicks, stale/replaced meetings, leave/logout/close during opening, reopen, and independent movie playback. Actual two-way calling needs all six directed desktop audio/video cases with visible Google controls; source/fixture checks do not establish it.
 
-All three desktop hosts remain unqualified candidates. Embedded account access, guest participation, two-way media, native controls, independent call volume, and reliable hangup remain unresolved. Google-supported browser compatibility does not automatically extend to embedded WebKit or CEF hosts.
+Record actual Join/Leave, device/capture outcomes, and browser ownership separately from SyncWatch state. Clean up only test-created meetings, windows, profiles, and resources. Preserve unsupported and unverified capability boundaries.

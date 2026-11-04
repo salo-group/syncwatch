@@ -13,7 +13,7 @@ SyncWatch is a native desktop product for synchronized local movie viewing and v
 | Shared design | Platform-neutral JSON tokens and component contracts in `packages/design`; Apache 2.0 Style Dictionary generates native resources |
 | Playback | Embedded libVLC with SyncWatch controls |
 | Synchronization | The upstream Syncplay client engine in a headless helper on each device, connected to a standard Syncplay server |
-| Calling | Google Meet in a separate application-owned window; browser-host integration is not implemented |
+| Calling | Google Meet through a supported browser or official PWA; account/room/provisioning and explicit handoff belong to SyncWatch and remain unimplemented |
 | Room metadata | A C# / ASP.NET Core service over HTTPS/WSS for catalog and watch-session metadata |
 | External libraries | Pinned source submodules under `3rdparty/`, including the complete transitive graph before component builds |
 | Continuous integration | GitHub Actions for repository checks, native macOS/Windows builds, required Linux Kotlin-domain/JVM checks, reproducible dependencies, integration checks, and trusted release candidates |
@@ -24,34 +24,24 @@ The Windows SDK selection is pinned in [global.json](../../global.json) and the 
 
 ```mermaid
 flowchart TB
-    D[SyncWatch Design JSON] --> G[Style Dictionary build tool]
-    G --> A[SwiftUI / AppKit client]
-    G --> W[C# / WPF client]
-    G --> L[Kotlin / Compose Desktop Linux client]
-    L -. Source / build pending .-> CL[Linux coordinators and native adapters]
-    CL -. Local movie .-> FL[Linux libVLC surface]
-    CL -. Versioned local IPC .-> SL[Syncplay headless bridge]
-    SL -. Syncplay protocol and TLS .-> SS
-    CL -. HTTPS / WSS metadata .-> R
-    CL -. Application-owned window .-> ML[Linux Meet host]
-    ML -. Google web client .-> M
-    A --> CA[Application coordinators and ports]
-    W --> CW[Application coordinators and ports]
-    CA --> VA[Native libVLC adapter]
-    CW --> VW[Native libVLC adapter]
-    VA --> FA[Local movie file]
-    VW --> FW[Local movie file]
-    CA <-->|Versioned local IPC| SA[Syncplay headless bridge]
-    CW <-->|Versioned local IPC| SW[Syncplay headless bridge]
-    SA <-->|Syncplay protocol and TLS| SS[Syncplay server]
-    SW <-->|Syncplay protocol and TLS| SS
-    CA <-->|HTTPS / WSS metadata| R[RoomMetadata service]
-    CW <-->|HTTPS / WSS metadata| R
-    CA --> MA[Application-owned Meet window]
-    CW --> MW[Application-owned Meet window]
-    MA <-->|Google web client| M[Google Meet service]
-    MW <-->|Google web client| M
+    D[SyncWatch Design JSON] --> G[Style Dictionary generator]
+    G --> A[Swift macOS client]
+    G --> W[C# Windows client]
+    G --> L[Kotlin Linux client]
+    A --> C[Native coordinators implementing shared contracts]
+    W --> C
+    L --> C
+    C --> V[Per-device native libVLC adapter]
+    V --> F[Local movie file]
+    C <-->|Owned local IPC| S[Per-device Syncplay helper]
+    S <-->|Upstream protocol and TLS| SS[Syncplay server]
+    C <-->|HTTPS / WSS metadata| R[Room service]
+    C -. Explicit validated URI handoff .-> H[Supported browser / Meet PWA]
+    H <-->|Google-managed call| M[Google Meet]
+    R -. Planned account / provisioning modules .-> API[Google OIDC / Meet REST]
 ```
+
+Native ownership is implemented separately in each selected language. Account/provisioning and call handoff remain planned; the diagram does not imply their runtime availability.
 
 Each device reads its own movie file. Only play, pause, seek, and movie/playlist-item selection are shared user playback actions. RoomMetadata supplies the identities, ordering, membership, and authorization needed for them. Other application preferences and presentation state remain local. Google Meet handles calling independently; ending a call does not disconnect playback synchronization.
 

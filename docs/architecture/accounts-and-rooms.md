@@ -4,16 +4,16 @@
 
 The target experience is one SyncWatch account, one room invitation, and a call associated with that room. Every participant signs in with Google before creating or joining a shared room. First sign-in creates the SyncWatch account automatically; there is no separate password. Local library and local playback remain available without sign-in.
 
-This is a target architecture, not an implemented authentication or calling service. The current [room API](room-service.md) uses creation and membership credentials without Google identity or durable account storage. Its v1 behavior remains unchanged until a versioned replacement is delivered on all three desktops. [Embedded Meet hosting](google-meet.md) remains an unresolved prerequisite: registration and REST authorization do not provide a signed-in Meet surface or a two-way media renderer.
+This is a target architecture, not an implemented authentication or calling service. The current [room API](room-service.md) uses creation and membership credentials without Google identity or durable account storage. Its v1 behavior remains unchanged until a versioned replacement is delivered on all three desktops. The selected [Meet mode](google-meet.md) uses a supported external browser or official PWA, with room/account/provisioning inside SyncWatch. Native embedded hosting is not a prerequisite for this mode.
 
 ## User journey
 
 1. **Continue with Google.** A supported browser authorization flow returns the result to SyncWatch. Show the selected account before creating the local session. Never collect the Google password in SyncWatch.
 2. **Create room.** Create the SyncWatch room immediately. Offer **Start call** in the same flow. Only the organizer grants permission to create Meet spaces, when first needed; declining leaves the room usable for watching.
 3. **Invite.** Share one SyncWatch invitation. A recipient signs in, requests admission, and is approved by the owner. A pending request receives no catalog, synchronization access, or meeting URI. An invitation is not an account credential.
-4. **Join call.** An admitted participant explicitly opens the room's call, sees a device/permission preview, and joins. Room admission never activates the microphone, camera, or received call audio. A Meet admission or account prompt remains visible when Google requires it.
-5. **Watch together.** Syncplay owns playback synchronization and VLC reads each local movie. The call has independent device, output-volume, and connection state.
-6. **Leave call**, **Leave room**, and **End room** are distinct. Leaving the call preserves the watch; leaving the room releases that device's call and shared watch; ending the room revokes all room memberships and requests conference termination. Local media and preferences are retained.
+4. **Join call.** An admitted participant explicitly opens the room's call in the supported browser/PWA, checks the Google account and device/permission preview, and joins there. Room admission never activates capture or call audio. Browser-open success is not joined state.
+5. **Watch together.** Syncplay owns playback synchronization and VLC reads each local movie. Meet owns call devices, preview, capture, and hangup; independent native call gain remains an unmet capability.
+6. **Leave call**, **Leave room**, and **End room** are distinct. Leaving in Meet preserves the watch; leaving the room releases the shared watch and invalidates call handoff. Explain that an existing external call may continue until left in Meet. Ending the room revokes room memberships and requests conference termination, reporting its actual outcome. Local media/preferences are retained.
 
 The owner is also the initial Meet organizer. Owner departure closes the room, preserving current room semantics. Network interruption gets a bounded reconnect grace; it is not immediate departure. There is no implicit ownership transfer. Any later transfer must distinguish SyncWatch roles from Google organizer/co-host permissions and require a supported provider operation.
 
@@ -31,7 +31,7 @@ flowchart TB
     M -->|Organizer grant only| API[Google Meet REST API]
     C -->|Room-scoped admission| S[Syncplay admission boundary]
     S --> E[Pinned upstream Syncplay engine]
-    C --> H[Application-owned call window]
+    C --> H[Supported browser / official Meet PWA]
     H --> MEET[Google Meet media and admission]
     C --> V[Local VLC and movie files]
 ```
@@ -43,7 +43,7 @@ flowchart TB
 | Meet coordinator | Organizer grant, space identity, provisioning journal, call generation | Browser login, native media rendering, Syncplay timing |
 | Sync admission | Server-verified room/run binding, expiring tickets, revocation | A second playback synchronization algorithm |
 | Native account adapter | Browser handoff, secure local session storage, cancellation | OAuth client secrets, Google refresh tokens |
-| Call host | Qualified participation signals, isolated received audio, capture/window lifetime | Native filesystem access, room/session credentials |
+| Call handoff | Validated current-room URI, explicit browser request, bounded failure/cancellation | Claims about joined media, browser cookies, native capture/hangup control |
 | Shared Design | Common account/room/call components, copy, states, and actions | Network requests, tokens, or authorization decisions |
 
 Backend authorization is authoritative even if a client hides or disables a control. UI, domain, HTTP, persistence, and provider types remain separate. All new UI structure belongs to `packages/design`; native renderers bind the same state/actions without recreating layouts.
@@ -58,7 +58,7 @@ For sign-in, request `openid`, `profile`, and `email`. Identify an account by th
 
 Issue separate opaque SyncWatch access and rotating device-refresh credentials; retain only hashes server-side. Short access lifetime, idle/absolute refresh lifetime, transaction expiry, request bounds, and reconnect budgets are named, versioned server policy with injected clocks in tests. A refresh transaction has single-use rotation and bounded retry correlation; unexpected reuse revokes the session family. Check account/session revocation on authenticated requests and terminate affected streams. Provide current-device logout and all-device logout. Require recent authentication for account deletion and identity changes.
 
-Store only the SyncWatch device credential in macOS Keychain, Windows protected credential storage, or Linux Secret Service. If secure storage is unavailable, offer an explicit memory-only session; never fall back to plaintext preferences. Access tokens stay in memory. Logout cancels pending authorization, shuts down the local call/capture and room/helper owners, clears local credentials/profile data, and revokes the device session. A signed-out restart cannot reopen a room or resume capture silently.
+Store only the SyncWatch device credential in macOS Keychain, Windows protected credential storage, or Linux Secret Service. If secure storage is unavailable, offer an explicit memory-only session; never fall back to plaintext preferences. Access tokens stay in memory. Logout cancels authorization/handoff work, closes owned room/helper resources, clears local credentials/profile data, and revokes the device session. It does not sign the external browser out or prove an existing Meet call stopped; provide a clear route to leave there. A signed-out restart cannot reopen a room or request a call silently.
 
 ## Meet permission and account consistency
 
@@ -66,7 +66,7 @@ Only a user starting a room's call grants `https://www.googleapis.com/auth/meeti
 
 The backend performs the additional authorization and verifies that its Google `sub` matches the current SyncWatch account. Switching the browser's Google account must never attach another person's Meet grant. Retain a Google refresh token only after explicit permission for reconnect/reuse, encrypted with managed keys separately from the database; keep access tokens short-lived and server-side. Revoked/expired grants become `authorizationRequired`, without retry loops or loss of room membership. Normal SyncWatch logout revokes the device session; **Disconnect Google access** additionally attempts provider revocation and deletes stored provider tokens. Account deletion removes provider grants and account data under a published retention policy.
 
-Google authorization must use a supported external user agent. A successful OIDC/API exchange does not sign the embedded Meet page into the same account. Do not import cookies, inject tokens, spoof the user agent, or collect credentials to bridge that gap. The selected call host must establish a supported participation path and reliably distinguish verified Google participation from a guest/display-name claim. If it cannot, authenticated embedded calling remains unmet. [OAuth browser policy](https://developers.google.com/identity/protocols/oauth2/policies), [call host requirements](google-meet.md).
+Google authorization and Meet use supported external user agents. An OIDC/API exchange does not select the same Google web account automatically. Do not import cookies, inject tokens, spoof the user agent, or collect credentials to bridge that gap. Expose account selection in Meet and distinguish room identity from provider participation; never treat a guest/display name or browser-open result as verified Google identity. [OAuth browser policy](https://developers.google.com/identity/protocols/oauth2/policies), [call handoff requirements](google-meet.md).
 
 ## Room admission and Syncplay access
 
@@ -88,29 +88,29 @@ Request restrictive access and host moderation where supported, then read back t
 
 SyncWatch membership and Google Meet admission are distinct access systems. A leaked Meet link, a guest using someone's display name, or organizer admission outside SyncWatch cannot be made safe by checking the SyncWatch roster alone. Display room presence and confirmed call participation separately. Do not claim that every Meet participant is an authenticated room member unless the selected integration can actually enforce and observe that relationship.
 
-Removing a room member also withdraws any configured Meet membership. Deleting that configuration does not establish that an already joined participant was disconnected. For a privacy-sensitive removal, the target policy requests ending the active conference before offering a replacement to the retained members. Room closure and expiry also enqueue conference termination, with durable bounded retries while authorization remains available. `endActiveConference` ends the current conference; it does not delete the space or permanently invalidate its link. If Google denies termination or the outcome is unknown, expose **Call termination unconfirmed** and the organizer's recovery action. Never report that all remote capture stopped, or that the old link was revoked. Local clients must still stop their own capture and received audio. [End active conference](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/endActiveConference).
+Removing a room member also withdraws any configured Meet membership. Deleting that configuration does not establish that an already joined participant was disconnected. For a privacy-sensitive removal, the target policy requests ending the active conference before offering a replacement to retained members. Room closure/expiry enqueue termination with durable bounded retries while authorization remains available. `endActiveConference` ends the current conference; it does not delete the space, permanently invalidate its link, or close browser windows. If denied or unknown, expose **Call termination unconfirmed** and the organizer's recovery action. Never report remote capture stopped or the old link revoked. Local browser/PWA hangup and capture release need their own observed outcome. [End active conference](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/endActiveConference).
 
 ## Failure and data boundaries
 
-Expose independent states: account (`signedOut`, `authorizing`, `signedIn`, `reauthenticationRequired`); room (`outside`, `requestingAdmission`, `admitted`, `reconnecting`, `closed`); provider provisioning (`absent`, `authorizationRequired`, `creating`, `ready`, `outcomeUnknown`, `terminationUnconfirmed`); and the qualified [local call host states](google-meet.md#state-and-capabilities). A ready space or authenticated room never sets a local call to joined. Version these proposed contracts before implementation; they are not additions to the current v1 schema.
+Expose independent states: account (`signedOut`, `authorizing`, `signedIn`, `reauthenticationRequired`); room (`outside`, `requestingAdmission`, `admitted`, `reconnecting`, `closed`); provider provisioning (`absent`, `authorizationRequired`, `creating`, `ready`, `outcomeUnknown`, `terminationUnconfirmed`); and [browser handoff](google-meet.md#state-and-capabilities). A ready space, authenticated room, or accepted open request never sets the local call to joined. Version these proposed contracts before implementation; they are not additions to the current v1 schema.
 
 | Situation | Required result |
 | --- | --- |
 | OAuth denied, cancelled, expired, or wrong account | No new authenticated session/grant; leave the existing account and local library intact |
 | Invitation copied, expired, replayed, or raced | No membership until authenticated approval; consumption is atomic and retries are correlated |
-| Session revoked or account deleted | Reject new operations, close streams, revoke Sync admission, stop that client's call/capture |
+| Session revoked or account deleted | Reject operations, close streams, revoke Sync admission, invalidate handoff; make external Meet hangup explicit |
 | Meet provisioning, authorization, or media failure | Keep room/watch usable; present a typed recoverable call state |
 | Metadata/Syncplay interruption | Preserve existing recovery semantics and pause on synchronization loss; do not recreate Meet |
-| Close/logout during pending create/join | Cancel local work; reconcile server/provider outcome; late callbacks cannot reopen windows or capture |
+| Close/logout during pending create/open | Cancel local work; reconcile provider outcome; late completions cannot issue another open; an already accepted external launch remains separately owned |
 | Organizer leaves or room expires | Close the room, invalidate tickets, stop cooperative clients, and report actual provider termination outcome |
 | Server restart or database/key failure | Fail closed for accounts/tickets; no trust bypass or silent recreation of old room state |
 
 Use HTTPS/WSS with normal certificate validation. Native APIs accept header credentials, with no broad CORS or query authentication. Browser OAuth endpoints have separate cookie, CSRF, CSP, referrer, and redirect policies; their exceptions must not weaken room APIs. Trust forwarded headers only from configured proxies. Encrypt backups and provider grants; use reviewed cryptographic/OIDC libraries rather than custom JWT validation or encryption. Rotate secrets, test restore/key-loss behavior, and publish deletion/retention rules before public accounts.
 
-Do not relay local movies or retain absolute paths, Google passwords, call media, transcripts, or recordings. Share only the existing bounded media descriptors needed by admitted participants. Keep emails private to account/provider operations unless the user explicitly shares them. Logs exclude authorization headers, cookies, callback codes, transaction proofs, invitation/meeting URLs, and media titles; use bounded sanitized identifiers and event categories. Native call content receives no privileged file or room bridge. Deny device capture by default, grant it only for an explicit trusted call origin, and release it on leave, close, failure, logout, and process teardown.
+Do not relay local movies or retain absolute paths, Google passwords, call media, transcripts, or recordings. Share only bounded media descriptors needed by admitted participants. Keep emails private unless explicitly shared. Logs exclude authorization headers, cookies, callback codes, transaction proofs, invitation/meeting URLs, and titles. External call content receives no native file/room bridge or session credential. Browser/PWA permissions and capture belong to its trusted Meet origin; SyncWatch does not request them or pretend to revoke them through logout.
 
 ## Delivery acceptance
 
-Swift/macOS, C#/Windows, and Kotlin/Linux consume the same account/room/call state contracts and shared Design. Qualify the Google participation path on all three before treating registration as an embedded-call solution. Test personal and managed Google accounts, consent refusal, account mismatch, secure-store denial, token/refresh replay, logout/restart, invitation races, cross-room access, Syncplay bypass attempts, removal, organizer loss, unknown provider outcomes, and capture/audio teardown.
+Swift/macOS, C#/Windows, and Kotlin/Linux consume the same account/room/handoff contracts and shared Design. Qualify supported-browser/PWA participation on all three independently of SyncWatch sign-in. Test personal/managed Google accounts, consent refusal, account mismatch, secure-store denial, token/refresh replay, logout/restart, invitation races, cross-room access, Syncplay bypass attempts, removal, organizer loss, unknown provider outcomes, and actual browser capture/audio teardown.
 
 Verify real bidirectional calls in all six desktop directions, alongside existing synchronized playback and independent local volumes. Provider navigation or REST success cannot substitute for observed joined media or confirmed local shutdown. Required CI, dependency/source/license closure, real native windows, and applicable failure scenarios belong to each delivered feature; a documented decision alone clears none of these gates.
