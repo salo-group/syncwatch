@@ -807,7 +807,7 @@ object SyncWatchPlayerSettings {
         "contrast" to "0",
         "saturation" to "0",
         "hue" to "0",
-        "defaultVolume" to "100",
+        "defaultVolume" to "50",
         "rememberVolume" to "true",
         "normalizeAudio" to "false",
         "smoothScaling" to "true",

@@ -22,7 +22,11 @@ public sealed class AppearancePreferences
             {
                 loaded.State.Validate(); State = loaded.State; CanWrite = true;
             }
-            else CanWrite = loaded.Status is LocalStateStatus.Missing or LocalStateStatus.Invalid;
+            else
+            {
+                CanWrite = loaded.Status is LocalStateStatus.Missing or LocalStateStatus.Invalid;
+                if (CanWrite) State = State with { Preferences = State.Preferences with { MovieVolume = DefaultMovieVolume } };
+            }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or WatchException or ContractException) { CanWrite = false; }
     }

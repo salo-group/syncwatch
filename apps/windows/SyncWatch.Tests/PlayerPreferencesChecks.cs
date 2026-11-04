@@ -51,6 +51,7 @@ internal static class PlayerPreferencesChecks
             }
             finally { gate.Proceed.Set(); await writing; }
             var volumeDisk = new FileLocalStateStore(Path.Combine(root, "volume.json")); volumeDisk.Write(initial);
+            Require(new AppearancePreferences(new FileLocalStateStore(Path.Combine(root, "fresh-volume.json"))).OpeningMovieVolume == 0.5);
             var volume = new AppearancePreferences(volumeDisk);
             Require(volume.OpeningMovieVolume == 0.4);
             var volumeDraft = volume.CreatePlayerSettingsEditor(); volumeDraft.Edit("skipSeconds", "10");

@@ -119,6 +119,7 @@ private final class TestStore: LocalStateStore {
     initial.selectedMediaID = "retained-film"
     initial.resumePositions = [ResumePosition(mediaID: "retained-film", positionMs: 9000)]
     try disk.write(initial)
+    #expect(AppearancePreferences(store: TestStore()).openingMovieVolume == 0.5)
     let preferences = AppearancePreferences(store: disk)
     #expect(preferences.openingMovieVolume == 0.4)
     var draft = preferences.playerSettingsEditor

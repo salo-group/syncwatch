@@ -24,7 +24,9 @@ import SyncWatchLibrary
                 try value.validate()
                 state = value
                 canWrite = true
-            case .missing, .invalid: canWrite = true
+            case .missing, .invalid:
+                canWrite = true
+                state.preferences.movieVolume = defaultMovieVolume
             case .unsupportedVersion: break
             }
         } catch { canWrite = false }

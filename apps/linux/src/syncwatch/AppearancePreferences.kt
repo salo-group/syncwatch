@@ -18,7 +18,10 @@ internal class AppearancePreferences(store: LocalStateStore) {
             val loaded = this.store.read()
             when (loaded.status) {
                 LocalStateStatus.loaded -> { state = loaded.state!!; canWrite = true }
-                LocalStateStatus.missing, LocalStateStatus.invalid -> canWrite = true
+                LocalStateStatus.missing, LocalStateStatus.invalid -> {
+                    canWrite = true
+                    state = state.copy(preferences = state.preferences.copy(movieVolume = defaultMovieVolume))
+                }
                 LocalStateStatus.unsupportedVersion -> Unit
             }
         } catch (_: java.io.IOException) { }

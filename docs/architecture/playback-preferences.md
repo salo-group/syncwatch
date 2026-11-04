@@ -10,6 +10,6 @@ The existing local-state owner serializes writes and retains unrelated preferenc
 
 Native component and persistence checks do not replace actual settings-window, keyboard/button, six-direction shared-watch and same-package restart acceptance on macOS, Windows and Linux.
 
-Default movie volume is an optional normalized field in version1 local state. Its absence in an older file resolves through the common Design default; the stored remembered movie volume is preserved. A new playback scope applies remembered volume when enabled, otherwise the configured default, before readiness, shared admission and autoplay. Mute remains transient.
+New application state starts at the common Design default (50percent). Existing saved levels are retained. Default movie volume is an optional normalized field in version1 local state. Its absence in an older file resolves through the common Design default; the stored remembered movie volume is preserved. A new playback scope applies remembered volume when enabled, otherwise the configured default, before readiness, shared admission and autoplay. Mute remains transient.
 
 Only a successfully acknowledged local volume command can update remembered volume. The owning watch coordinator rejects callbacks from an old scope and coalesces accepted changes through its existing serialized checkpoint. Room commands do not carry volume. Turning remembering off retains the last saved value while subsequent scopes use the configured default. Changing default volume affects subsequent scopes.

@@ -37,6 +37,7 @@ internal suspend fun playerPreferencesChecks(scratch: Path) {
     check(!result.second && result.first.message == "saveFailed" && failed.state.preferences.skipSeconds == 10)
     val volumeDisk = FileLocalStateStore(scratch.resolve("movie-volume/local-state.json"))
     volumeDisk.write(initial)
+    check(AppearancePreferences(FileLocalStateStore(scratch.resolve("fresh-volume/local-state.json"))).openingMovieVolume == 0.5)
     val volume = AppearancePreferences(volumeDisk)
     check(volume.openingMovieVolume == 0.4)
     var volumeDraft = volume.playerSettingsEditor().edit("skipSeconds", "10").edit("defaultVolume", "25").edit("rememberVolume", "false")
