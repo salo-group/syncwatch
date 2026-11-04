@@ -36,6 +36,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     private readonly NativeVideoHost surface;
     private readonly LocalPlaybackLaunch launch;
     private string language;
+    private ulong? lastVolumeSequence;
     private readonly double? initialVolume;
     private readonly Action<PlaybackScope, double>? onVolumeChanged;
     private readonly long initialPositionMs;
@@ -324,7 +325,13 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
                 case "seek" when value is double seek: await player.SeekAsync(checked((long)seek), scope, cancellation.Token); break;
                 case "setMovieVolume" when value is double volume:
                     await player.SetVolumeAsync(volume, presentation.Muted, scope, cancellation.Token);
-                    if (!closing) onVolumeChanged?.Invoke(scope, volume);
+                    var observed = await player.ObserveAsync(scope, cancellation.Token);
+                    if (!closing && observed.Scope == scope && observed.Status == PlaybackStatus.Ready && observed.Volume is double actual
+                        && (lastVolumeSequence is null || observed.Sequence > lastVolumeSequence.Value))
+                    {
+                        lastVolumeSequence = observed.Sequence;
+                        onVolumeChanged?.Invoke(scope, actual);
+                    }
                     break;
                 case "muteMovie": await player.SetVolumeAsync(presentation.Volume, !presentation.Muted, scope, cancellation.Token); break;
             }

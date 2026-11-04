@@ -49,6 +49,7 @@ struct LocalPlaybackLaunch {
     private var closing = false
     private var closed = false
     private let allocateScope: Bool
+    private var lastVolumeSequence: UInt64?
     private let initialVolume: Double?
     private let onVolumeChanged: (@MainActor (PlaybackScope, Double) -> Void)?
     private let initialPositionMs: Int64
@@ -366,7 +367,12 @@ struct LocalPlaybackLaunch {
                 case "setMovieVolume":
                     if let value {
                         try await player.setVolume(value, muted: muted, scope: scope)
-                        if !closing { onVolumeChanged?(scope, value) }
+                        let observed = try await player.observe(scope)
+                        if !closing, observed.scope == scope, observed.status == .ready, let actual = observed.volume,
+                            lastVolumeSequence.map({ observed.sequence > $0 }) ?? true {
+                            lastVolumeSequence = observed.sequence
+                            onVolumeChanged?(scope, actual)
+                        }
                     }
                 case "muteMovie": try await player.setVolume(volume, muted: !muted, scope: scope)
                 default: break

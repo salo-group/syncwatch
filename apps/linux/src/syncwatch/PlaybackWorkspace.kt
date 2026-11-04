@@ -74,6 +74,7 @@ internal class PlaybackController(
     internal fun libraryPresentation(source: LibraryPresentation) = tracks.libraryPresentation(source)
     internal val loaded = CompletableDeferred<Unit>()
     internal val acceptanceRequested = launch.report != null
+    private var lastVolumeSequence: ULong? = null
     private var autoplayPending = autoplay && !requiresSharedAdmission
     private var started = false
     private var closing = false
@@ -265,7 +266,12 @@ internal class PlaybackController(
                             "seek" -> if (number != null) player.seek(number.toLong(), scope)
                             "setMovieVolume" -> if (number != null) {
                                 player.setVolume(number, presentation.muted, scope)
-                                if (!closing) onVolumeChanged?.invoke(scope, number)
+                                val observed = player.observe(scope)
+                                if (!closing && observed.scope == scope && observed.status == PlaybackStatus.ready && observed.volume != null
+                                    && (lastVolumeSequence == null || observed.sequence > lastVolumeSequence!!)) {
+                                    lastVolumeSequence = observed.sequence
+                                    onVolumeChanged?.invoke(scope, observed.volume)
+                                }
                             }
                             "muteMovie" -> player.setVolume(presentation.volume, !presentation.muted, scope)
                         }
