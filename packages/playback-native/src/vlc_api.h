@@ -40,6 +40,7 @@
  X(unsigned, libvlc_media_player_has_vout, (libvlc_media_player_t *)) \
  X(int, libvlc_video_get_size, (libvlc_media_player_t *, unsigned, unsigned *, unsigned *)) \
  X(int, libvlc_audio_get_volume, (libvlc_media_player_t *)) \
+ X(int, libvlc_audio_output_set, (libvlc_media_player_t *, const char *)) \
  X(int, libvlc_audio_set_volume, (libvlc_media_player_t *, int)) \
  X(int, libvlc_audio_get_mute, (libvlc_media_player_t *)) \
  X(void, libvlc_audio_set_mute, (libvlc_media_player_t *, int)) \
