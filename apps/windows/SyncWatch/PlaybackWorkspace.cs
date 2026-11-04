@@ -36,7 +36,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     private readonly NativeVideoHost surface;
     private readonly LocalPlaybackLaunch launch;
     private string language;
-    private ulong? lastVolumeSequence;
+    private readonly LocalVolumeCheckpoint volumeCheckpoint;
     private readonly double? initialVolume;
     private readonly Action<PlaybackScope, double>? onVolumeChanged;
     private readonly long initialPositionMs;
@@ -171,6 +171,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         this.onPlaylistUpdate = onPlaylistUpdate; this.onPlaylistSelection = onPlaylistSelection;
         this.scope = scope ?? PlaybackScope.Create().ReplacingMedia(); initialPositionMs = positionMs;
         checkpoint = new(this.scope);
+        volumeCheckpoint = new(this.scope);
         tracks = new(player, this.scope, RenderTracks, new ExternalTrackPicker(() => Window.GetWindow(this)));
         this.initialVolume = initialVolume; this.onVolumeChanged = onVolumeChanged;
         this.selection = selection; this.onLoaded = onLoaded; this.onObservation = onObservation;
@@ -224,6 +225,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
                     admissionPending = false; onLoaded?.Invoke(scope);
                     continue;
                 }
+                RememberVolume(value);
                 checkpoint.Observe(value, SharedPlaybackAvailable);
                 HashSet<string> enabled = NavigationActions; enabled.Add("playPause");
                 if (value.Seekable) enabled.UnionWith(["seek", "skip"]);
@@ -326,18 +328,17 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
                 case "seek" when value is double seek: await player.SeekAsync(checked((long)seek), scope, cancellation.Token); break;
                 case "setMovieVolume" when value is double volume:
                     await player.SetVolumeAsync(volume, presentation.Muted, scope, cancellation.Token);
-                    var observed = await player.ObserveAsync(scope, cancellation.Token);
-                    if (!closing && observed.Scope == scope && observed.Status == PlaybackStatus.Ready && observed.Volume is double actual
-                        && (lastVolumeSequence is null || observed.Sequence > lastVolumeSequence.Value))
-                    {
-                        lastVolumeSequence = observed.Sequence;
-                        onVolumeChanged?.Invoke(scope, actual);
-                    }
+                    volumeCheckpoint.Submitted();
+                    RememberVolume(await player.ObserveAsync(scope, cancellation.Token));
                     break;
                 case "muteMovie": await player.SetVolumeAsync(presentation.Volume, !presentation.Muted, scope, cancellation.Token); break;
             }
         }
         catch (Exception) { /* A rejected request never changes the observation. */ }
+    }
+    private void RememberVolume(PlaybackObservation value)
+    {
+        if (!closing && volumeCheckpoint.Observe(value) is double actual) onVolumeChanged?.Invoke(scope, actual);
     }
     public Task CloseAsync() => shutdown ??= CloseCoreAsync();
     private async Task CloseCoreAsync()

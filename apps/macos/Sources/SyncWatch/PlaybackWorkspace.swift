@@ -49,7 +49,7 @@ struct LocalPlaybackLaunch {
     private var closing = false
     private var closed = false
     private let allocateScope: Bool
-    private var lastVolumeSequence: UInt64?
+    private var volumeCheckpoint: LocalVolumeCheckpoint?
     private let initialVolume: Double?
     private let onVolumeChanged: (@MainActor (PlaybackScope, Double) -> Void)?
     private let initialPositionMs: Int64
@@ -189,6 +189,7 @@ struct LocalPlaybackLaunch {
             do {
                 if allocateScope { scope = try scope.replacingMedia() }
                 checkpoint = SharedPlaybackCheckpoint(scope: scope)
+                volumeCheckpoint = LocalVolumeCheckpoint(scope: scope)
                 let address = UInt(bitPattern: Unmanaged.passUnretained(view).toOpaque())
                 if let runtime {
                     try await player.open(runtime: runtime, appKitSurfaceAddress: address)
@@ -225,6 +226,7 @@ struct LocalPlaybackLaunch {
                         onLoaded(scope)
                         continue
                     }
+                    rememberVolume(observation)
                     apply(observation)
                     onObservation(observation)
                     if autoplayPending, observation.status == .ready, !observation.ended {
@@ -367,12 +369,8 @@ struct LocalPlaybackLaunch {
                 case "setMovieVolume":
                     if let value {
                         try await player.setVolume(value, muted: muted, scope: scope)
-                        let observed = try await player.observe(scope)
-                        if !closing, observed.scope == scope, observed.status == .ready, let actual = observed.volume,
-                            lastVolumeSequence.map({ observed.sequence > $0 }) ?? true {
-                            lastVolumeSequence = observed.sequence
-                            onVolumeChanged?(scope, actual)
-                        }
+                        volumeCheckpoint?.submitted()
+                        rememberVolume(try await player.observe(scope))
                     }
                 case "muteMovie": try await player.setVolume(volume, muted: !muted, scope: scope)
                 default: break
@@ -381,6 +379,10 @@ struct LocalPlaybackLaunch {
                 // A rejected request does not acknowledge a different state.
             }
         }
+    }
+    private func rememberVolume(_ value: PlaybackObservation) {
+        guard !closing, let actual = volumeCheckpoint?.observe(value) else { return }
+        onVolumeChanged?(scope, actual)
     }
     func detach(_ surface: NSView) {
         let ownedWindow = surface.window ?? window

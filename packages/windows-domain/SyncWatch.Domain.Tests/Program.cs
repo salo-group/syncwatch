@@ -46,6 +46,7 @@ foreach (string invalid in new[] { "", "-run", "run/7", "run\n7", "\u00e9", new 
 }
 
 SharedPlaybackCheckpointTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);
+LocalVolumeCheckpointTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);
 WatchSessionTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);
 PlaybackActionFenceTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);
 MediaAgreementTests.Run(Path.GetDirectoryName(Path.GetFullPath(path))!);

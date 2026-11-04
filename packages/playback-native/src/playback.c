@@ -41,7 +41,8 @@ static const libvlc_event_type_t event_types[] = {
     libvlc_MediaPlayerEncounteredError, libvlc_MediaPlayerTimeChanged,
     libvlc_MediaPlayerLengthChanged, libvlc_MediaPlayerSeekableChanged,
     libvlc_MediaPlayerVout, libvlc_MediaPlayerESAdded, libvlc_MediaPlayerESDeleted,
-    libvlc_MediaPlayerESSelected
+    libvlc_MediaPlayerESSelected, libvlc_MediaPlayerAudioVolume,
+    libvlc_MediaPlayerMuted, libvlc_MediaPlayerUnmuted
 };
 static void changed(const libvlc_event_t *event, void *opaque) {
     (void)event;

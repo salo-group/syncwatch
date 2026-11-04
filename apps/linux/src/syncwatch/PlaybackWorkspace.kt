@@ -74,7 +74,7 @@ internal class PlaybackController(
     internal fun libraryPresentation(source: LibraryPresentation) = tracks.libraryPresentation(source)
     internal val loaded = CompletableDeferred<Unit>()
     internal val acceptanceRequested = launch.report != null
-    private var lastVolumeSequence: ULong? = null
+    private val volumeCheckpoint = LocalVolumeCheckpoint(scope)
     private var autoplayPending = autoplay && !requiresSharedAdmission
     private var started = false
     private var closing = false
@@ -176,6 +176,7 @@ internal class PlaybackController(
                         admissionPending = false; loaded.complete(Unit); onLoaded?.invoke(scope)
                         continue
                     }
+                    rememberVolume(value)
                     apply(value)
                     onObservation?.invoke(value)
                     if (autoplayPending && value.status == PlaybackStatus.ready && !value.ended) {
@@ -266,12 +267,8 @@ internal class PlaybackController(
                             "seek" -> if (number != null) player.seek(number.toLong(), scope)
                             "setMovieVolume" -> if (number != null) {
                                 player.setVolume(number, presentation.muted, scope)
-                                val observed = player.observe(scope)
-                                if (!closing && observed.scope == scope && observed.status == PlaybackStatus.ready && observed.volume != null
-                                    && (lastVolumeSequence == null || observed.sequence > lastVolumeSequence!!)) {
-                                    lastVolumeSequence = observed.sequence
-                                    onVolumeChanged?.invoke(scope, observed.volume)
-                                }
+                                volumeCheckpoint.submitted()
+                                rememberVolume(player.observe(scope))
                             }
                             "muteMovie" -> player.setVolume(presentation.volume, !presentation.muted, scope)
                         }
@@ -279,6 +276,11 @@ internal class PlaybackController(
                 }
             }
         }
+    }
+
+    private fun rememberVolume(value: PlaybackObservation) {
+        if (closing) return
+        volumeCheckpoint.observe(value)?.let { onVolumeChanged?.invoke(scope, it) }
     }
 
     private fun closeNative(): CompletableFuture<Void> {
