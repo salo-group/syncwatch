@@ -70,16 +70,19 @@ import SyncWatchLibrary
     /// The watch checkpoint coalesces this acknowledged local change with current playback history.
     func rememberMovieVolume(_ value: Double) -> Bool {
         guard canWrite, state.preferences.rememberMovieVolume, value.isFinite, (0...1).contains(value),
-            value != state.preferences.movieVolume else { return false }
+            value != state.preferences.movieVolume
+        else { return false }
         state.preferences.movieVolume = value
         return true
     }
 
     var playerSettingsEditor: PlayerSettingsEditor {
         PlayerSettingsEditor(
-            values: ["skipSeconds": String(state.preferences.skipSeconds),
+            values: [
+                "skipSeconds": String(state.preferences.skipSeconds),
                 "defaultVolume": PlayerSettingsEditor.canonical(defaultMovieVolume * 100),
-                "rememberVolume": String(state.preferences.rememberMovieVolume)],
+                "rememberVolume": String(state.preferences.rememberMovieVolume),
+            ],
             editableFields: canWrite && !savingWatchState ? ["skipSeconds", "defaultVolume", "rememberVolume"] : [],
             canSave: canWrite && !savingWatchState)
     }
@@ -96,7 +99,8 @@ import SyncWatchLibrary
         next.preferences.skipSeconds = seconds
         if let volume = values["defaultVolume"] {
             guard let field = SyncWatchPlayerSettings.fields.first(where: { $0.id == "defaultVolume" }),
-                PlayerSettingsEditor.valid(volume, for: field), let number = Double(volume) else { return false }
+                PlayerSettingsEditor.valid(volume, for: field), let number = Double(volume)
+            else { return false }
             next.preferences.defaultMovieVolume = number / 100
         }
         if let remember = values["rememberVolume"] {

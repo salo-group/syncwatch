@@ -141,7 +141,9 @@ private final class TestStore: LocalStateStore {
     #expect(await preferences.persistWatchState(initial))
     let restored = AppearancePreferences(store: disk)
     #expect(restored.openingMovieVolume == 0.6 && restored.defaultMovieVolume == 0.25)
-    #expect(restored.state.selectedMediaID == initial.selectedMediaID && restored.state.resumePositions == initial.resumePositions)
+    #expect(
+        restored.state.selectedMediaID == initial.selectedMediaID
+            && restored.state.resumePositions == initial.resumePositions)
     for value in ["-5", "101", "2", "NaN"] {
         #expect(!preferences.savePlayerSettings(["skipSeconds": "10", "defaultVolume": value]))
     }

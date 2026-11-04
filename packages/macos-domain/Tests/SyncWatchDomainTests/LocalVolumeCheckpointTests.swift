@@ -13,13 +13,17 @@ import Testing
     for row in cases {
         var model = LocalVolumeCheckpoint(scope: try PlaybackScope(clientRunID: "run-1", mediaGeneration: 2))
         for step in try #require(row["steps"] as? [[String: Any]]) {
-            if step["op"] as? String == "submitted" { model.submitted(); continue }
+            if step["op"] as? String == "submitted" {
+                model.submitted()
+                continue
+            }
             let owner = try PlaybackScope(
                 clientRunID: step["owner"] as? String == "foreignRun" ? "run-2" : "run-1",
                 mediaGeneration: step["owner"] as? String == "oldGeneration" ? 1 : 2)
             let value = try PlaybackObservation(
                 scope: owner, sequence: try #require(step["sequence"] as? UInt64),
-                status: step["status"] as? String == "loading" ? .loading : step["status"] as? String == "failed" ? .failed : .ready,
+                status: step["status"] as? String == "loading"
+                    ? .loading : step["status"] as? String == "failed" ? .failed : .ready,
                 positionMs: 0, durationMs: 60_000, paused: true, rate: 1,
                 seekable: false, buffering: false, ended: false, width: 0, height: 0, videoOutputs: 0,
                 volume: step["volume"] as? Double, muted: step["muted"] as? Bool ?? false)

@@ -22,7 +22,9 @@ struct ConfiguredPlaybackPane: View {
             PlayerSettingsDialog(
                 editor: $editor, language: preferences.state.preferences.language,
                 onSave: { values in
-                    let volume = controller.presentation.enabledActions.contains("setMovieVolume") ? controller.presentation.volume : nil
+                    let volume =
+                        controller.presentation.enabledActions.contains("setMovieVolume")
+                        ? controller.presentation.volume : nil
                     guard preferences.savePlayerSettings(values, currentMovieVolume: volume) else { return false }
                     onSaved()
                     return true

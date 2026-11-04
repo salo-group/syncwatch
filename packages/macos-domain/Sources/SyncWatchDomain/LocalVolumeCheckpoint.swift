@@ -10,7 +10,8 @@ public struct LocalVolumeCheckpoint: Sendable {
 
     public mutating func observe(_ value: PlaybackObservation) -> Double? {
         guard active, value.scope == scope, value.status == .ready, let actual = value.volume,
-            high.map({ value.sequence > $0 }) ?? true else { return nil }
+            high.map({ value.sequence > $0 }) ?? true
+        else { return nil }
         high = value.sequence
         guard last != actual else { return nil }
         last = actual
