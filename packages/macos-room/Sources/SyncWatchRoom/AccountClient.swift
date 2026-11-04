@@ -17,12 +17,13 @@ public struct AccountDeviceSession: Sendable, CustomStringConvertible, CustomDeb
     public var debugDescription: String { description }
 }
 
-public struct AccountSignIn: Sendable, CustomStringConvertible {
+public struct AccountSignIn: Sendable, CustomStringConvertible, CustomDebugStringConvertible {
     public let browserURI: URL
     fileprivate let id: String
     fileprivate let proof: String
     fileprivate let confirmation: String
     public var description: String { "[account sign-in redacted]" }
+    public var debugDescription: String { description }
 }
 
 public struct AccountSignInStatus: Sendable {
@@ -61,14 +62,34 @@ public actor AccountClient {
     public func poll(_ signIn: AccountSignIn) async throws -> AccountSignInStatus {
         let result = try await request("sign-ins/" + signIn.id + "/poll", body: ["proof": signIn.proof])
         guard let state = result["status"] as? String,
-            ["pending", "authorizing", "confirmAccount", "complete", "cancelled", "failed"].contains(state)
+            [
+                "pending", "authorizing", "browserConfirmationRequired", "confirmAccount", "complete", "cancelled",
+                "failed",
+            ].contains(state)
         else { throw RoomProtocolFailure.malformed }
         let account = state == "confirmAccount" ? try Self.profile(result["account"], proposal: true) : nil
         return AccountSignInStatus(state: state, account: account)
     }
-    public func confirm(_ signIn: AccountSignIn) async throws -> AccountDeviceSession {
+    public func verifyBrowser(_ signIn: AccountSignIn, browserProof: String) async throws -> AccountProfile {
+        let code = browserProof.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "")
+            .uppercased()
+        guard code.utf8.count == 12, code.range(of: "^[0-9A-F]{12}$", options: .regularExpression) != nil else {
+            throw RoomProtocolFailure.malformed
+        }
         let result = try await request(
-            "sign-ins/" + signIn.id + "/confirm", body: ["proof": signIn.proof, "requestId": signIn.confirmation])
+            "sign-ins/" + signIn.id + "/verify", body: ["proof": signIn.proof, "browserProof": code])
+        guard result["status"] as? String == "confirmAccount" else { throw RoomProtocolFailure.malformed }
+        return try Self.profile(result["account"], proposal: true)
+    }
+    public func confirm(_ signIn: AccountSignIn, browserProof: String) async throws -> AccountDeviceSession {
+        let code = browserProof.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "")
+            .uppercased()
+        guard code.utf8.count == 12, code.range(of: "^[0-9A-F]{12}$", options: .regularExpression) != nil else {
+            throw RoomProtocolFailure.malformed
+        }
+        let result = try await request(
+            "sign-ins/" + signIn.id + "/confirm",
+            body: ["proof": signIn.proof, "requestId": signIn.confirmation, "browserProof": code])
         guard result["status"] as? String == "complete" else { throw RoomProtocolFailure.malformed }
         return try Self.device(result["session"])
     }

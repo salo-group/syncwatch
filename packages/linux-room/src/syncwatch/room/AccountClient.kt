@@ -38,11 +38,20 @@ class AccountClient(private val address: RoomAddress) : AutoCloseable {
     suspend fun poll(signIn: AccountSignIn): AccountSignInStatus {
         val result = request("sign-ins/${signIn.id}/poll", mapOf("proof" to signIn.proof))
         val state = RoomWire.string(result["status"])
-        need(state in setOf("pending", "authorizing", "confirmAccount", "complete", "cancelled", "failed"))
+        need(state in setOf("pending", "authorizing", "browserConfirmationRequired", "confirmAccount", "complete", "cancelled", "failed"))
         return AccountSignInStatus(state, if (state == "confirmAccount") profile(result["account"], true) else null)
     }
-    suspend fun confirm(signIn: AccountSignIn): AccountDeviceSession {
-        val result = request("sign-ins/${signIn.id}/confirm", mapOf("proof" to signIn.proof, "requestId" to signIn.confirmation))
+    suspend fun verifyBrowser(signIn: AccountSignIn, browserProof: String): AccountProfile {
+        val code = browserProof.replace(" ", "").replace("-", "").uppercase()
+        need(code.matches(Regex("[0-9A-F]{12}")))
+        val result = request("sign-ins/${signIn.id}/verify", mapOf("proof" to signIn.proof, "browserProof" to code))
+        need(result["status"] == "confirmAccount")
+        return profile(result["account"], true)
+    }
+    suspend fun confirm(signIn: AccountSignIn, browserProof: String): AccountDeviceSession {
+        val code = browserProof.replace(" ", "").replace("-", "").uppercase()
+        need(code.matches(Regex("[0-9A-F]{12}")))
+        val result = request("sign-ins/${signIn.id}/confirm", mapOf("proof" to signIn.proof, "requestId" to signIn.confirmation, "browserProof" to code))
         need(result["status"] == "complete")
         return device(result["session"])
     }

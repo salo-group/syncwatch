@@ -259,7 +259,11 @@
       "accountFailed": "Sign-in could not finish. Check the service address and try again.",
       "accountMemoryOnly": "This session stays in memory. Sign in again after restarting SyncWatch.",
       "accountExternalSession": "Your Google browser session and any Meet call stay separate. Signing out here does not end a call.",
-      "accountSignOutFailed": "Server sign-out is unconfirmed. Retry while this window is open."
+      "accountSignOutFailed": "Server sign-out is unconfirmed. Retry while this window is open.",
+      "accountBrowserProof": "Confirmation code from the browser",
+      "accountConfirmationFailed": "The code could not be verified. Check it, or cancel and sign in again.",
+      "accountBrowserProofRequired": "Enter the confirmation code shown in the browser to check the account.",
+      "accountVerifyBrowserProof": "Check account"
     },
     "ru": {
       "brand": "SyncWatch",
@@ -519,7 +523,11 @@
       "accountFailed": "Не удалось войти. Проверьте адрес сервиса и повторите попытку.",
       "accountMemoryOnly": "Сессия хранится в памяти. После перезапуска SyncWatch войдите снова.",
       "accountExternalSession": "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок.",
-      "accountSignOutFailed": "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто."
+      "accountSignOutFailed": "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто.",
+      "accountBrowserProof": "Код подтверждения из браузера",
+      "accountConfirmationFailed": "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
+      "accountBrowserProofRequired": "Введите код из браузера, чтобы проверить аккаунт.",
+      "accountVerifyBrowserProof": "Проверить аккаунт"
     }
   },
   "gallery": {

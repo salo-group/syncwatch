@@ -1388,5 +1388,39 @@
       }
     },
     "error": null
+  },
+  {
+    "name": "native-proof-without-browser-counterproof",
+    "schema": "account-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "requestId": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "browser-counterproof-required-for-confirmation",
+    "schema": "account-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "requestId": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "browserProof": "012345ABCDEF"
+    },
+    "error": null
+  },
+  {
+    "name": "browser-proof-gates-profile",
+    "schema": "account-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "browserConfirmationRequired",
+        "account": null,
+        "session": null
+      }
+    },
+    "error": null
   }
 ]

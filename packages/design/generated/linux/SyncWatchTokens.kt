@@ -451,6 +451,10 @@ object SyncWatchCopy {
         "en" to "accountMemoryOnly" -> "This session stays in memory. Sign in again after restarting SyncWatch."
         "en" to "accountExternalSession" -> "Your Google browser session and any Meet call stay separate. Signing out here does not end a call."
         "en" to "accountSignOutFailed" -> "Server sign-out is unconfirmed. Retry while this window is open."
+        "en" to "accountBrowserProof" -> "Confirmation code from the browser"
+        "en" to "accountConfirmationFailed" -> "The code could not be verified. Check it, or cancel and sign in again."
+        "en" to "accountBrowserProofRequired" -> "Enter the confirmation code shown in the browser to check the account."
+        "en" to "accountVerifyBrowserProof" -> "Check account"
         "ru" to "brand" -> "SyncWatch"
         "ru" to "room" -> "Смотрим вместе"
         "ru" to "library" -> "Библиотека фильмов"
@@ -709,6 +713,10 @@ object SyncWatchCopy {
         "ru" to "accountMemoryOnly" -> "Сессия хранится в памяти. После перезапуска SyncWatch войдите снова."
         "ru" to "accountExternalSession" -> "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок."
         "ru" to "accountSignOutFailed" -> "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто."
+        "ru" to "accountBrowserProof" -> "Код подтверждения из браузера"
+        "ru" to "accountConfirmationFailed" -> "Не удалось проверить код. Проверьте его или отмените вход и начните снова."
+        "ru" to "accountBrowserProofRequired" -> "Введите код из браузера, чтобы проверить аккаунт."
+        "ru" to "accountVerifyBrowserProof" -> "Проверить аккаунт"
         else -> if (language != "en") text(key, "en") else key
     }
     val galleryStates = listOf("empty", "scanning", "selected", "missingMedia", "reconnecting")
@@ -923,7 +931,7 @@ object SyncWatchSelectionMenu {
 }
 
 object SyncWatchLayouts {
-    const val sourceDigest = "700ac22aec977501dc504d439757b3d8001a77d2bae23f0ddbe50f403589bde7"
+    const val sourceDigest = "9f80e03f50807243d479012a528e8be7ddbe4858ed3b7bd1d05fff53ab39d38e"
     const val coordinateSize = 20.0f
     fun themeColor(role: String, theme: SyncWatchTheme): Long? = when (role) {
         "background" -> theme.background
@@ -6023,6 +6031,38 @@ object SyncWatchLayouts {
             "text" to "\$email",
             "when" to "\$hasProfile",
         ), listOf())
+        val accountBrowserProofLabel = DesignNode("accountBrowserProofLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountBrowserProof",
+            "when" to "\$codeRequired",
+        ), listOf())
+        val accountBrowserProofInput = DesignNode("accountBrowserProofInput", "input", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accent",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "placeholderFill" to "theme.textSecondary",
+            "height" to "@control.fieldHeight",
+            "paddingX" to "@layout.panelPadding",
+            "radius" to "@control.fieldRadius",
+            "background" to "theme.inputFill",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "value" to "\$browserProof",
+            "width" to "fill",
+            "secret" to "true",
+            "action" to "editAccountBrowserProof",
+            "enabled" to "\$can.editAccountBrowserProof",
+            "automation" to "account.browserProof",
+            "label" to "~accountBrowserProof",
+            "when" to "\$codeRequired",
+        ), listOf())
         val accountMemory = DesignNode("accountMemory", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -6052,7 +6092,7 @@ object SyncWatchLayouts {
             "align" to "leading",
             "gap" to "@layout.settingsCardPadding",
             "padding" to "@layout.settingsCardPadding",
-        ), listOf(accountServiceLabel, accountServiceInput, accountState, accountName, accountEmail, accountMemory, accountBoundary))
+        ), listOf(accountServiceLabel, accountServiceInput, accountState, accountName, accountEmail, accountBrowserProofLabel, accountBrowserProofInput, accountMemory, accountBoundary))
         val accountScroll = DesignNode("accountScroll", "scroll", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -6130,6 +6170,38 @@ object SyncWatchLayouts {
             "label" to "~accountOpenBrowser",
             "when" to "\$pending",
         ), listOf(accountaccountOpenBrowserText))
+        val verifyaccountaccountConfirmText = DesignNode("verifyaccountaccountConfirmText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountVerifyBrowserProof",
+        ), listOf())
+        val verifyaccountaccountConfirm = DesignNode("verifyaccountaccountConfirm", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountVerifyBrowserProof",
+            "enabled" to "\$can.accountVerifyBrowserProof",
+            "automation" to "account.accountVerifyBrowserProof",
+            "label" to "~accountVerifyBrowserProof",
+            "when" to "\$codeRequired",
+        ), listOf(verifyaccountaccountConfirmText))
         val accountaccountConfirmText = DesignNode("accountaccountConfirmText", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -6234,7 +6306,7 @@ object SyncWatchLayouts {
             "focusWidth" to "@control.borderWidth",
             "padding" to "@layout.settingsCardPadding",
             "gap" to "@control.compactGap",
-        ), listOf(accountaccountSignIn, accountaccountOpenBrowser, accountaccountConfirm, accountaccountCancel, accountaccountSignOut))
+        ), listOf(accountaccountSignIn, accountaccountOpenBrowser, verifyaccountaccountConfirm, accountaccountConfirm, accountaccountCancel, accountaccountSignOut))
         val accountDialog = DesignNode("accountDialog", "column", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",

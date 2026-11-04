@@ -632,6 +632,10 @@ public enum SyncWatchCopy {
             "accountExternalSession":
                 "Your Google browser session and any Meet call stay separate. Signing out here does not end a call.",
             "accountSignOutFailed": "Server sign-out is unconfirmed. Retry while this window is open.",
+            "accountBrowserProof": "Confirmation code from the browser",
+            "accountConfirmationFailed": "The code could not be verified. Check it, or cancel and sign in again.",
+            "accountBrowserProofRequired": "Enter the confirmation code shown in the browser to check the account.",
+            "accountVerifyBrowserProof": "Check account",
         ],
         "ru": [
             "brand": "SyncWatch",
@@ -899,6 +903,10 @@ public enum SyncWatchCopy {
             "accountExternalSession":
                 "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок.",
             "accountSignOutFailed": "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто.",
+            "accountBrowserProof": "Код подтверждения из браузера",
+            "accountConfirmationFailed": "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
+            "accountBrowserProofRequired": "Введите код из браузера, чтобы проверить аккаунт.",
+            "accountVerifyBrowserProof": "Проверить аккаунт",
         ],
     ]
     public static func text(_ key: String, language: String = "en") -> String {
@@ -2195,7 +2203,7 @@ public enum SyncWatchSelectionMenu {
 }
 
 public enum SyncWatchLayouts {
-    public static let sourceDigest = "700ac22aec977501dc504d439757b3d8001a77d2bae23f0ddbe50f403589bde7"
+    public static let sourceDigest = "9f80e03f50807243d479012a528e8be7ddbe4858ed3b7bd1d05fff53ab39d38e"
     public static let coordinateSize = 20.0
     public static func themeColor(_ role: String, theme: SyncWatchTheme) -> Color? {
         switch role {
@@ -9350,6 +9358,44 @@ public enum SyncWatchLayouts {
                 "when": "$hasProfile",
             ],
             children: [])
+        let accountBrowserProofLabel = DesignNode(
+            id: "accountBrowserProofLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountBrowserProof",
+                "when": "$codeRequired",
+            ],
+            children: [])
+        let accountBrowserProofInput = DesignNode(
+            id: "accountBrowserProofInput", kind: "input",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accent",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "placeholderFill": "theme.textSecondary",
+                "height": "@control.fieldHeight",
+                "paddingX": "@layout.panelPadding",
+                "radius": "@control.fieldRadius",
+                "background": "theme.inputFill",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "value": "$browserProof",
+                "width": "fill",
+                "secret": "true",
+                "action": "editAccountBrowserProof",
+                "enabled": "$can.editAccountBrowserProof",
+                "automation": "account.browserProof",
+                "label": "~accountBrowserProof",
+                "when": "$codeRequired",
+            ],
+            children: [])
         let accountMemory = DesignNode(
             id: "accountMemory", kind: "text",
             props: [
@@ -9394,6 +9440,8 @@ public enum SyncWatchLayouts {
                 accountState,
                 accountName,
                 accountEmail,
+                accountBrowserProofLabel,
+                accountBrowserProofInput,
                 accountMemory,
                 accountBoundary,
             ])
@@ -9489,6 +9537,44 @@ public enum SyncWatchLayouts {
                 "when": "$pending",
             ],
             children: [accountaccountOpenBrowserText])
+        let verifyaccountaccountConfirmText = DesignNode(
+            id: "verifyaccountaccountConfirmText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountVerifyBrowserProof",
+            ],
+            children: [])
+        let verifyaccountaccountConfirm = DesignNode(
+            id: "verifyaccountaccountConfirm", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountVerifyBrowserProof",
+                "enabled": "$can.accountVerifyBrowserProof",
+                "automation": "account.accountVerifyBrowserProof",
+                "label": "~accountVerifyBrowserProof",
+                "when": "$codeRequired",
+            ],
+            children: [verifyaccountaccountConfirmText])
         let accountaccountConfirmText = DesignNode(
             id: "accountaccountConfirmText", kind: "text",
             props: [
@@ -9617,6 +9703,7 @@ public enum SyncWatchLayouts {
             children: [
                 accountaccountSignIn,
                 accountaccountOpenBrowser,
+                verifyaccountaccountConfirm,
                 accountaccountConfirm,
                 accountaccountCancel,
                 accountaccountSignOut,

@@ -1,8 +1,11 @@
 import SwiftUI
 
 /// Account observations only; the neutral Account tree owns composition and copy.
-public struct AccountPresentation: Sendable {
+public struct AccountPresentation: Sendable, CustomStringConvertible, CustomDebugStringConvertible {
+    public var description: String { "[account presentation redacted]" }
+    public var debugDescription: String { description }
     public var service = ""
+    public var browserProof = ""
     public var state = "signedOut"
     public var name = ""
     public var email = ""
@@ -11,16 +14,23 @@ public struct AccountPresentation: Sendable {
     public var context: DesignContext {
         let pending = ["pending", "authorizing"].contains(state)
         let confirmation = state == "confirmAccount"
+        let codeRequired = state == "browserConfirmationRequired"
         let signedIn = state == "signedIn"
         let canStart = state == "signedOut" || state == "failed"
         return DesignContext([
-            "namespace": "account", "service": service, "name": name, "email": email, "status": status,
-            "pending": String(pending), "confirmation": String(confirmation), "signedIn": String(signedIn),
+            "namespace": "account", "service": service, "browserProof": browserProof, "name": name, "email": email,
+            "status": status,
+            "pending": String(pending), "confirmation": String(confirmation), "codeRequired": String(codeRequired),
+            "signedIn": String(signedIn),
             "hasProfile": String(confirmation || signedIn), "showSignIn": String(canStart),
-            "canCancel": String(pending || confirmation),
+            "canCancel": String(pending || codeRequired || confirmation),
             "can.editAccountService": String(canStart), "can.accountSignIn": String(canStart && !service.isEmpty),
-            "can.accountOpenBrowser": String(state == "pending"), "can.accountConfirm": String(confirmation),
-            "can.accountCancel": String(pending || confirmation), "can.accountSignOut": String(signedIn),
+            "can.accountOpenBrowser": String(state == "pending"),
+            "can.accountConfirm": String(confirmation),
+            "can.accountVerifyBrowserProof": String(codeRequired && !browserProof.isEmpty),
+            "can.editAccountBrowserProof": String(codeRequired),
+            "can.accountCancel": String(pending || codeRequired || confirmation),
+            "can.accountSignOut": String(signedIn),
             "can.close": "true",
         ])
     }

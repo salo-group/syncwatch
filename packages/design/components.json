@@ -266,7 +266,8 @@
         "authorizing",
         "confirmAccount",
         "signedIn",
-        "failed"
+        "failed",
+        "browserConfirmationRequired"
       ],
       "actions": [
         "editAccountService",
@@ -275,7 +276,9 @@
         "accountConfirm",
         "accountCancel",
         "accountSignOut",
-        "close"
+        "close",
+        "editAccountBrowserProof",
+        "accountVerifyBrowserProof"
       ]
     }
   }

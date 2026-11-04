@@ -622,6 +622,10 @@ public static class SyncWatchCopy
         ("en", "accountMemoryOnly") => "This session stays in memory. Sign in again after restarting SyncWatch.",
         ("en", "accountExternalSession") => "Your Google browser session and any Meet call stay separate. Signing out here does not end a call.",
         ("en", "accountSignOutFailed") => "Server sign-out is unconfirmed. Retry while this window is open.",
+        ("en", "accountBrowserProof") => "Confirmation code from the browser",
+        ("en", "accountConfirmationFailed") => "The code could not be verified. Check it, or cancel and sign in again.",
+        ("en", "accountBrowserProofRequired") => "Enter the confirmation code shown in the browser to check the account.",
+        ("en", "accountVerifyBrowserProof") => "Check account",
         ("ru", "brand") => "SyncWatch",
         ("ru", "room") => "Смотрим вместе",
         ("ru", "library") => "Библиотека фильмов",
@@ -880,6 +884,10 @@ public static class SyncWatchCopy
         ("ru", "accountMemoryOnly") => "Сессия хранится в памяти. После перезапуска SyncWatch войдите снова.",
         ("ru", "accountExternalSession") => "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок.",
         ("ru", "accountSignOutFailed") => "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто.",
+        ("ru", "accountBrowserProof") => "Код подтверждения из браузера",
+        ("ru", "accountConfirmationFailed") => "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
+        ("ru", "accountBrowserProofRequired") => "Введите код из браузера, чтобы проверить аккаунт.",
+        ("ru", "accountVerifyBrowserProof") => "Проверить аккаунт",
         _ when language != "en" => Text(key, "en"),
         _ => key,
     };
@@ -1111,7 +1119,7 @@ public static class SyncWatchSelectionMenu
 
 public static class SyncWatchLayouts
 {
-    public const string SourceDigest = "700ac22aec977501dc504d439757b3d8001a77d2bae23f0ddbe50f403589bde7";
+    public const string SourceDigest = "9f80e03f50807243d479012a528e8be7ddbe4858ed3b7bd1d05fff53ab39d38e";
     public const double CoordinateSize = 20;
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults { get; } = new System.Collections.Generic.Dictionary<string, string>
     {
@@ -6603,6 +6611,40 @@ public static class SyncWatchLayouts
             ["text"] = "$email",
             ["when"] = "$hasProfile",
         }, []);
+        var accountBrowserProofLabel = new DesignNode("accountBrowserProofLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountBrowserProof",
+            ["when"] = "$codeRequired",
+        }, []);
+        var accountBrowserProofInput = new DesignNode("accountBrowserProofInput", "input", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accent",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["placeholderFill"] = "theme.textSecondary",
+            ["height"] = "@control.fieldHeight",
+            ["paddingX"] = "@layout.panelPadding",
+            ["radius"] = "@control.fieldRadius",
+            ["background"] = "theme.inputFill",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["value"] = "$browserProof",
+            ["width"] = "fill",
+            ["secret"] = "true",
+            ["action"] = "editAccountBrowserProof",
+            ["enabled"] = "$can.editAccountBrowserProof",
+            ["automation"] = "account.browserProof",
+            ["label"] = "~accountBrowserProof",
+            ["when"] = "$codeRequired",
+        }, []);
         var accountMemory = new DesignNode("accountMemory", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6635,7 +6677,7 @@ public static class SyncWatchLayouts
             ["align"] = "leading",
             ["gap"] = "@layout.settingsCardPadding",
             ["padding"] = "@layout.settingsCardPadding",
-        }, [accountServiceLabel, accountServiceInput, accountState, accountName, accountEmail, accountMemory, accountBoundary]);
+        }, [accountServiceLabel, accountServiceInput, accountState, accountName, accountEmail, accountBrowserProofLabel, accountBrowserProofInput, accountMemory, accountBoundary]);
         var accountScroll = new DesignNode("accountScroll", "scroll", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6718,6 +6760,40 @@ public static class SyncWatchLayouts
             ["label"] = "~accountOpenBrowser",
             ["when"] = "$pending",
         }, [accountaccountOpenBrowserText]);
+        var verifyaccountaccountConfirmText = new DesignNode("verifyaccountaccountConfirmText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountVerifyBrowserProof",
+        }, []);
+        var verifyaccountaccountConfirm = new DesignNode("verifyaccountaccountConfirm", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountVerifyBrowserProof",
+            ["enabled"] = "$can.accountVerifyBrowserProof",
+            ["automation"] = "account.accountVerifyBrowserProof",
+            ["label"] = "~accountVerifyBrowserProof",
+            ["when"] = "$codeRequired",
+        }, [verifyaccountaccountConfirmText]);
         var accountaccountConfirmText = new DesignNode("accountaccountConfirmText", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6829,7 +6905,7 @@ public static class SyncWatchLayouts
             ["focusWidth"] = "@control.borderWidth",
             ["padding"] = "@layout.settingsCardPadding",
             ["gap"] = "@control.compactGap",
-        }, [accountaccountSignIn, accountaccountOpenBrowser, accountaccountConfirm, accountaccountCancel, accountaccountSignOut]);
+        }, [accountaccountSignIn, accountaccountOpenBrowser, verifyaccountaccountConfirm, accountaccountConfirm, accountaccountCancel, accountaccountSignOut]);
         var accountDialog = new DesignNode("accountDialog", "column", new()
         {
             ["disabledOpacity"] = "0.4",

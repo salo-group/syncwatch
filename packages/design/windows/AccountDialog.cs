@@ -4,7 +4,9 @@ namespace SyncWatch.Design;
 
 public sealed class AccountPresentation
 {
+    public override string ToString() => "[account presentation redacted]";
     public string Service { get; set; } = "";
+    public string BrowserProof { get; set; } = "";
     public string State { get; set; } = "signedOut";
     public string Name { get; set; } = "";
     public string Email { get; set; } = "";
@@ -13,6 +15,7 @@ public sealed class AccountPresentation
     {
         get
         {
+            bool codeRequired = State == "browserConfirmationRequired";
             bool pending = State is "pending" or "authorizing", confirmation = State == "confirmAccount", signedIn = State == "signedIn", canStart = State is "signedOut" or "failed";
             static string Flag(bool value) => value ? "true" : "false";
             return new()
@@ -21,20 +24,24 @@ public sealed class AccountPresentation
                 {
                     ["namespace"] = "account",
                     ["service"] = Service,
+                    ["browserProof"] = BrowserProof,
                     ["name"] = Name,
                     ["email"] = Email,
                     ["status"] = Status,
                     ["pending"] = Flag(pending),
                     ["confirmation"] = Flag(confirmation),
+                    ["codeRequired"] = Flag(codeRequired),
                     ["signedIn"] = Flag(signedIn),
                     ["hasProfile"] = Flag(confirmation || signedIn),
                     ["showSignIn"] = Flag(canStart),
-                    ["canCancel"] = Flag(pending || confirmation),
+                    ["canCancel"] = Flag(pending || codeRequired || confirmation),
                     ["can.editAccountService"] = Flag(canStart),
                     ["can.accountSignIn"] = Flag(canStart && Service.Length > 0),
                     ["can.accountOpenBrowser"] = Flag(State == "pending"),
                     ["can.accountConfirm"] = Flag(confirmation),
-                    ["can.accountCancel"] = Flag(pending || confirmation),
+                    ["can.accountVerifyBrowserProof"] = Flag(codeRequired && BrowserProof.Length > 0),
+                    ["can.editAccountBrowserProof"] = Flag(codeRequired),
+                    ["can.accountCancel"] = Flag(pending || codeRequired || confirmation),
                     ["can.accountSignOut"] = Flag(signedIn),
                     ["can.close"] = "true"
                 }

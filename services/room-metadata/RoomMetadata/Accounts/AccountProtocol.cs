@@ -31,6 +31,10 @@ internal static partial class AccountWire
     internal static bool Token(string? value) => value is not null && TokenPattern().IsMatch(value);
     internal static bool Matches(string value, string hash) => Token(value) && Token(hash)
         && CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(Hash(value)), Encoding.ASCII.GetBytes(hash));
+    internal static string BrowserProof() => Convert.ToHexString(RandomNumberGenerator.GetBytes(6));
+    internal static bool BrowserProofMatches(string? value, string? hash) => value is { Length: 12 }
+        && value.All(character => char.IsAsciiHexDigitUpper(character)) && Token(hash)
+        && CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(Hash(value)), Encoding.ASCII.GetBytes(hash!));
     internal static bool Text(string? value, int maximum) => value is { Length: > 0 } && value.Length <= maximum && !value.Any(char.IsControl);
     [GeneratedRegex("^[A-Za-z0-9_-]{43}$", RegexOptions.CultureInvariant)] private static partial Regex TokenPattern();
 }

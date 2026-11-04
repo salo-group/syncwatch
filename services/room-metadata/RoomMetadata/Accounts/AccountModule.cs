@@ -14,7 +14,7 @@ public static class AccountModule
     private const string Google = "google-account";
     private const string TransactionKey = "syncwatch.transaction";
     private sealed record StartBody(int V, string Challenge);
-    private sealed record ProofBody(int V, string Proof, string? RequestId = null);
+    private sealed record ProofBody(int V, string Proof, string? RequestId = null, string? BrowserProof = null);
     private sealed record RefreshBody(int V, string RefreshToken, string RequestId);
 
     public static void Configure(WebApplicationBuilder builder, AccountOptions options)
@@ -76,11 +76,11 @@ public static class AccountModule
             {
                 string id = context.Properties!.Items[TransactionKey]!;
                 ClaimsPrincipal principal = context.Principal!;
-                context.HttpContext.RequestServices.GetRequiredService<SignInTransactions>().CompleteBrowser(id,
+                string browserProof = context.HttpContext.RequestServices.GetRequiredService<SignInTransactions>().CompleteBrowser(id,
                     principal.FindFirstValue(ClaimTypes.NameIdentifier)!, principal.FindFirstValue(ClaimTypes.Name)!,
                     principal.FindFirstValue(ClaimTypes.Email)!);
                 context.HandleResponse();
-                await BrowserResult(context.HttpContext, success: true);
+                await BrowserResult(context.HttpContext, success: true, browserProof);
             };
             oauth.Events.OnRemoteFailure = async context =>
             {
@@ -112,16 +112,19 @@ public static class AccountModule
             StartBody body = await Read<StartBody>(context); Version(body.V);
             await Reply(context, context.RequestServices.GetRequiredService<SignInTransactions>().Start(body.Challenge));
         });
-        foreach (string action in new[] { "poll", "confirm", "cancel" })
+        foreach (string action in new[] { "poll", "verify", "confirm", "cancel" })
         {
             group.MapPost("/sign-ins/{id}/" + action, async context =>
             {
                 ProofBody body = await Read<ProofBody>(context); Version(body.V);
+                if (action is "poll" or "cancel") AccountWire.Need(body.RequestId is null && body.BrowserProof is null);
+                if (action == "verify") AccountWire.Need(body.RequestId is null);
                 SignInTransactions transactions = context.RequestServices.GetRequiredService<SignInTransactions>();
                 string id = context.Request.RouteValues["id"]!.ToString()!;
                 if (action == "cancel") { transactions.Cancel(id, body.Proof); await Reply(context, new SignInStatus("cancelled")); }
+                else if (action == "verify") await Reply(context, transactions.VerifyBrowser(id, body.Proof, body.BrowserProof ?? ""));
                 else await Reply(context, action == "poll" ? transactions.Poll(id, body.Proof)
-                    : transactions.Confirm(id, body.Proof, body.RequestId ?? ""));
+                    : transactions.Confirm(id, body.Proof, body.RequestId ?? "", body.BrowserProof ?? ""));
             });
         }
         group.MapGet("/me", context => Reply(context, new { account = context.RequestServices.GetRequiredService<AccountRepository>().Authenticate(Bearer(context)) }));
@@ -171,12 +174,14 @@ public static class AccountModule
         catch (JsonException) { throw new AccountException("malformed"); }
     }
     private static Task Reply(HttpContext context, object value) => context.Response.WriteAsJsonAsync(new { v = 2, result = value }, AccountWire.Json, context.RequestAborted);
-    private static async Task BrowserResult(HttpContext context, bool success)
+    private static async Task BrowserResult(HttpContext context, bool success, string? browserProof = null)
     {
         context.Response.ContentType = "text/html; charset=utf-8";
         context.Response.StatusCode = success ? 200 : 400;
         await context.Response.WriteAsync("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>SyncWatch</title><h1>SyncWatch</h1><p>"
-            + (success ? "Return to SyncWatch to confirm the Google account. You can close this tab." : "Sign-in did not finish. Return to SyncWatch to try again.") + "</p></html>", context.RequestAborted);
+            + (success ? "Return to the SyncWatch window where you started sign-in. Enter this one-time confirmation code there, check the account, and confirm. Do not send this code to another person or enter it into another website.</p><code>"
+                + System.Net.WebUtility.HtmlEncode(browserProof) + "</code><p>You can close this tab after confirming in SyncWatch."
+                : "Sign-in did not finish. Return to SyncWatch to try again.") + "</p></html>", context.RequestAborted);
     }
 }
 

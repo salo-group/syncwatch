@@ -32,18 +32,26 @@ def main():
 
     socket.socket = blocked
     root = Path(__file__).resolve().parents[3]
-    documents = {json.loads(path.read_text())["$id"]: json.loads(path.read_text()) for path in (root / "contracts/v1").glob("*.schema.json")}
+    manifest = json.loads((root / "contracts/manifest.json").read_text())
+    entries = {
+        name: json.loads((root / "contracts" / relative).read_text())
+        for name, relative in manifest["schemas"].items()
+    }
+    documents = {
+        document["$id"]: document
+        for path in (root / "contracts").glob("v[0-9]*/*.schema.json")
+        for document in [json.loads(path.read_text())]
+    }
     validators = {}
     for identity, document in documents.items():
         validators[identity] = library.compile(document, handlers={scheme: lambda uri: documents[uri.split("#")[0]] for scheme in ("https", "http", "file", "")}, use_default=False)
-    schema = validators["https://schemas.syncwatch.invalid/v1/playback-state.schema.json"]
+    schema = validators[entries["playback-state"]["$id"]]
     fixtures = json.loads((root / "contracts/fixtures/acceptance.json").read_text())
     checked = 0
     # The complete semantic conformance oracle remains tools/contracts/check_contracts.py.
-    manifest = json.loads((root / "contracts/manifest.json").read_text())
     for fixture in fixtures:
         if fixture.get("error") is None:
-            identity = "https://schemas.syncwatch.invalid/v1/" + Path(manifest["schemas"][fixture["schema"]]).name
+            identity = entries[fixture["schema"]]["$id"]
             validators[identity](fixture["value"])
             checked += 1
     try:

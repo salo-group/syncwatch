@@ -5137,6 +5137,34 @@
                   "children": []
                 },
                 {
+                  "id": "accountBrowserProofLabel",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountBrowserProof",
+                    "when": "$codeRequired"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "accountBrowserProofInput",
+                  "kind": "input",
+                  "styles": [
+                    "input"
+                  ],
+                  "props": {
+                    "value": "$browserProof",
+                    "width": "fill",
+                    "secret": "true",
+                    "action": "editAccountBrowserProof",
+                    "enabled": "$can.editAccountBrowserProof",
+                    "automation": "account.browserProof",
+                    "label": "~accountBrowserProof",
+                    "when": "$codeRequired"
+                  },
+                  "children": []
+                },
+                {
                   "id": "accountMemory",
                   "kind": "text",
                   "styles": [],
@@ -5216,6 +5244,32 @@
                   "styles": [],
                   "props": {
                     "text": "~accountOpenBrowser"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "verifyaccountaccountConfirm",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountVerifyBrowserProof",
+                "enabled": "$can.accountVerifyBrowserProof",
+                "automation": "account.accountVerifyBrowserProof",
+                "label": "~accountVerifyBrowserProof",
+                "when": "$codeRequired"
+              },
+              "children": [
+                {
+                  "id": "verifyaccountaccountConfirmText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountVerifyBrowserProof"
                   },
                   "children": []
                 }

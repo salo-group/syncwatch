@@ -23,6 +23,10 @@ import SyncWatchRoom
             if ["signedOut", "failed"].contains(presentation.state), let value, value.utf16.count <= 256 {
                 presentation.service = value
             }
+        case "editAccountBrowserProof":
+            if presentation.state == "browserConfirmationRequired", let value, value.utf16.count <= 32 {
+                presentation.browserProof = value
+            }
         case "accountSignIn": start()
         case "accountOpenBrowser":
             guard presentation.state == "pending", let attempt else { return }
@@ -31,6 +35,7 @@ import SyncWatchRoom
             } else {
                 presentation.status = "accountFailed"
             }
+        case "accountVerifyBrowserProof": verifyBrowser()
         case "accountConfirm": confirm()
         case "accountCancel":
             generation = UUID()
@@ -72,6 +77,11 @@ import SyncWatchRoom
                     try await Task.sleep(for: .seconds(2))
                     let status = try await client.poll(signIn)
                     guard generation == scope else { return }
+                    if status.state == "browserConfirmationRequired" {
+                        presentation.state = "browserConfirmationRequired"
+                        presentation.status = "accountBrowserProofRequired"
+                        return
+                    }
                     if status.state == "confirmAccount", let account = status.account {
                         presentation.state = "confirmAccount"
                         presentation.status = "accountConfirmAccount"
@@ -94,6 +104,28 @@ import SyncWatchRoom
             }
         }
     }
+    private func verifyBrowser() {
+        guard presentation.state == "browserConfirmationRequired", let client, let attempt else { return }
+        let scope = generation
+        presentation.state = "working"
+        presentation.status = "accountWorking"
+        work = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let account = try await client.verifyBrowser(attempt, browserProof: presentation.browserProof)
+                guard generation == scope else { return }
+                presentation.state = "confirmAccount"
+                presentation.status = "accountConfirmAccount"
+                presentation.name = account.name
+                presentation.email = account.email
+            } catch {
+                if generation == scope {
+                    presentation.state = "browserConfirmationRequired"
+                    presentation.status = "accountConfirmationFailed"
+                }
+            }
+        }
+    }
     private func confirm() {
         guard presentation.state == "confirmAccount", let client, let attempt else { return }
         presentation.state = "working"
@@ -102,13 +134,14 @@ import SyncWatchRoom
         work = Task { [weak self] in
             guard let self else { return }
             do {
-                let session = try await client.confirm(attempt)
+                let session = try await client.confirm(attempt, browserProof: presentation.browserProof)
                 guard generation == scope else {
                     try? await client.logout(session)
                     return
                 }
                 device = session
                 self.attempt = nil
+                presentation.browserProof = ""
                 presentation.state = "signedIn"
                 presentation.status = "accountSignedIn"
                 presentation.name = session.account.name
@@ -128,7 +161,7 @@ import SyncWatchRoom
             } catch {
                 guard generation == scope else { return }
                 presentation.state = "confirmAccount"
-                presentation.status = "accountFailed"
+                presentation.status = "accountConfirmationFailed"
             }
         }
     }

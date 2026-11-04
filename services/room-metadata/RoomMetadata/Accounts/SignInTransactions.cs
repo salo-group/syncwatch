@@ -15,6 +15,8 @@ public sealed class SignInTransactions(AccountRepository repository, Uri origin,
         internal AccountProfile? Profile { get; set; }
         internal string? ConfirmationId { get; set; }
         internal DeviceSession? Reply { get; set; }
+        internal string? BrowserProofHash { get; set; }
+        internal int ProofFailures { get; set; }
     }
     private readonly object gate = new();
     private readonly Dictionary<string, Transaction> transactions = [];
@@ -41,7 +43,7 @@ public sealed class SignInTransactions(AccountRepository repository, Uri origin,
             transaction.Status = "authorizing";
         }
     }
-    public void CompleteBrowser(string id, string subject, string name, string email)
+    public string CompleteBrowser(string id, string subject, string name, string email)
     {
         AccountWire.Need(AccountWire.Text(subject, 255) && AccountWire.Text(name, 128) && AccountWire.Text(email, 320), "providerIdentityInvalid", 502);
         lock (gate)
@@ -51,7 +53,10 @@ public sealed class SignInTransactions(AccountRepository repository, Uri origin,
             transaction.Subject = subject;
             // No durable identity is created until the native confirmation.
             transaction.Profile = new("", name, email);
-            transaction.Status = "confirmAccount";
+            string browserProof = AccountWire.BrowserProof();
+            transaction.BrowserProofHash = AccountWire.Hash(browserProof);
+            transaction.Status = "browserConfirmationRequired";
+            return browserProof;
         }
     }
     public void FailBrowser(string id)
@@ -69,18 +74,39 @@ public sealed class SignInTransactions(AccountRepository repository, Uri origin,
             return new(transaction.Status, transaction.Status == "confirmAccount" ? transaction.Profile : null);
         }
     }
-    public SignInStatus Confirm(string id, string proof, string confirmationId)
+    public SignInStatus Confirm(string id, string proof, string confirmationId, string browserProof)
     {
         AccountWire.Need(AccountWire.Token(confirmationId));
         lock (gate)
         {
             Transaction transaction = Prove(id, proof);
-            if (transaction.Status == "complete" && transaction.ConfirmationId == confirmationId) return new("complete", Session: transaction.Reply);
+            if (transaction.Status == "complete" && transaction.ConfirmationId == confirmationId
+                && AccountWire.BrowserProofMatches(browserProof, transaction.BrowserProofHash)) return new("complete", Session: transaction.Reply);
             AccountWire.Need(transaction.Status == "confirmAccount" && transaction.Subject is not null && transaction.Profile is not null, "signInUnavailable", 409);
+            if (!AccountWire.BrowserProofMatches(browserProof, transaction.BrowserProofHash))
+            {
+                if (++transaction.ProofFailures >= 3) { transaction.Status = "failed"; transaction.Subject = null; transaction.Profile = null; transaction.BrowserProofHash = null; }
+                throw new AccountException("signInCodeRequired", 401);
+            }
             DeviceSession reply = repository.SignIn(transaction.Subject!, transaction.Profile!.Name, transaction.Profile.Email);
             transaction.Reply = reply; transaction.ConfirmationId = confirmationId; transaction.Status = "complete";
             transaction.Until = clock.GetUtcNow().AddSeconds(30);
             return new("complete", Session: reply);
+        }
+    }
+    public SignInStatus VerifyBrowser(string id, string proof, string browserProof)
+    {
+        lock (gate)
+        {
+            Transaction transaction = Prove(id, proof);
+            AccountWire.Need(transaction.Status is "browserConfirmationRequired" or "confirmAccount", "signInUnavailable", 409);
+            if (!AccountWire.BrowserProofMatches(browserProof, transaction.BrowserProofHash))
+            {
+                if (++transaction.ProofFailures >= 3) { transaction.Status = "failed"; transaction.Subject = null; transaction.Profile = null; transaction.BrowserProofHash = null; }
+                throw new AccountException("signInCodeRequired", 401);
+            }
+            transaction.Status = "confirmAccount";
+            return new("confirmAccount", transaction.Profile);
         }
     }
     public void Cancel(string id, string proof)
@@ -89,7 +115,7 @@ public sealed class SignInTransactions(AccountRepository repository, Uri origin,
         {
             Transaction transaction = Prove(id, proof);
             if (transaction.Reply is not null) repository.Logout(transaction.Reply.RefreshToken);
-            transaction.Status = "cancelled"; transaction.Subject = null; transaction.Profile = null; transaction.Reply = null;
+            transaction.Status = "cancelled"; transaction.Subject = null; transaction.Profile = null; transaction.Reply = null; transaction.BrowserProofHash = null;
         }
     }
     private Transaction Find(string id)

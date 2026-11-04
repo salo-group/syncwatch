@@ -19,11 +19,13 @@ internal class AccountController(private val scope: CoroutineScope) {
     fun action(action: String, value: String?) {
         when (action) {
             "editAccountService" -> if (presentation.state in setOf("signedOut", "failed") && value != null && value.length <= 256) presentation = presentation.copy(service = value)
+            "editAccountBrowserProof" -> if (presentation.state == "browserConfirmationRequired" && value != null && value.length <= 32) presentation = presentation.copy(browserProof = value)
             "accountSignIn" -> start()
             "accountOpenBrowser" -> if (presentation.state == "pending") attempt?.let {
                 try { java.awt.Desktop.getDesktop().browse(it.browserUri); presentation = presentation.copy(state = "authorizing") }
                 catch (_: Exception) { presentation = presentation.copy(status = "accountFailed") }
             }
+            "accountVerifyBrowserProof" -> if (presentation.state == "browserConfirmationRequired") verifyBrowser()
             "accountConfirm" -> if (presentation.state == "confirmAccount") confirm()
             "accountCancel" -> { generation++; val previous = work; previous?.cancel(); work = scope.launch { previous?.join(); cancel() } }
             "accountSignOut" -> if (presentation.state == "signedIn") signOut()
@@ -43,6 +45,7 @@ internal class AccountController(private val scope: CoroutineScope) {
                     delay(2000)
                     val result = owner.poll(signIn)
                     if (generation != current) return@launch
+                    if (result.state == "browserConfirmationRequired") { presentation = presentation.copy(state = "browserConfirmationRequired", status = "accountBrowserProofRequired"); return@launch }
                     if (result.state == "confirmAccount" && result.account != null) {
                         presentation = presentation.copy(state = "confirmAccount", status = "accountConfirmAccount", name = result.account.name, email = result.account.email)
                         return@launch
@@ -54,22 +57,34 @@ internal class AccountController(private val scope: CoroutineScope) {
             catch (_: Exception) { if (generation == current) { cancel(); fail() } }
         }
     }
+    private fun verifyBrowser() {
+        val owner = client ?: return; val signIn = attempt ?: return; val current = generation
+        presentation = presentation.copy(state = "working", status = "accountWorking")
+        work = scope.launch {
+            try {
+                val account = owner.verifyBrowser(signIn, presentation.browserProof)
+                if (generation != current) return@launch
+                presentation = presentation.copy(state = "confirmAccount", status = "accountConfirmAccount", name = account.name, email = account.email)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (generation == current) presentation = presentation.copy(state = "browserConfirmationRequired", status = "accountConfirmationFailed") }
+        }
+    }
     private fun confirm() {
         val owner = client ?: return; val signIn = attempt ?: return; val current = generation
         presentation = presentation.copy(state = "working", status = "accountWorking")
         work = scope.launch {
             try {
-                val session = owner.confirm(signIn)
+                val session = owner.confirm(signIn, presentation.browserProof)
                 if (generation != current) { owner.logout(session); return@launch }
                 device = session; attempt = null
-                presentation = presentation.copy(state = "signedIn", status = "accountSignedIn", name = session.account.name, email = session.account.email)
+                presentation = presentation.copy(state = "signedIn", status = "accountSignedIn", browserProof = "", name = session.account.name, email = session.account.email)
                 refresh = scope.launch {
                     try { while (true) { delay(480000); device = owner.refresh(device ?: return@launch) } }
                     catch (cancelled: CancellationException) { throw cancelled }
                     catch (_: Exception) { presentation = presentation.copy(status = "accountFailed") }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { if (generation == current) presentation = presentation.copy(state = "confirmAccount", status = "accountFailed") }
+            catch (_: Exception) { if (generation == current) presentation = presentation.copy(state = "confirmAccount", status = "accountConfirmationFailed") }
         }
     }
     private fun signOut() {

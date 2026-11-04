@@ -23,6 +23,7 @@ internal sealed class AccountController
     public void Action(string action, string? value)
     {
         if (action == "editAccountService" && Presentation.State is "signedOut" or "failed" && value is { Length: <= 256 }) { Presentation.Service = value; Changed?.Invoke(); }
+        else if (action == "editAccountBrowserProof" && Presentation.State == "browserConfirmationRequired" && value is { Length: <= 32 }) { Presentation.BrowserProof = value; Changed?.Invoke(); }
         else if (action == "accountSignIn") Start();
         else if (action == "accountOpenBrowser" && attempt is not null && Presentation.State == "pending")
         {
@@ -34,6 +35,7 @@ internal sealed class AccountController
             catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException) { Presentation.Status = "accountFailed"; }
             Changed?.Invoke();
         }
+        else if (action == "accountVerifyBrowserProof" && Presentation.State == "browserConfirmationRequired") work = VerifyBrowser();
         else if (action == "accountConfirm" && Presentation.State == "confirmAccount") work = Confirm();
         else if (action == "accountCancel")
         {
@@ -63,6 +65,7 @@ internal sealed class AccountController
                 await Task.Delay(TimeSpan.FromSeconds(2), cancellation);
                 AccountSignInStatus status = await owner.PollAsync(signIn, cancellation);
                 if (generation != scope) return;
+                if (status.State == "browserConfirmationRequired") { Presentation.State = "browserConfirmationRequired"; Presentation.Status = "accountBrowserProofRequired"; Changed?.Invoke(); return; }
                 if (status.State == "confirmAccount" && status.Account is AccountProfile profile)
                 {
                     Presentation.State = "confirmAccount"; Presentation.Status = "accountConfirmAccount";
@@ -75,19 +78,32 @@ internal sealed class AccountController
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
         catch (Exception) { if (generation == scope) { await Cancel(); Fail(); } }
     }
+    private async Task VerifyBrowser()
+    {
+        if (client is not AccountClient owner || attempt is not AccountSignIn signIn) return;
+        long current = generation; Presentation.State = "working"; Presentation.Status = "accountWorking"; Changed?.Invoke();
+        try
+        {
+            AccountProfile profile = await owner.VerifyBrowserAsync(signIn, Presentation.BrowserProof, stop.Token);
+            if (generation != current) return;
+            Presentation.State = "confirmAccount"; Presentation.Status = "accountConfirmAccount";
+            Presentation.Name = profile.Name; Presentation.Email = profile.Email; Changed?.Invoke();
+        }
+        catch (Exception) { if (generation == current) { Presentation.State = "browserConfirmationRequired"; Presentation.Status = "accountConfirmationFailed"; Changed?.Invoke(); } }
+    }
     private async Task Confirm()
     {
         if (client is not AccountClient owner || attempt is not AccountSignIn signIn) return;
         long scope = generation; Presentation.State = "working"; Presentation.Status = "accountWorking"; Changed?.Invoke();
         try
         {
-            AccountDeviceSession session = await owner.ConfirmAsync(signIn, stop.Token);
+            AccountDeviceSession session = await owner.ConfirmAsync(signIn, Presentation.BrowserProof, stop.Token);
             if (generation != scope) { await owner.LogoutAsync(session); return; }
-            device = session; attempt = null; Presentation.State = "signedIn"; Presentation.Status = "accountSignedIn";
+            device = session; attempt = null; Presentation.BrowserProof = ""; Presentation.State = "signedIn"; Presentation.Status = "accountSignedIn";
             Presentation.Name = session.Account.Name; Presentation.Email = session.Account.Email; Changed?.Invoke();
             refreshStop.Dispose(); refreshStop = new(); refresh = Renew(owner, refreshStop.Token);
         }
-        catch (Exception) { if (generation == scope) { Presentation.State = "confirmAccount"; Presentation.Status = "accountFailed"; Changed?.Invoke(); } }
+        catch (Exception) { if (generation == scope) { Presentation.State = "confirmAccount"; Presentation.Status = "accountConfirmationFailed"; Changed?.Invoke(); } }
     }
     private async Task Renew(AccountClient owner, CancellationToken cancellation)
     {

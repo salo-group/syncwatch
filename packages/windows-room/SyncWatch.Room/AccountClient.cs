@@ -43,12 +43,22 @@ public sealed class AccountClient(RoomAddress address) : IDisposable
     {
         JsonElement result = await Request("sign-ins/" + signIn.Id + "/poll", new { v = 2, proof = signIn.Proof }, cancellation: cancellation);
         string state = result.GetProperty("status").GetString()!;
-        Need(state is "pending" or "authorizing" or "confirmAccount" or "complete" or "cancelled" or "failed");
+        Need(state is "pending" or "authorizing" or "browserConfirmationRequired" or "confirmAccount" or "complete" or "cancelled" or "failed");
         return new(state, state == "confirmAccount" ? Profile(result.GetProperty("account"), proposal: true) : null);
     }
-    public async Task<AccountDeviceSession> ConfirmAsync(AccountSignIn signIn, CancellationToken cancellation = default)
+    public async Task<AccountProfile> VerifyBrowserAsync(AccountSignIn signIn, string browserProof, CancellationToken cancellation = default)
     {
-        JsonElement result = await Request("sign-ins/" + signIn.Id + "/confirm", new { v = 2, proof = signIn.Proof, requestId = signIn.Confirmation }, cancellation: cancellation);
+        string code = browserProof.Replace(" ", "").Replace("-", "").ToUpperInvariant();
+        Need(code.Length == 12 && code.All(char.IsAsciiHexDigitUpper));
+        JsonElement result = await Request("sign-ins/" + signIn.Id + "/verify", new { v = 2, proof = signIn.Proof, browserProof = code }, cancellation: cancellation);
+        Need(result.GetProperty("status").GetString() == "confirmAccount");
+        return Profile(result.GetProperty("account"), proposal: true);
+    }
+    public async Task<AccountDeviceSession> ConfirmAsync(AccountSignIn signIn, string browserProof, CancellationToken cancellation = default)
+    {
+        string code = browserProof.Replace(" ", "").Replace("-", "").ToUpperInvariant();
+        Need(code.Length == 12 && code.All(char.IsAsciiHexDigitUpper));
+        JsonElement result = await Request("sign-ins/" + signIn.Id + "/confirm", new { v = 2, proof = signIn.Proof, requestId = signIn.Confirmation, browserProof = code }, cancellation: cancellation);
         Need(result.GetProperty("status").GetString() == "complete");
         return Device(result.GetProperty("session"));
     }

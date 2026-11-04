@@ -358,6 +358,26 @@
                 "status"
               ],
               "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "browserConfirmationRequired"
+                },
+                "account": {
+                  "type": "null"
+                },
+                "session": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
             }
           ]
         }
