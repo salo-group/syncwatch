@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.WebSockets;
 using System.Text.Json;
+using SyncWatch.RoomMetadata.Accounts;
 
 namespace SyncWatch.RoomMetadata;
 
@@ -25,6 +26,8 @@ public static class RoomApplication
         limits ??= builder.Configuration.GetSection("SyncWatch:Limits").Get<RoomLimits>() ?? new();
         builder.Services.AddSingleton(store ?? new RoomStore(limits));
         builder.Services.AddHostedService<RoomCleanup>();
+        AccountOptions? accounts = AccountOptions.FromEnvironment();
+        if (accounts is not null) AccountModule.Configure(builder, accounts);
         WebApplication app = builder.Build();
         RoomStore rooms = app.Services.GetRequiredService<RoomStore>();
         app.Use(async (context, next) =>
@@ -36,7 +39,14 @@ public static class RoomApplication
                     && context.Connection.LocalIpAddress is IPAddress local && IPAddress.IsLoopback(remote) && IPAddress.IsLoopback(local)), "tlsRequired", 403);
                 // Native clients use header credentials. Cross-origin browser access is not enabled.
                 Wire.Need(!context.Request.Headers.ContainsKey("Origin"), "forbidden", 403);
+                if (accounts is not null && (context.Request.Path.StartsWithSegments("/auth") || context.Request.Path.StartsWithSegments("/v2/account")))
+                    AccountModule.ValidateOrigin(context, accounts);
                 await next(context);
+            }
+            catch (AccountException error) when (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = error.Status;
+                await Write(context, new { v = 2, error = new { code = error.Code } });
             }
             catch (RoomException error) when (!context.Response.HasStarted)
             {
@@ -101,6 +111,7 @@ public static class RoomApplication
         app.MapPost("/v1/rooms/{roomId}/commands", async context => await Write(context,
             rooms.Execute(RoomId(context), Bearer(context), Wire.ReadCommand(await Body(context)))));
         app.MapGet("/v1/rooms/{roomId}/events", context => Events(context, rooms));
+        if (accounts is not null) AccountModule.Map(app, accounts);
         return app;
     }
 

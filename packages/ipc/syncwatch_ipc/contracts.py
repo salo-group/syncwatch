@@ -4,6 +4,7 @@ import argparse
 from dataclasses import dataclass, field
 import json
 import math
+import re
 from pathlib import Path
 import unicodedata
 from urllib.parse import urldefrag
@@ -93,9 +94,9 @@ class Registry:
         self.manifest = strict_json((self.directory / "manifest.json").read_bytes())
         self.schema_error = library.JsonSchemaValueException
         self.documents = {}
-        for path in sorted((self.directory / "v1").glob("*.schema.json")):
+        for path in sorted(self.directory.glob("v[0-9]*/*.schema.json")):
             document = strict_json(path.read_bytes())
-            if document.get("$id") != SCHEMA_BASE + path.name:
+            if not re.fullmatch(r"v[1-9][0-9]*", path.parent.name) or document.get("$id") != SCHEMA_BASE.removesuffix("v1/") + path.relative_to(self.directory).as_posix():
                 raise ValueError("Schema identity must match its versioned local path")
             if document.get("$schema") != self.manifest["schemaDialect"]:
                 raise ValueError("Schema dialect must match the contract manifest")
@@ -104,6 +105,7 @@ class Registry:
             self.check_references(document)
         handlers = {scheme: self.resolve for scheme in ("https", "http", "file", "")}
         self.validators = {}
+        self.versions = {}
         selected = set(self.manifest["schemas"] if kinds is None else kinds)
         if not selected or not selected <= self.manifest["schemas"].keys():
             raise ValueError("Unknown or empty schema selection")
@@ -111,9 +113,10 @@ class Registry:
             path = (self.directory / relative).resolve()
             if not path.is_relative_to(self.directory) or not path.is_file():
                 raise ValueError("Contract entry must resolve to a local schema")
-            document = self.resolve(SCHEMA_BASE + path.name)
+            document = self.resolve(SCHEMA_BASE.removesuffix("v1/") + path.relative_to(self.directory).as_posix())
             if name in selected:
                 self.validators[name] = library.compile(document, handlers=handlers, use_default=False)
+                self.versions[name] = int(path.parent.name[1:])
 
     def resolve(self, uri: str) -> dict:
         identity, _ = urldefrag(uri)
@@ -145,7 +148,7 @@ class Registry:
         check_tree(value, limit=self.manifest["maxNesting"])
         reject(not isinstance(value, dict), "malformed")
         reject(type(value.get("v")) is not int, "malformed")
-        reject(value["v"] != 1, "unsupportedVersion")
+        reject(value["v"] != self.versions[kind], "unsupportedVersion")
         try:
             self.validators[kind](value)
         except self.schema_error as error:

@@ -1,0 +1,25 @@
+# Account service
+
+Accounts extend the existing metadata application as an optional, independent module. Legacy v1 room credentials are unchanged and are not authenticated Google room membership. See [accounts and rooms](architecture/accounts-and-rooms.md).
+
+Configure the confidential backend with `SYNCWATCH_GOOGLE_CLIENT_FILE` (protected Google Web-client JSON), `SYNCWATCH_PUBLIC_ORIGIN` (exact HTTPS origin), and `SYNCWATCH_ACCOUNT_DIRECTORY` (private persistent directory). All three are required together. The registered callback must equal `<origin>/auth/google/callback`. Literal `http://127.0.0.1` is permitted only for local development. Requests must match the configured origin; untrusted forwarded headers, browser CORS, redirects to another API origin and arbitrary OAuth endpoints are unsupported. Account-enabled storage currently requires Windows DPAPI. Keep the configuration, protected account snapshot and key ring outside source/build/package directories with owner-only access. Back up and restore the protected key ring and snapshot together; key loss must fail closed.
+
+The native API returns JSON `{ "v": 2, "result": ... }`; typed errors return `{ "v": 2, "error": { "code": ... } }`. Native request bodies are JSON objects with `v: 2`, no unknown or duplicate fields, and at most 4096 bytes. The endpoints accept no browser Origin header. Responses never return Google tokens. Clients bound response bytes and reject redirects.
+
+| Request | Body or header | Result |
+| --- | --- | --- |
+| `POST /v2/account/sign-ins` | `challenge`: base64url SHA-256 of an in-memory 256-bit verifier | `transactionId`, same-origin `browserUri`, `expiresIn: 300`, `pollAfterMs: 2000` |
+| `POST /v2/account/sign-ins/{id}/poll` | `proof`: verifier | `status`; proposed `account` only for `confirmAccount`; no device credential |
+| `POST /v2/account/sign-ins/{id}/confirm` | `proof`, random `requestId` | `status: complete`, `session` after native account confirmation |
+| `POST /v2/account/sign-ins/{id}/cancel` | `proof` | `status: cancelled`; revokes a completed transaction's device session while its receipt remains available |
+| `GET /v2/account/me` | `Authorization: Bearer <accessToken>` | Current account profile |
+| `POST /v2/account/refresh` | `refreshToken`, random `requestId` | Rotated `session` |
+| `POST /v2/account/logout` | No body; `Authorization: Bearer <refreshToken>` | `status: signedOut` |
+
+Each JSON request body includes `v: 2`. A profile has opaque `id`, `name` and verified `email`; a pre-confirmation proposal has an empty ID. A session contains `account`, opaque `accessToken`, opaque `refreshToken`, and `expiresIn: 600`. Opaque credentials, proof, transaction and request identifiers use 32 random bytes encoded as 43 unpadded base64url characters. They are not diagnostic strings, URLs or clipboard data.
+
+Transaction states are `pending`, `authorizing`, `confirmAccount`, `complete`, `cancelled`, and `failed`. Only its proof-owning native client can inspect or confirm a transaction. Opening its browser URL is not authentication. An identical confirmation retry returns its original result for 30 seconds; a different confirmation cannot consume it again. Browser pages contain no tokens, profile, scripts or native application bridge. The OAuth handler consumes the browser correlation cookie and protected state; it uses PKCE and fixed Google endpoints. The backend reads verified profile data over its authenticated UserInfo backchannel and never decodes an ID token.
+
+Access credentials expire after ten minutes; refresh families have a thirty-day absolute limit. A refresh rotates both credentials and invalidates the old access token. An identical refresh request may recover its original result for thirty seconds. Any retired refresh-token reuse outside that exact latest retry revokes its device family. History is bounded to 4096 rotations, after which a new sign-in is required. Background cleanup removes expired transactions, sessions and encrypted retry responses. Request/global transaction/store bounds fail closed.
+
+Desktop credentials currently stay in memory, with that limitation shown by common Design. Restart requires explicit sign-in and never reopens a room or call. A normal SyncWatch logout revokes its device session; it does not sign Google out or end an external Meet call. Native secure-store persistence, all-device logout, authenticated room/Syncplay admission, organizer consent, automatic Meet provisioning and complete call acceptance remain incomplete.
