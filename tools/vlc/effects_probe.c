@@ -102,6 +102,10 @@ int main(int argc, char **argv) {
         deadline = milliseconds() + 1800;
         /* A uniformly bright authored video frame cannot count as subtitle text. */
         while (((white = atomic_load(&white_pixels)) < 20 || white > WIDTH * HEIGHT / 4) && milliseconds() < deadline) delay();
+        fprintf(stderr, "subtitle observations: case=%s white=%u frames=%u track=%d tracks=%d time=%lld state=%d\n",
+                argv[1], white, atomic_load(&observed.frames), libvlc_video_get_spu(player),
+                libvlc_video_get_spu_count(player), (long long)libvlc_media_player_get_time(player),
+                (int)libvlc_media_player_get_state(player));
         REQUIRE(white >= 20 && white <= WIDTH * HEIGHT / 4 && libvlc_video_get_spu(player) >= 0,
                 "subtitle track did not render actual text pixels");
     }
