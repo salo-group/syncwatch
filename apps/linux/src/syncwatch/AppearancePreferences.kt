@@ -55,7 +55,8 @@ internal class AppearancePreferences(store: LocalStateStore) {
             "rememberVolume" to state.preferences.rememberMovieVolume.toString()),
         editableFields = if (canWrite && !savingWatchState) setOf("skipSeconds", "defaultVolume", "rememberVolume") else emptySet(),
         canSave = canWrite && !savingWatchState)
-    fun savePlayerSettings(values: Map<String, String>): Boolean {
+    fun savePlayerSettings(values: Map<String, String>): Boolean = savePlayerSettings(values, null)
+    fun savePlayerSettings(values: Map<String, String>, currentMovieVolume: Double?): Boolean {
         if (!canWrite || savingWatchState) return false
         val value = values["skipSeconds"] ?: return false
         val field = SyncWatchPlayerSettings.fields.single { it.id == "skipSeconds" }
@@ -68,6 +69,10 @@ internal class AppearancePreferences(store: LocalStateStore) {
         }
         values["rememberVolume"]?.let { remember ->
             val flag = remember.toBooleanStrictOrNull() ?: return false
+            if (flag && !state.preferences.rememberMovieVolume && currentMovieVolume != null) {
+                if (!currentMovieVolume.isFinite() || currentMovieVolume !in 0.0..1.0) return false
+                updated = updated.copy(movieVolume = currentMovieVolume)
+            }
             updated = updated.copy(rememberMovieVolume = flag)
         }
         val next = state.copy(preferences = updated)

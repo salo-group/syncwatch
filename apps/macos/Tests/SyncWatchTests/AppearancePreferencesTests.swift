@@ -133,8 +133,8 @@ private final class TestStore: LocalStateStore {
     #expect(AppearancePreferences(store: disk).openingMovieVolume == 0.25)
     draft = preferences.playerSettingsEditor
     draft.edit("rememberVolume", value: "true")
-    let rememberingSaved = draft.save(using: preferences.savePlayerSettings)
-    #expect(rememberingSaved)
+    let rememberingSaved = draft.save { preferences.savePlayerSettings($0, currentMovieVolume: 0.55) }
+    #expect(rememberingSaved && AppearancePreferences(store: disk).openingMovieVolume == 0.55)
     #expect(preferences.rememberMovieVolume(0.6))
     #expect(!preferences.rememberMovieVolume(0.6))
     #expect(!preferences.rememberMovieVolume(.nan) && !preferences.rememberMovieVolume(1.1))

@@ -50,6 +50,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     private HashSet<string> NavigationActions => onNavigation is null ? ["endWatching", "toggleFullscreen"] : ["endWatching", "toggleFullscreen", "showLibrary"];
     private readonly CancellationTokenSource cancellation = new();
     private PlayerPresentation presentation = new();
+    internal double? ObservedMovieVolume => presentation.EnabledActions.Contains("setMovieVolume") ? presentation.Volume : null;
     private string roomNotice = "";
     private int? skipSeconds;
     private Action? openPlayerSettings;

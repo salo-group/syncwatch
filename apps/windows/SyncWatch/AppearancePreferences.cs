@@ -63,7 +63,8 @@ public sealed class AppearancePreferences
         },
         CanWrite && !SavingWatchState ? ["skipSeconds", "defaultVolume", "rememberVolume"] : [], CanWrite && !SavingWatchState);
 
-    public bool SavePlayerSettings(IReadOnlyDictionary<string, string> values)
+    public bool SavePlayerSettings(IReadOnlyDictionary<string, string> values) => SavePlayerSettings(values, null);
+    public bool SavePlayerSettings(IReadOnlyDictionary<string, string> values, double? currentMovieVolume)
     {
         if (!CanWrite || SavingWatchState || !values.TryGetValue("skipSeconds", out var value)) return false;
         var field = SyncWatchPlayerSettings.Fields.Single(f => f.Id == "skipSeconds");
@@ -77,6 +78,11 @@ public sealed class AppearancePreferences
         if (values.TryGetValue("rememberVolume", out var remember))
         {
             if (remember is not ("true" or "false")) return false;
+            if (remember == "true" && !State.Preferences.RememberMovieVolume && currentMovieVolume is double current)
+            {
+                if (!double.IsFinite(current) || current is < 0 or > 1) return false;
+                updated = updated with { MovieVolume = current };
+            }
             updated = updated with { RememberMovieVolume = remember == "true" };
         }
         var next = State with { Preferences = updated };

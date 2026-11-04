@@ -59,7 +59,7 @@ internal static class PlayerPreferencesChecks
             Require(volumeDraft.Save(volume.SavePlayerSettings) && volume.OpeningMovieVolume == 0.25);
             Require(!volume.RememberMovieVolume(0.6) && new AppearancePreferences(volumeDisk).OpeningMovieVolume == 0.25);
             volumeDraft = volume.CreatePlayerSettingsEditor(); volumeDraft.Edit("rememberVolume", "true");
-            Require(volumeDraft.Save(volume.SavePlayerSettings) && volume.RememberMovieVolume(0.6));
+            Require(volumeDraft.Save(values => volume.SavePlayerSettings(values, 0.55)) && new AppearancePreferences(volumeDisk).OpeningMovieVolume == 0.55 && volume.RememberMovieVolume(0.6));
             Require(!volume.RememberMovieVolume(0.6) && !volume.RememberMovieVolume(double.NaN) && !volume.RememberMovieVolume(1.1));
             Require(await volume.PersistWatchStateAsync(initial));
             var volumeRestored = new AppearancePreferences(volumeDisk);

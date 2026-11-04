@@ -44,7 +44,7 @@ internal suspend fun playerPreferencesChecks(scratch: Path) {
     check(volumeDraft.save(volume::savePlayerSettings).second && volume.openingMovieVolume == 0.25)
     check(!volume.rememberMovieVolume(0.6) && AppearancePreferences(volumeDisk).openingMovieVolume == 0.25)
     volumeDraft = volume.playerSettingsEditor().edit("rememberVolume", "true")
-    check(volumeDraft.save(volume::savePlayerSettings).second && volume.rememberMovieVolume(0.6))
+    check(volumeDraft.save { volume.savePlayerSettings(it, 0.55) }.second && AppearancePreferences(volumeDisk).openingMovieVolume == 0.55 && volume.rememberMovieVolume(0.6))
     check(!volume.rememberMovieVolume(0.6) && !volume.rememberMovieVolume(Double.NaN) && !volume.rememberMovieVolume(1.1))
     check(volume.persistWatchState(initial))
     val volumeRestored = AppearancePreferences(volumeDisk)

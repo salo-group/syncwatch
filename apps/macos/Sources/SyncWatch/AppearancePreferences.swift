@@ -85,6 +85,9 @@ import SyncWatchLibrary
     }
 
     func savePlayerSettings(_ values: [String: String]) -> Bool {
+        savePlayerSettings(values, currentMovieVolume: nil)
+    }
+    func savePlayerSettings(_ values: [String: String], currentMovieVolume: Double?) -> Bool {
         guard canWrite, !savingWatchState, let value = values["skipSeconds"],
             let field = SyncWatchPlayerSettings.fields.first(where: { $0.id == "skipSeconds" }),
             PlayerSettingsEditor.valid(value, for: field), let seconds = Int(value)
@@ -98,6 +101,10 @@ import SyncWatchLibrary
         }
         if let remember = values["rememberVolume"] {
             guard ["true", "false"].contains(remember) else { return false }
+            if remember == "true", !state.preferences.rememberMovieVolume, let currentMovieVolume {
+                guard currentMovieVolume.isFinite, (0...1).contains(currentMovieVolume) else { return false }
+                next.preferences.movieVolume = currentMovieVolume
+            }
             next.preferences.rememberMovieVolume = remember == "true"
         }
         do {
