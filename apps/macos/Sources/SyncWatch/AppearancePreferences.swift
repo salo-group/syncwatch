@@ -154,6 +154,7 @@ import SyncWatchLibrary
     @StateObject private var room: RoomController
     @StateObject private var watch: WatchSessionCoordinator
     @StateObject private var shared: RoomWatchCoordinator
+    @StateObject private var account = AccountController()
     private let lifecycle: ApplicationLifecycle
     init(lifecycle: ApplicationLifecycle) {
         self.lifecycle = lifecycle
@@ -190,6 +191,7 @@ import SyncWatchLibrary
         _library = StateObject(wrappedValue: library)
     }
     @State private var showRoom = false
+    @State private var showAccount = false
     @State private var showSettings = false
     @State private var editor = SettingsEditor()
 
@@ -198,7 +200,8 @@ import SyncWatchLibrary
             playerPresented: watch.playerPresented,
             library: AnyView(
                 LibraryWorkspace(
-                    presentation: shared.libraryPresentation(watch.libraryPresentation(library.presentation)),
+                    presentation: account.libraryPresentation(
+                        shared.libraryPresentation(watch.libraryPresentation(library.presentation))),
                     language: preferences.state.preferences.language
                 ) { action, value in
                     if action != "openLibraryAudio" && action != "openLibrarySubtitles" { library.dismissTracks() }
@@ -220,6 +223,11 @@ import SyncWatchLibrary
                         Task { await shared.end() }
                     } else if action == "openRoom" {
                         showRoom = true
+                    } else if action == "openAccount" {
+                        if account.presentation.service.isEmpty {
+                            account.presentation.service = room.editor.values["serviceAddress"] ?? ""
+                        }
+                        showAccount = true
                     } else if action == "openSettings" {
                         editor = library.settingsEditor(preferences.editor)
                         showSettings = true
@@ -238,9 +246,10 @@ import SyncWatchLibrary
             lifecycle.prepareForTermination = {
                 [
                     weak sessionOwner = watch, weak catalogOwner = library, weak roomOwner = room,
-                    weak sharedOwner = shared
+                    weak sharedOwner = shared, weak accountOwner = account
                 ] in
                 await sharedOwner?.close()
+                await accountOwner?.close()
                 await sessionOwner?.close()
                 await roomOwner?.close()
                 await catalogOwner?.closeAndWait()
@@ -254,8 +263,10 @@ import SyncWatchLibrary
             let catalogOwner = library
             let roomOwner = room
             let sharedOwner = shared
+            let accountOwner = account
             Task {
                 await sharedOwner.close()
+                await accountOwner.close()
                 await sessionOwner.close()
                 await roomOwner.close()
                 await catalogOwner.closeAndWait()
@@ -309,6 +320,19 @@ import SyncWatchLibrary
                 showRoom = false
             }
         }
+        .sheet(isPresented: $showAccount, onDismiss: { Task { await account.dismiss() } }) {
+            AccountDialog(presentation: account.presentation, language: preferences.state.preferences.language) {
+                action, value in
+                if action == "close" {
+                    Task {
+                        await account.dismiss()
+                        showAccount = false
+                    }
+                } else {
+                    account.action(action, value: value)
+                }
+            }
+        }
         .preferredColorScheme(preferences.colorScheme)
         .environment(\.locale, Locale(identifier: preferences.state.preferences.language))
     }
@@ -327,6 +351,7 @@ import SyncWatchLibrary
         let sessionOwner = watch
         let catalogOwner = library
         await shared.close()
+        await account.close()
         await sessionOwner.close()
         await room.close()
         await catalogOwner.closeAndWait()

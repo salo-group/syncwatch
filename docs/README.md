@@ -49,3 +49,5 @@ The three native clients contain Library, local WatchSession/VLC ownership, gene
 
 - [Local library ownership and scanning](architecture/library.md)
 - [Native playback ownership, development entry and acceptance](playback.md)
+
+- [Account service](account-service.md): confidential Google sign-in, proof-bound native handoff, device sessions and current implementation limits.

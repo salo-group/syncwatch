@@ -20,6 +20,7 @@
         <Page Include="../../../packages/design/windows/SyncWatchComponents.xaml" Link="Design/SyncWatchComponents.xaml" />
         <Compile Include="../../../packages/design/windows/SettingsDialog.cs" Link="Design/SettingsDialog.cs" />
         <Compile Include="../../../packages/design/windows/RoomDialog.cs" Link="Design/RoomDialog.cs" />
+        <Compile Include="../../../packages/design/windows/AccountDialog.cs" Link="Design/AccountDialog.cs" />
         <Compile Include="../../../packages/design/windows/PlayerSettingsDialog.cs" Link="Design/PlayerSettingsDialog.cs" />
         <Compile Include="../../../packages/design/windows/PlayerChrome.cs" Link="Design/PlayerChrome.cs" />
         <Compile Include="../../../packages/design/windows/PlayerInput.cs" Link="Design/PlayerInput.cs" />

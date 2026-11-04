@@ -13,7 +13,7 @@ SyncWatch is a native desktop product for synchronized local movie viewing and v
 | Shared design | Platform-neutral JSON tokens and component contracts in `packages/design`; Apache 2.0 Style Dictionary generates native resources |
 | Playback | Embedded libVLC with SyncWatch controls |
 | Synchronization | The upstream Syncplay client engine in a headless helper on each device, connected to a standard Syncplay server |
-| Calling | Google Meet through a supported browser or official PWA; account/room/provisioning and explicit handoff belong to SyncWatch and remain unimplemented |
+| Calling | Google Meet through a supported browser or official PWA; account sign-in is in progress; authenticated rooms, provisioning and call handoff remain incomplete |
 | Room metadata | A C# / ASP.NET Core service over HTTPS/WSS for catalog and watch-session metadata |
 | External libraries | Pinned source submodules under `3rdparty/`, including the complete transitive graph before component builds |
 | Continuous integration | GitHub Actions for repository checks, native macOS/Windows builds, required Linux Kotlin-domain/JVM checks, reproducible dependencies, integration checks, and trusted release candidates |
@@ -38,7 +38,7 @@ flowchart TB
     C <-->|HTTPS / WSS metadata| R[Room service]
     C -. Explicit validated URI handoff .-> H[Supported browser / Meet PWA]
     H <-->|Google-managed call| M[Google Meet]
-    R -. Planned account / provisioning modules .-> API[Google OIDC / Meet REST]
+    R -. Account / planned provisioning modules .-> API[Google OAuth / Meet REST]
 ```
 
 Native ownership is implemented separately in each selected language. Account/provisioning and call handoff remain planned; the diagram does not imply their runtime availability.
@@ -63,7 +63,7 @@ Each device reads its own movie file. Only play, pause, seek, and movie/playlist
 
 Swift, C# and Kotlin implement the [shared contracts](contracts.md) and consume the same acceptance fixtures, including local watch generations and preference persistence. Domain behavior remains independent of UI and provider SDK types. The Python helper adapts the selected Syncplay engine while each application uses its selected desktop stack.
 
-The target [Google account, room, and call architecture](accounts-and-rooms.md) adds authenticated accounts and device sessions to the existing service, with approved room invitations, server-enforced synchronization admission, and organizer-authorized Meet creation. It is a planned extension requiring versioned contracts and all-three-desktop delivery; the current creation-key API does not implement it.
+The target [Google account, room, and call architecture](accounts-and-rooms.md) adds authenticated accounts and device sessions to the existing service, with approved room invitations, server-enforced synchronization admission, and organizer-authorized Meet creation. Account sign-in has versioned server and native source implementations with partial qualification. Authenticated rooms, synchronization admission and Meet provisioning still require all-three-desktop delivery; the current creation-key API does not implement them.
 
 ## Native video integration
 

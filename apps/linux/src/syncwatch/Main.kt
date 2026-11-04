@@ -91,9 +91,11 @@ fun main(arguments: Array<String>) {
     val state = preferences.state
     val watch = workspace.watch
     val room = workspace.room
+    val account = workspace.account
     val shared = workspace.shared
     val roomWork = rememberCoroutineScope()
     var roomOpen by remember { mutableStateOf(false) }
+    var accountOpen by remember { mutableStateOf(false) }
     var settingsOpen by remember { mutableStateOf(false) }
     var editor by remember { mutableStateOf(preferences.editor()) }
     val library = workspace.library
@@ -109,7 +111,7 @@ fun main(arguments: Array<String>) {
     val dark = when (state.preferences.theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }
     val theme = if (dark) SyncWatchTheme.dark else SyncWatchTheme.light
     ApplicationChrome(watch.playerPresented, library = {
-    LibraryWorkspace(shared.libraryPresentation(watch.libraryPresentation(library.presentation)), language, theme,
+    LibraryWorkspace(account.libraryPresentation(shared.libraryPresentation(watch.libraryPresentation(library.presentation))), language, theme,
         selectionMenu = if (watch.playerPresented) null else library.tracks.menu,
         onSelection = library::selectTrack, onDismissSelection = library::dismissTracks) { action, value ->
         if (action !in setOf("openLibraryAudio", "openLibrarySubtitles")) library.dismissTracks()
@@ -121,6 +123,10 @@ fun main(arguments: Array<String>) {
         else if (action == "continueWatching") watch.continueWatching()
         else if (action == "endWatching") roomWork.launch { shared.end() }
         else if (action == "openRoom") roomOpen = true
+        else if (action == "openAccount") {
+            if (account.presentation.service.isEmpty()) account.action("editAccountService", room.editor.values["serviceAddress"].orEmpty())
+            accountOpen = true
+        }
         else if (action == "openSettings") { editor = library.settingsEditor(preferences.editor()); settingsOpen = true }
     }
     }, player = {
@@ -134,6 +140,15 @@ fun main(arguments: Array<String>) {
         (library.errorKey ?: watch.errorKey ?: shared.errorKey)?.let { key ->
             javax.swing.JOptionPane.showMessageDialog(null, SyncWatchCopy.text(key, language), SyncWatchCopy.text("brand", language), javax.swing.JOptionPane.WARNING_MESSAGE)
             library.clearError(); watch.clearError(); shared.clearError()
+        }
+    }
+    if (accountOpen) {
+        fun closeAccount() { roomWork.launch { account.dismiss(); accountOpen = false } }
+        DialogWindow(onCloseRequest = ::closeAccount, title = SyncWatchCopy.text("openAccount", language),
+            state = rememberDialogState(width = SyncWatchTokens.layoutSettingsWidth.dp, height = SyncWatchTokens.layoutSettingsHeight.dp)) {
+            AccountDialog(account.presentation, language, theme) { action, value ->
+                if (action == "close") closeAccount() else account.action(action, value)
+            }
         }
     }
     if (roomOpen) {

@@ -36,7 +36,8 @@
         "openCall",
         "openRoom",
         "openLibraryAudio",
-        "openLibrarySubtitles"
+        "openLibrarySubtitles",
+        "openAccount"
       ]
     },
     "PlayerChrome": {
@@ -253,6 +254,27 @@
         "connectRoom",
         "leaveRoom",
         "copyInvitation",
+        "close"
+      ]
+    },
+    "Account": {
+      "tokens": [],
+      "states": [
+        "signedOut",
+        "working",
+        "pending",
+        "authorizing",
+        "confirmAccount",
+        "signedIn",
+        "failed"
+      ],
+      "actions": [
+        "editAccountService",
+        "accountSignIn",
+        "accountOpenBrowser",
+        "accountConfirm",
+        "accountCancel",
+        "accountSignOut",
         "close"
       ]
     }

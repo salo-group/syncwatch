@@ -1665,6 +1665,31 @@
                               "children": []
                             }
                           ]
+                        },
+                        {
+                          "id": "accountEntrylibraryOpenRoom",
+                          "kind": "button",
+                          "styles": [
+                            "button",
+                            "compact"
+                          ],
+                          "props": {
+                            "action": "openAccount",
+                            "automation": "{namespace}.openAccount",
+                            "enabled": "$can.openAccount",
+                            "label": "~openAccount"
+                          },
+                          "children": [
+                            {
+                              "id": "accountEntrylibraryOpenRoomLabel",
+                              "kind": "text",
+                              "styles": [],
+                              "props": {
+                                "text": "~openAccount"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     },
@@ -1752,7 +1777,7 @@
                 "dialogTitle"
               ],
               "props": {
-                "text": "{~brand} \u00b7 {~openSettings}",
+                "text": "{~brand} · {~openSettings}",
                 "width": "fill",
                 "moveAction": "moveDialog"
               },
@@ -4973,6 +4998,302 @@
                   "styles": [],
                   "props": {
                     "text": "~{connectLabel}"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "Account": {
+      "id": "accountDialog",
+      "kind": "column",
+      "styles": [
+        "dialog"
+      ],
+      "props": {},
+      "children": [
+        {
+          "id": "accountHeader",
+          "kind": "row",
+          "styles": [],
+          "props": {
+            "padding": "@layout.settingsCardPadding",
+            "gap": "@control.compactGap"
+          },
+          "children": [
+            {
+              "id": "accountTitle",
+              "kind": "text",
+              "styles": [
+                "dialogTitle"
+              ],
+              "props": {
+                "text": "~openAccount",
+                "width": "fill"
+              },
+              "children": []
+            },
+            {
+              "id": "accountClose",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "close",
+                "automation": "account.close",
+                "enabled": "$can.close",
+                "label": "~close",
+                "shortcut": "cancel"
+              },
+              "children": [
+                {
+                  "id": "accountCloseLabel",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~close"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "accountScroll",
+          "kind": "scroll",
+          "styles": [],
+          "props": {
+            "height": "fill",
+            "minHeight": "0"
+          },
+          "children": [
+            {
+              "id": "accountBody",
+              "kind": "column",
+              "styles": [],
+              "props": {
+                "gap": "@layout.settingsCardPadding",
+                "padding": "@layout.settingsCardPadding"
+              },
+              "children": [
+                {
+                  "id": "accountServiceLabel",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~roomService"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "accountServiceInput",
+                  "kind": "input",
+                  "styles": [
+                    "input"
+                  ],
+                  "props": {
+                    "value": "$service",
+                    "action": "editAccountService",
+                    "enabled": "$can.editAccountService",
+                    "automation": "account.service",
+                    "label": "~roomService",
+                    "width": "fill"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "accountState",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~{status}"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "accountName",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "$name",
+                    "when": "$hasProfile"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "accountEmail",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "$email",
+                    "when": "$hasProfile"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "accountMemory",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountMemoryOnly",
+                    "lines": "4"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "accountBoundary",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountExternalSession",
+                    "lines": "5"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "accountActions",
+          "kind": "row",
+          "styles": [],
+          "props": {
+            "padding": "@layout.settingsCardPadding",
+            "gap": "@control.compactGap"
+          },
+          "children": [
+            {
+              "id": "accountaccountSignIn",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountSignIn",
+                "enabled": "$can.accountSignIn",
+                "automation": "account.accountSignIn",
+                "label": "~accountSignIn",
+                "when": "$showSignIn"
+              },
+              "children": [
+                {
+                  "id": "accountaccountSignInText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountSignIn"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "accountaccountOpenBrowser",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountOpenBrowser",
+                "enabled": "$can.accountOpenBrowser",
+                "automation": "account.accountOpenBrowser",
+                "label": "~accountOpenBrowser",
+                "when": "$pending"
+              },
+              "children": [
+                {
+                  "id": "accountaccountOpenBrowserText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountOpenBrowser"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "accountaccountConfirm",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountConfirm",
+                "enabled": "$can.accountConfirm",
+                "automation": "account.accountConfirm",
+                "label": "~accountConfirm",
+                "when": "$confirmation"
+              },
+              "children": [
+                {
+                  "id": "accountaccountConfirmText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountConfirm"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "accountaccountCancel",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountCancel",
+                "enabled": "$can.accountCancel",
+                "automation": "account.accountCancel",
+                "label": "~accountCancel",
+                "when": "$canCancel"
+              },
+              "children": [
+                {
+                  "id": "accountaccountCancelText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountCancel"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "accountaccountSignOut",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountSignOut",
+                "enabled": "$can.accountSignOut",
+                "automation": "account.accountSignOut",
+                "label": "~accountSignOut",
+                "when": "$signedIn"
+              },
+              "children": [
+                {
+                  "id": "accountaccountSignOutText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountSignOut"
                   },
                   "children": []
                 }

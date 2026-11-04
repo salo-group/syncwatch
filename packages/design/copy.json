@@ -244,7 +244,22 @@
       "roomPeersMissingMedia": "A participant does not have the selected movie yet.",
       "sharedPositionCheckpoint": "Position before connection loss",
       "restoreSharedPosition": "Return to this position",
-      "dismissSharedPosition": "Dismiss"
+      "dismissSharedPosition": "Dismiss",
+      "openAccount": "Google account",
+      "accountSignIn": "Sign in with Google",
+      "accountOpenBrowser": "Continue in browser",
+      "accountConfirm": "Use this account",
+      "accountCancel": "Cancel sign-in",
+      "accountSignOut": "Sign out of SyncWatch",
+      "accountSignedOut": "Sign in to prepare your SyncWatch account for rooms and Meet.",
+      "accountPending": "Complete sign-in in the browser, then confirm the account here.",
+      "accountConfirmAccount": "Check the Google account before continuing.",
+      "accountSignedIn": "Signed in to SyncWatch",
+      "accountWorking": "Working…",
+      "accountFailed": "Sign-in could not finish. Check the service address and try again.",
+      "accountMemoryOnly": "This session stays in memory. Sign in again after restarting SyncWatch.",
+      "accountExternalSession": "Your Google browser session and any Meet call stay separate. Signing out here does not end a call.",
+      "accountSignOutFailed": "Server sign-out is unconfirmed. Retry while this window is open."
     },
     "ru": {
       "brand": "SyncWatch",
@@ -489,7 +504,22 @@
       "roomPeersMissingMedia": "У одного из участников пока нет выбранного фильма.",
       "sharedPositionCheckpoint": "Позиция до потери связи",
       "restoreSharedPosition": "Вернуться к этой позиции",
-      "dismissSharedPosition": "Скрыть"
+      "dismissSharedPosition": "Скрыть",
+      "openAccount": "Аккаунт Google",
+      "accountSignIn": "Войти через Google",
+      "accountOpenBrowser": "Продолжить в браузере",
+      "accountConfirm": "Использовать этот аккаунт",
+      "accountCancel": "Отменить вход",
+      "accountSignOut": "Выйти из SyncWatch",
+      "accountSignedOut": "Войдите, чтобы подготовить аккаунт SyncWatch для комнат и Meet.",
+      "accountPending": "Завершите вход в браузере и подтвердите аккаунт здесь.",
+      "accountConfirmAccount": "Проверьте аккаунт Google перед продолжением.",
+      "accountSignedIn": "Вход в SyncWatch выполнен",
+      "accountWorking": "Подождите…",
+      "accountFailed": "Не удалось войти. Проверьте адрес сервиса и повторите попытку.",
+      "accountMemoryOnly": "Сессия хранится в памяти. После перезапуска SyncWatch войдите снова.",
+      "accountExternalSession": "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок.",
+      "accountSignOutFailed": "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто."
     }
   },
   "gallery": {
@@ -517,7 +547,8 @@
       "openCall",
       "openRoom",
       "openLibraryAudio",
-      "openLibrarySubtitles"
+      "openLibrarySubtitles",
+      "openAccount"
     ]
   }
 }

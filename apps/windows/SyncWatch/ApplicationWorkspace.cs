@@ -14,6 +14,7 @@ internal sealed class ApplicationWorkspace : UserControl
     private readonly LibraryController catalog;
     private readonly WatchSessionCoordinator watch;
     private readonly RoomController room = new();
+    private readonly AccountController account = new();
     private readonly RoomWatchCoordinator shared;
     private readonly Design.ApplicationChrome chrome;
     private bool started;
@@ -33,6 +34,7 @@ internal sealed class ApplicationWorkspace : UserControl
         watch.OnEndWatching = async () => await shared.EndAsync();
         chrome = new Design.ApplicationChrome(library); Content = chrome;
         catalog.Changed += Refresh; watch.Changed += Refresh; room.Changed += Refresh;
+        account.Changed += Refresh;
         shared.Changed += Refresh;
         library.ActionRequested += Action;
         library.SelectionRequested += catalog.SelectTrack; library.SelectionDismissed += catalog.DismissTracks;
@@ -44,14 +46,14 @@ internal sealed class ApplicationWorkspace : UserControl
         };
         Refresh();
     }
-    public async Task CloseAsync() { await shared.CloseAsync(); await watch.CloseAsync(); await room.CloseAsync(); await catalog.CloseAsync(); }
+    public async Task CloseAsync() { await account.CloseAsync(); await shared.CloseAsync(); await watch.CloseAsync(); await room.CloseAsync(); await catalog.CloseAsync(); }
     private void Refresh()
     {
         room.UpdateLibrary(catalog.RoomRevision, () => catalog.RoomFiles);
         shared.MembershipChanged();
         if (watch.PlayerPresented) catalog.DismissTracks();
         library.SelectionPresentation = watch.PlayerPresented ? null : catalog.Tracks.Menu;
-        library.Render(shared.LibraryPresentation(watch.LibraryPresentation(catalog.Presentation)), preferences.State.Preferences.Language);
+        library.Render(account.LibraryPresentation(shared.LibraryPresentation(watch.LibraryPresentation(catalog.Presentation))), preferences.State.Preferences.Language);
         watch.Player?.SetRoomNotice(shared.PlayerNotice);
         watch.Player?.ConfigurePlayerSettings(preferences.State.Preferences.SkipSeconds, OpenPlayerSettings);
         chrome.SetPlayer(watch.Player); chrome.PresentPlayer(watch.PlayerPresented);
@@ -78,7 +80,27 @@ internal sealed class ApplicationWorkspace : UserControl
         else if (action == "continueWatching") watch.ContinueWatching();
         else if (action == "endWatching") _ = shared.EndAsync();
         else if (action == "openRoom") OpenRoom();
+        else if (action == "openAccount") OpenAccount();
         else if (action == "openSettings") OpenSettings();
+    }
+    private void OpenAccount()
+    {
+        if (account.Presentation.Service.Length == 0) account.Presentation.Service = room.Editor.Values.GetValueOrDefault("serviceAddress", "");
+        var view = new Design.AccountDialog(); var window = CreateDialog(view); bool released = false;
+        void Render() => view.Render(account.Presentation, preferences.State.Preferences.Language);
+        account.Changed += Render;
+        view.ActionRequested += async (action, value) =>
+        {
+            if (action == "close") { await account.DismissAsync(); released = true; window.Close(); }
+            else account.Action(action, value);
+        };
+        window.Closing += async (_, e) =>
+        {
+            if (!released) { e.Cancel = true; await account.DismissAsync(); released = true; window.Close(); }
+        };
+        Render();
+        try { window.ShowDialog(); }
+        finally { account.Changed -= Render; }
     }
     private void OpenRoom()
     {

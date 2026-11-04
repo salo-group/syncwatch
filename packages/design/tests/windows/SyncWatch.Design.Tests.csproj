@@ -14,6 +14,7 @@
         <None Include="../../generated/design-manifest.json" Link="design-manifest.json" CopyToOutputDirectory="PreserveNewest" />
         <Compile Include="../../windows/SettingsDialog.cs" Link="SettingsDialog.cs" />
         <Compile Include="../../windows/RoomDialog.cs" Link="RoomDialog.cs" />
+        <Compile Include="../../windows/AccountDialog.cs" Link="AccountDialog.cs" />
         <Compile Include="../../windows/PlayerSettingsDialog.cs" Link="PlayerSettingsDialog.cs" />
         <Compile Include="../../windows/PlayerChrome.cs" Link="PlayerChrome.cs" />
         <Compile Include="../../windows/PlayerInput.cs" Link="PlayerInput.cs" />

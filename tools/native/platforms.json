@@ -56,6 +56,10 @@
     "application-syncplay-transport": {
       "complete": false,
       "validation": { "macos": "native-tested", "windows": "native-tested", "linux": "native-tested" }
+    },
+    "google-account-sign-in": {
+      "complete": false,
+      "validation": { "macos": "source-only", "windows": "source-only", "linux": "source-only" }
     }
   }
 }

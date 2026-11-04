@@ -607,6 +607,21 @@ public static class SyncWatchCopy
         ("en", "sharedPositionCheckpoint") => "Position before connection loss",
         ("en", "restoreSharedPosition") => "Return to this position",
         ("en", "dismissSharedPosition") => "Dismiss",
+        ("en", "openAccount") => "Google account",
+        ("en", "accountSignIn") => "Sign in with Google",
+        ("en", "accountOpenBrowser") => "Continue in browser",
+        ("en", "accountConfirm") => "Use this account",
+        ("en", "accountCancel") => "Cancel sign-in",
+        ("en", "accountSignOut") => "Sign out of SyncWatch",
+        ("en", "accountSignedOut") => "Sign in to prepare your SyncWatch account for rooms and Meet.",
+        ("en", "accountPending") => "Complete sign-in in the browser, then confirm the account here.",
+        ("en", "accountConfirmAccount") => "Check the Google account before continuing.",
+        ("en", "accountSignedIn") => "Signed in to SyncWatch",
+        ("en", "accountWorking") => "Working…",
+        ("en", "accountFailed") => "Sign-in could not finish. Check the service address and try again.",
+        ("en", "accountMemoryOnly") => "This session stays in memory. Sign in again after restarting SyncWatch.",
+        ("en", "accountExternalSession") => "Your Google browser session and any Meet call stay separate. Signing out here does not end a call.",
+        ("en", "accountSignOutFailed") => "Server sign-out is unconfirmed. Retry while this window is open.",
         ("ru", "brand") => "SyncWatch",
         ("ru", "room") => "Смотрим вместе",
         ("ru", "library") => "Библиотека фильмов",
@@ -850,11 +865,26 @@ public static class SyncWatchCopy
         ("ru", "sharedPositionCheckpoint") => "Позиция до потери связи",
         ("ru", "restoreSharedPosition") => "Вернуться к этой позиции",
         ("ru", "dismissSharedPosition") => "Скрыть",
+        ("ru", "openAccount") => "Аккаунт Google",
+        ("ru", "accountSignIn") => "Войти через Google",
+        ("ru", "accountOpenBrowser") => "Продолжить в браузере",
+        ("ru", "accountConfirm") => "Использовать этот аккаунт",
+        ("ru", "accountCancel") => "Отменить вход",
+        ("ru", "accountSignOut") => "Выйти из SyncWatch",
+        ("ru", "accountSignedOut") => "Войдите, чтобы подготовить аккаунт SyncWatch для комнат и Meet.",
+        ("ru", "accountPending") => "Завершите вход в браузере и подтвердите аккаунт здесь.",
+        ("ru", "accountConfirmAccount") => "Проверьте аккаунт Google перед продолжением.",
+        ("ru", "accountSignedIn") => "Вход в SyncWatch выполнен",
+        ("ru", "accountWorking") => "Подождите…",
+        ("ru", "accountFailed") => "Не удалось войти. Проверьте адрес сервиса и повторите попытку.",
+        ("ru", "accountMemoryOnly") => "Сессия хранится в памяти. После перезапуска SyncWatch войдите снова.",
+        ("ru", "accountExternalSession") => "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок.",
+        ("ru", "accountSignOutFailed") => "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто.",
         _ when language != "en" => Text(key, "en"),
         _ => key,
     };
     public static string[] GalleryStates => ["empty", "scanning", "selected", "missingMedia", "reconnecting"];
-    public static string[] LibraryActions => ["chooseFolder", "rescan", "search", "selectMovie", "startWatching", "continueWatching", "endWatching", "openSettings", "openCall", "openRoom", "openLibraryAudio", "openLibrarySubtitles"];
+    public static string[] LibraryActions => ["chooseFolder", "rescan", "search", "selectMovie", "startWatching", "continueWatching", "endWatching", "openSettings", "openCall", "openRoom", "openLibraryAudio", "openLibrarySubtitles", "openAccount"];
     public static string[] GalleryMovies => ["Example Movie 01.mkv", "A very long movie title for responsive layout and selection.mkv", "Example Movie 03.mp4"];
 }
 
@@ -1081,7 +1111,7 @@ public static class SyncWatchSelectionMenu
 
 public static class SyncWatchLayouts
 {
-    public const string SourceDigest = "c9abba47f60911bdf25c77058e47f13c493d5dd2dbbdcad7fef0fd9977c232fa";
+    public const string SourceDigest = "700ac22aec977501dc504d439757b3d8001a77d2bae23f0ddbe50f403589bde7";
     public const double CoordinateSize = 20;
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults { get; } = new System.Collections.Generic.Dictionary<string, string>
     {
@@ -1281,6 +1311,7 @@ public static class SyncWatchLayouts
         ["selectionFixture"] = MakeselectionFixture(),
         ["Application"] = MakeApplication(),
         ["Room"] = MakeRoom(),
+        ["Account"] = MakeAccount(),
     };
     private static DesignNode MakeLibrary()
     {
@@ -2634,6 +2665,39 @@ public static class SyncWatchLayouts
             ["enabled"] = "$can.openRoom",
             ["label"] = "~openRoom",
         }, [libraryOpenRoomLabel]);
+        var accountEntrylibraryOpenRoomLabel = new DesignNode("accountEntrylibraryOpenRoomLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~openAccount",
+        }, []);
+        var accountEntrylibraryOpenRoom = new DesignNode("accountEntrylibraryOpenRoom", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "openAccount",
+            ["automation"] = "{namespace}.openAccount",
+            ["enabled"] = "$can.openAccount",
+            ["label"] = "~openAccount",
+        }, [accountEntrylibraryOpenRoomLabel]);
         var node94 = new DesignNode("node94", "column", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -2651,7 +2715,7 @@ public static class SyncWatchLayouts
             ["padding"] = "@layout.panelPadding",
             ["width"] = "fill",
             ["height"] = "fill",
-        }, [node89, node90, node91, node93, libraryOpenRoom]);
+        }, [node89, node90, node91, node93, libraryOpenRoom, accountEntrylibraryOpenRoom]);
         var node95 = new DesignNode("node95", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6416,5 +6480,375 @@ public static class SyncWatchLayouts
             ["cycleFocus"] = "true",
         }, [roomHeader, roomDivider, roomBody, roomFooter]);
         return roomDialog;
+    }
+    private static DesignNode MakeAccount()
+    {
+        var accountTitle = new DesignNode("accountTitle", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["fontSize"] = "@type.settingsTitleSize",
+            ["weight"] = "bold",
+            ["text"] = "~openAccount",
+            ["width"] = "fill",
+        }, []);
+        var accountCloseLabel = new DesignNode("accountCloseLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~close",
+        }, []);
+        var accountClose = new DesignNode("accountClose", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "close",
+            ["automation"] = "account.close",
+            ["enabled"] = "$can.close",
+            ["label"] = "~close",
+            ["shortcut"] = "cancel",
+        }, [accountCloseLabel]);
+        var accountHeader = new DesignNode("accountHeader", "row", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["padding"] = "@layout.settingsCardPadding",
+            ["gap"] = "@control.compactGap",
+        }, [accountTitle, accountClose]);
+        var accountServiceLabel = new DesignNode("accountServiceLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~roomService",
+        }, []);
+        var accountServiceInput = new DesignNode("accountServiceInput", "input", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accent",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["placeholderFill"] = "theme.textSecondary",
+            ["height"] = "@control.fieldHeight",
+            ["paddingX"] = "@layout.panelPadding",
+            ["radius"] = "@control.fieldRadius",
+            ["background"] = "theme.inputFill",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["value"] = "$service",
+            ["action"] = "editAccountService",
+            ["enabled"] = "$can.editAccountService",
+            ["automation"] = "account.service",
+            ["label"] = "~roomService",
+            ["width"] = "fill",
+        }, []);
+        var accountState = new DesignNode("accountState", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~{status}",
+        }, []);
+        var accountName = new DesignNode("accountName", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "$name",
+            ["when"] = "$hasProfile",
+        }, []);
+        var accountEmail = new DesignNode("accountEmail", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "$email",
+            ["when"] = "$hasProfile",
+        }, []);
+        var accountMemory = new DesignNode("accountMemory", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountMemoryOnly",
+            ["lines"] = "4",
+        }, []);
+        var accountBoundary = new DesignNode("accountBoundary", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountExternalSession",
+            ["lines"] = "5",
+        }, []);
+        var accountBody = new DesignNode("accountBody", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["gap"] = "@layout.settingsCardPadding",
+            ["padding"] = "@layout.settingsCardPadding",
+        }, [accountServiceLabel, accountServiceInput, accountState, accountName, accountEmail, accountMemory, accountBoundary]);
+        var accountScroll = new DesignNode("accountScroll", "scroll", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["barWidth"] = "@control.compactGap",
+            ["thumbMinimum"] = "@control.iconSize",
+            ["thumbRadius"] = "@control.buttonRadius",
+            ["thumbFill"] = "theme.border",
+            ["height"] = "fill",
+            ["minHeight"] = "0",
+        }, [accountBody]);
+        var accountaccountSignInText = new DesignNode("accountaccountSignInText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountSignIn",
+        }, []);
+        var accountaccountSignIn = new DesignNode("accountaccountSignIn", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountSignIn",
+            ["enabled"] = "$can.accountSignIn",
+            ["automation"] = "account.accountSignIn",
+            ["label"] = "~accountSignIn",
+            ["when"] = "$showSignIn",
+        }, [accountaccountSignInText]);
+        var accountaccountOpenBrowserText = new DesignNode("accountaccountOpenBrowserText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountOpenBrowser",
+        }, []);
+        var accountaccountOpenBrowser = new DesignNode("accountaccountOpenBrowser", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountOpenBrowser",
+            ["enabled"] = "$can.accountOpenBrowser",
+            ["automation"] = "account.accountOpenBrowser",
+            ["label"] = "~accountOpenBrowser",
+            ["when"] = "$pending",
+        }, [accountaccountOpenBrowserText]);
+        var accountaccountConfirmText = new DesignNode("accountaccountConfirmText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountConfirm",
+        }, []);
+        var accountaccountConfirm = new DesignNode("accountaccountConfirm", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountConfirm",
+            ["enabled"] = "$can.accountConfirm",
+            ["automation"] = "account.accountConfirm",
+            ["label"] = "~accountConfirm",
+            ["when"] = "$confirmation",
+        }, [accountaccountConfirmText]);
+        var accountaccountCancelText = new DesignNode("accountaccountCancelText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountCancel",
+        }, []);
+        var accountaccountCancel = new DesignNode("accountaccountCancel", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountCancel",
+            ["enabled"] = "$can.accountCancel",
+            ["automation"] = "account.accountCancel",
+            ["label"] = "~accountCancel",
+            ["when"] = "$canCancel",
+        }, [accountaccountCancelText]);
+        var accountaccountSignOutText = new DesignNode("accountaccountSignOutText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountSignOut",
+        }, []);
+        var accountaccountSignOut = new DesignNode("accountaccountSignOut", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountSignOut",
+            ["enabled"] = "$can.accountSignOut",
+            ["automation"] = "account.accountSignOut",
+            ["label"] = "~accountSignOut",
+            ["when"] = "$signedIn",
+        }, [accountaccountSignOutText]);
+        var accountActions = new DesignNode("accountActions", "row", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["padding"] = "@layout.settingsCardPadding",
+            ["gap"] = "@control.compactGap",
+        }, [accountaccountSignIn, accountaccountOpenBrowser, accountaccountConfirm, accountaccountCancel, accountaccountSignOut]);
+        var accountDialog = new DesignNode("accountDialog", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["width"] = "@layout.settingsWidth",
+            ["height"] = "@layout.settingsHeight",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["foreground"] = "theme.text",
+            ["background"] = "theme.surface",
+            ["radius"] = "@control.compactDialogRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["clip"] = "true",
+            ["cycleFocus"] = "true",
+        }, [accountHeader, accountScroll, accountActions]);
+        return accountDialog;
     }
 }

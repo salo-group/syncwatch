@@ -84,3 +84,9 @@ The PlayerSettings component is implemented in the native fixture galleries with
 Playback synchronization, room metadata, and calling have independent connection states. Show participant presence/readiness and connecting, connected, reconnecting, interrupted, missing-media, and failed states where applicable. Synchronization loss pauses shared playback; a call-only failure leaves the movie running. Reconnect must not replay obsolete actions or create duplicate players, capture streams, or helpers.
 
 All three desktop clients share design token IDs, component order, actions, and state contracts. The interface uses a two-column library, deep blue cinema-focused theme, compact dialogs, centered playback controls, timeline previews, audio popover, status indicators, and separate call window. The [architecture](architecture/README.md), [Syncplay integration](architecture/syncplay.md), and [wire contracts](architecture/contracts.md) describe ownership and ordering.
+
+## Google account ownership
+
+The three desktop shells bind `AccountController` to the same declarative `Account` component in SyncWatch Design. The account API adapter is isolated from room admission and playback, reusing only the service-origin and bounded JSON primitives in the native service packages. Account errors leave the library and local movie usable. No Google credential is bundled in an application or persisted in its preferences.
+
+The account surface accepts a service origin, starts a proof-bound sign-in transaction, explicitly opens its validated browser URI, shows the proposed account for confirmation, and owns session refresh/cancellation/logout. Current desktop sessions are explicitly memory-only. The browser's own Google session and external Meet call remain separately owned. Production secure-store persistence and complete account-to-room-to-call acceptance remain incomplete; see the [account service](account-service.md).
