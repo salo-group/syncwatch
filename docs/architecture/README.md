@@ -73,6 +73,8 @@ Each device reads its own movie file. Only play, pause, seek, and movie/playlist
 
 Swift, C# and Kotlin implement the [shared contracts](contracts.md) and consume the same acceptance fixtures, including local watch generations and preference persistence. Domain behavior remains independent of UI and provider SDK types. The Python helper adapts the selected Syncplay engine while each application uses its selected desktop stack.
 
+The target [Google account, room, and call architecture](accounts-and-rooms.md) adds authenticated accounts and device sessions to the existing service, with approved room invitations, server-enforced synchronization admission, and organizer-authorized Meet creation. It is a planned extension requiring versioned contracts and all-three-desktop delivery; the current creation-key API does not implement it.
+
 ## Native video integration
 
 Compile, test and run each desktop client only on its target OS: Swift on macOS,

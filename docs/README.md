@@ -25,6 +25,7 @@ SyncWatch lets people watch their local movie files together with synchronized p
 - [Local watch state](architecture/local-state.md): media ownership, Start/Continue/End, resume history, local preferences, and atomic persistence.
 - [Shared design system](architecture/design-system.md): platform-neutral design contracts and generated native resources.
 - [Room service API](architecture/room-service.md): authorization, catalog batches, snapshots, ordered events, and limits.
+- [Google accounts, rooms, and calls](architecture/accounts-and-rooms.md): target sign-in, room admission, automatic Meet creation, session security, and provider boundaries.
 - [Syncplay and room metadata](architecture/syncplay.md): engine integration, local IPC, media selection, and reconnect behavior.
 - [Google Meet integration](architecture/google-meet.md): application-owned call windows, authentication, capabilities, and browser-host limitations.
 - [Dependencies](architecture/dependencies.md): pinned Git submodules and source dependency policy.

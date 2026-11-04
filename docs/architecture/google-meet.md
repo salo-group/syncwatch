@@ -2,12 +2,14 @@
 
 The SyncWatch call architecture uses a separate application-owned window. The application manages its frame and lifecycle; a Google Meet surface handles the meeting. Call hosting is not implemented in the current native shells.
 
+The target [account and room architecture](accounts-and-rooms.md) uses Google sign-in for every shared-room participant, one SyncWatch invitation, and organizer-authorized automatic Meet creation. It defines separate account, room, synchronization, and call authorities, including revocation and provider termination limits. This flow is not implemented by the current native shells or v1 room service.
+
 ## Provider interfaces
 
 | Interface or constraint | Architectural consequence |
 |---|---|
 | Meet REST API manages spaces and conference metadata | It can support meeting setup but does not supply a native two-way call renderer. [REST overview](https://developers.google.com/workspace/meet/api/guides/overview) |
-| `spaces.create` creates a meeting space | Automated creation is optional after OAuth setup; accepting an existing Meet URL is an initial workflow. [API reference](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/create) |
+| `spaces.create` creates a meeting space | The target room workflow creates a space with the organizer's explicit OAuth grant and shares it with admitted room members. REST creation does not establish call participation. [API reference](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/create) |
 | Meet Media API is deprecated and its preview will not reach general availability | Google announced retirement on October 28, 2026, with endpoint shutdown on January 15, 2027. Do not adopt it for the calling baseline. The Meet REST API and Add-ons SDK remain supported, but do not supply a native two-way call renderer. [Release notes](https://developers.google.com/workspace/meet/release-notes), [Meet developer overview](https://developers.google.com/workspace/meet) |
 | Meet add-ons run applications inside Meet | They do not establish that Meet can be embedded in a native application. [Add-ons overview](https://developers.google.com/workspace/meet/add-ons/guides/overview) |
 | Google lists supported browsers | Embedded hosts still require their own feasibility test. [Meet requirements](https://support.google.com/meet/answer/7317473?hl=en) |

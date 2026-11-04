@@ -2,6 +2,8 @@
 
 The ASP.NET Core executable in `services/room-metadata/RoomMetadata` manages ephemeral room metadata using only platform SDK libraries. It does not connect to Syncplay, play media, transport movie bytes, or participate in Meet. The native room modules provide bounded HTTP and event-stream transport on their respective operating systems. Normal desktop workspace integration is in progress. See [running the service](../room-service.md).
 
+The [Google account and room architecture](accounts-and-rooms.md) describes the target authenticated service, approved invitations, enforced Syncplay admission, and associated Meet calls. These require a versioned API and durable identity/provider state; they are not features of the v1 API documented below.
+
 ## Authorization and lifetime
 
 Room creation requires a configured creation key in an `Authorization: Bearer` header. Creation returns an owner membership credential and a separate invitation. Joining exchanges the invitation for a new member ID and credential. Credentials and invitations contain 256 random bits; the service retains hashes instead of their original values. Creation credentials do not authorize room access; member credentials cannot create rooms or access another room.
