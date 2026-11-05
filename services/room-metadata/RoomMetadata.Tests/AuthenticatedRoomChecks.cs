@@ -64,8 +64,13 @@ internal static class AuthenticatedRoomChecks
             Require(rooms.Catalog(guest, room, guestMember, "guest-run", snapshot.CatalogCursor).Items.Length == 0);
             Command prohibited = Wire.ReadCommand(JsonSerializer.SerializeToUtf8Bytes(new
             {
-                v = 1, id = "cmd-1", type = "call.linkChanged", clientRunId = "guest-run", roomEpoch = snapshot.Snapshot.RoomEpoch,
-                watchGeneration = 0, payload = new { meetUri = "https://meet.google.com/aaa-bbbb-ccc" }
+                v = 1,
+                id = "cmd-1",
+                type = "call.linkChanged",
+                clientRunId = "guest-run",
+                roomEpoch = snapshot.Snapshot.RoomEpoch,
+                watchGeneration = 0,
+                payload = new { meetUri = "https://meet.google.com/aaa-bbbb-ccc" }
             }));
             Reject(() => rooms.Execute(guest, room, guestMember, "guest-run", prohibited), "forbidden", 403);
             rooms.Leave(owner, room, ownerMember, "owner-run", guestMember);

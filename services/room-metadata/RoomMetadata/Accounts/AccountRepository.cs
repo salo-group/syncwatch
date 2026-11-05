@@ -137,8 +137,13 @@ public sealed class AccountRepository : IDisposable
             DeviceSession reply = new(current.Users.Single(u => u.Profile.Id == device.UserId).Profile, AccountWire.Secret(), AccountWire.Secret());
             Device replacement = device with
             {
-                AccessHash = AccountWire.Hash(reply.AccessToken), RefreshHash = AccountWire.Hash(reply.RefreshToken), AccessUntil = now.AddMinutes(10),
-                PreviousHash = device.RefreshHash, RetryId = requestId, RetryUntil = now.AddSeconds(30), RetryReply = reply,
+                AccessHash = AccountWire.Hash(reply.AccessToken),
+                RefreshHash = AccountWire.Hash(reply.RefreshToken),
+                AccessUntil = now.AddMinutes(10),
+                PreviousHash = device.RefreshHash,
+                RetryId = requestId,
+                RetryUntil = now.AddSeconds(30),
+                RetryReply = reply,
                 RetiredHashes = [.. device.RetiredHashes ?? [], device.RefreshHash]
             };
             Save(current with { Devices = current.Devices.Select(d => d == device ? replacement : d).ToArray() });

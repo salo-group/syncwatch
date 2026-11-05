@@ -74,7 +74,11 @@ public sealed class AuthenticatedRooms
                 && rooms.Values.Count(room => room.Members.Values.Any(member => member.Owner && member.Principal.AccountId == principal.AccountId)) < 4, "queueFull", 429);
             Admission admission = metadata.Create(JsonSerializer.SerializeToElement(new
             {
-                v = 1, clientRunId = run, syncplayUsername = Username(), syncplayHost = host, syncplayPort = port,
+                v = 1,
+                clientRunId = run,
+                syncplayUsername = Username(),
+                syncplayHost = host,
+                syncplayPort = port,
                 syncplayRoom = "sw" + Guid.NewGuid().ToString("N")
             }));
             Room room = new(admission.RoomId, admission.Bootstrap.Snapshot.RoomEpoch, admission.ExpiresAt);

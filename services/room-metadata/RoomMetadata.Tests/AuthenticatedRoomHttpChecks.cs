@@ -85,8 +85,13 @@ internal static class AuthenticatedRoomHttpChecks
             await Request(HttpMethod.Post, path + "/invitation", guest.AccessToken, joined.MemberId, "http-guest-run", status: HttpStatusCode.Forbidden);
             await Request(HttpMethod.Post, path + "/commands", guest.AccessToken, joined.MemberId, "http-guest-run", new
             {
-                v = 1, id = "cmd-1", type = "call.linkChanged", clientRunId = "http-guest-run",
-                roomEpoch = joined.Bootstrap.Snapshot.RoomEpoch, watchGeneration = 0, payload = new { meetUri = "https://meet.google.com/abc-defg-hij" }
+                v = 1,
+                id = "cmd-1",
+                type = "call.linkChanged",
+                clientRunId = "http-guest-run",
+                roomEpoch = joined.Bootstrap.Snapshot.RoomEpoch,
+                watchGeneration = 0,
+                payload = new { meetUri = "https://meet.google.com/abc-defg-hij" }
             }, HttpStatusCode.Forbidden);
             using var ws = new ClientWebSocket();
             ws.Options.SetRequestHeader("Authorization", "Bearer " + guest.AccessToken);
@@ -149,7 +154,10 @@ internal static class AuthenticatedRoomHttpChecks
             + "' | Select-Object ProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress";
         var options = new ProcessStartInfo("powershell")
         {
-            UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
         };
         foreach (string arg in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(command)) }) options.ArgumentList.Add(arg);
         using Process query = Process.Start(options)!;

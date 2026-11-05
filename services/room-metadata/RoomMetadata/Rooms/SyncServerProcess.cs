@@ -42,8 +42,12 @@ public sealed class SyncServerProcess : IAsyncDisposable
         Wire.Need(File.Exists(executable) && Directory.Exists(launch.TlsDirectory), "syncServerUnavailable", 503);
         ProcessStartInfo options = new(executable)
         {
-            UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = launch.Runtime,
-            RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = launch.Runtime,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
         };
         options.ArgumentList.Add(launch.Runtime); options.ArgumentList.Add("--admission-server");
         HashSet<string> allowedEnvironment = new(["SystemRoot", "WINDIR", "TEMP", "TMP"], StringComparer.OrdinalIgnoreCase);
