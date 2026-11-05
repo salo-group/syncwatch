@@ -56,14 +56,19 @@ class AccountClient(private val address: RoomAddress) : AutoCloseable {
         return device(result["session"])
     }
     suspend fun cancel(signIn: AccountSignIn) { request("sign-ins/${signIn.id}/cancel", mapOf("proof" to signIn.proof)) }
-    suspend fun refresh(session: AccountDeviceSession): AccountDeviceSession {
-        val body = mapOf("refreshToken" to session.refresh, "requestId" to secret())
-        return try { device(request("refresh", body)["session"]) }
+    fun checkpoint(session: AccountDeviceSession) = AccountSavedSession(address.origin.toASCIIString(), session.account.id, session.refresh, secret())
+    suspend fun refresh(session: AccountDeviceSession): AccountDeviceSession = resume(checkpoint(session))
+    suspend fun resume(saved: AccountSavedSession): AccountDeviceSession {
+        need(RoomAddress(saved.service).origin == address.origin)
+        val body = mapOf("refreshToken" to saved.refreshToken, "requestId" to saved.requestId)
+        val result = try { device(request("refresh", body)["session"]) }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (error: java.io.IOException) {
             if (error is RoomProtocolException) throw error
             device(request("refresh", body)["session"])
         }
+        if (result.account.id != saved.accountId) { try { logout(result) } catch (_: Exception) { }; throw RoomProtocolException("malformed") }
+        return result
     }
     suspend fun logout(session: AccountDeviceSession) { request("logout", bearer = session.refresh) }
     override fun close() = synchronized(gate) {
@@ -85,7 +90,7 @@ class AccountClient(private val address: RoomAddress) : AutoCloseable {
             need(response.uri() == request.uri() && response.headers().firstValue("Content-Type").orElse("").substringBefore(';').trim() == "application/json" && response.body().size <= 16384)
             val envelope = RoomWire.parse(response.body())
             need(envelope["v"] == 2L)
-            if (response.statusCode() !in 200..299) throw RoomProtocolException("accountUnavailable")
+            if (response.statusCode() !in 200..299) throw RoomProtocolException(if (response.statusCode() == 401) "accountSignInRequired" else "accountUnavailable")
             return RoomWire.obj(envelope["result"])
         } finally { pending.remove(future) }
     }

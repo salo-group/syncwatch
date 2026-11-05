@@ -8,12 +8,13 @@ import syncwatch.playback.X11Display
 
 /** One normal desktop window owns its independent library, watch and local-state services. */
 internal class ApplicationSession(media: MediaConfiguration, display: X11Display?, private val work: CoroutineScope,
-    statePath: Path = AppearancePreferences.defaultPath(), helper: HelperConfiguration = HelperConfiguration.read(emptyArray())) {
+    statePath: Path = AppearancePreferences.defaultPath(), helper: HelperConfiguration = HelperConfiguration.read(emptyArray()),
+    accountHelper: Path = Path.of("syncwatch-account-store").toAbsolutePath()) {
     val preferences = AppearancePreferences(FileLocalStateStore(statePath))
     val library = LibraryController(FileLibraryAccessStore(statePath.resolveSibling("library-access.json")), work,
         preferences.state.selectedMediaId, LibraryMetadataReader(media))
     val room = RoomController(work)
-    val account = AccountController(work)
+    val account = AccountController(work, syncwatch.room.AccountSessionStore(statePath.toAbsolutePath().parent, accountHelper))
     val watch = WatchSessionCoordinator(preferences, media, display, work)
     val shared = RoomWatchCoordinator(room, watch, helper, work, library)
     init {

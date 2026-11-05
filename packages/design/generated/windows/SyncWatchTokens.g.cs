@@ -627,6 +627,17 @@ public static class SyncWatchCopy
         ("en", "accountBrowserProofRequired") => "Enter the confirmation code shown in the browser to check the account.",
         ("en", "accountVerifyBrowserProof") => "Check account",
         ("en", "accountBrowserUnavailable") => "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in.",
+        ("en", "accountWillRemember") => "Your SyncWatch sign-in will be saved in this device’s secure storage.",
+        ("en", "accountSavedOnDevice") => "Sign-in is saved securely on this device. Closing SyncWatch keeps it; Sign out removes it.",
+        ("en", "accountRestoring") => "Restoring your saved SyncWatch sign-in…",
+        ("en", "accountStorageUnavailable") => "Saved sign-in could not be accessed or restored. Retry, forget it, or explicitly continue without saving.",
+        ("en", "accountSavedUnavailable") => "A previous saved sign-in stays unchanged if you continue in memory only.",
+        ("en", "accountRetryStorage") => "Retry saved sign-in",
+        ("en", "accountForgetStorage") => "Forget on this device",
+        ("en", "accountUseMemory") => "Use memory only",
+        ("en", "accountSignInRequired") => "Saved sign-in expired or was revoked. Sign in again.",
+        ("en", "accountMemoryWithSaved") => "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
+        ("en", "accountUnavailable") => "The account service is unavailable. Retrying…",
         ("ru", "brand") => "SyncWatch",
         ("ru", "room") => "Смотрим вместе",
         ("ru", "library") => "Библиотека фильмов",
@@ -890,6 +901,17 @@ public static class SyncWatchCopy
         ("ru", "accountBrowserProofRequired") => "Введите код из браузера, чтобы проверить аккаунт.",
         ("ru", "accountVerifyBrowserProof") => "Проверить аккаунт",
         ("ru", "accountBrowserUnavailable") => "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход.",
+        ("ru", "accountWillRemember") => "Вход в SyncWatch будет сохранён в защищённом хранилище устройства.",
+        ("ru", "accountSavedOnDevice") => "Вход безопасно сохранён на устройстве. Закрытие SyncWatch сохраняет его; выход удаляет.",
+        ("ru", "accountRestoring") => "Восстанавливаем сохранённый вход в SyncWatch…",
+        ("ru", "accountStorageUnavailable") => "Не удалось прочитать или восстановить вход. Повторите, удалите его или явно продолжите без сохранения.",
+        ("ru", "accountSavedUnavailable") => "При работе только в памяти прежний сохранённый вход остаётся без изменений.",
+        ("ru", "accountRetryStorage") => "Повторить вход",
+        ("ru", "accountForgetStorage") => "Забыть на устройстве",
+        ("ru", "accountUseMemory") => "Только в памяти",
+        ("ru", "accountSignInRequired") => "Сохранённый вход истёк или отозван. Войдите снова.",
+        ("ru", "accountMemoryWithSaved") => "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
+        ("ru", "accountUnavailable") => "Сервис аккаунтов недоступен. Повторяем попытку…",
         _ when language != "en" => Text(key, "en"),
         _ => key,
     };
@@ -1121,7 +1143,7 @@ public static class SyncWatchSelectionMenu
 
 public static class SyncWatchLayouts
 {
-    public const string SourceDigest = "2e6b57b21350b652a0061d97b61fe5776d7529b22ea61ed35df272c57a75a7de";
+    public const string SourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1";
     public const double CoordinateSize = 20;
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults { get; } = new System.Collections.Generic.Dictionary<string, string>
     {
@@ -6655,7 +6677,7 @@ public static class SyncWatchLayouts
             ["hoverBorder"] = "theme.accent",
             ["focusWidth"] = "@control.borderWidth",
             ["align"] = "leading",
-            ["text"] = "~accountMemoryOnly",
+            ["text"] = "~{storageNotice}",
             ["lines"] = "4",
         }, []);
         var accountBoundary = new DesignNode("accountBoundary", "text", new()
@@ -6898,6 +6920,108 @@ public static class SyncWatchLayouts
             ["label"] = "~accountSignOut",
             ["when"] = "$signedIn",
         }, [accountaccountSignOutText]);
+        var accountRetryStorageText = new DesignNode("accountRetryStorageText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountRetryStorage",
+        }, []);
+        var accountRetryStorage = new DesignNode("accountRetryStorage", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountRetryStorage",
+            ["enabled"] = "$can.accountRetryStorage",
+            ["when"] = "$storageRecovery",
+            ["label"] = "~accountRetryStorage",
+            ["automation"] = "account.accountRetryStorage",
+        }, [accountRetryStorageText]);
+        var accountForgetStorageText = new DesignNode("accountForgetStorageText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountForgetStorage",
+        }, []);
+        var accountForgetStorage = new DesignNode("accountForgetStorage", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountForgetStorage",
+            ["enabled"] = "$can.accountForgetStorage",
+            ["when"] = "$storageRecovery",
+            ["label"] = "~accountForgetStorage",
+            ["automation"] = "account.accountForgetStorage",
+        }, [accountForgetStorageText]);
+        var accountUseMemoryText = new DesignNode("accountUseMemoryText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountUseMemory",
+        }, []);
+        var accountUseMemory = new DesignNode("accountUseMemory", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "accountUseMemory",
+            ["enabled"] = "$can.accountUseMemory",
+            ["when"] = "$storageRecovery",
+            ["label"] = "~accountUseMemory",
+            ["automation"] = "account.accountUseMemory",
+        }, [accountUseMemoryText]);
         var accountActions = new DesignNode("accountActions", "row", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6907,7 +7031,7 @@ public static class SyncWatchLayouts
             ["focusWidth"] = "@control.borderWidth",
             ["padding"] = "@layout.settingsCardPadding",
             ["gap"] = "@control.compactGap",
-        }, [accountaccountSignIn, accountaccountOpenBrowser, verifyaccountaccountConfirm, accountaccountConfirm, accountaccountCancel, accountaccountSignOut]);
+        }, [accountaccountSignIn, accountaccountOpenBrowser, verifyaccountaccountConfirm, accountaccountConfirm, accountaccountCancel, accountaccountSignOut, accountRetryStorage, accountForgetStorage, accountUseMemory]);
         var accountDialog = new DesignNode("accountDialog", "column", new()
         {
             ["disabledOpacity"] = "0.4",

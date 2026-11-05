@@ -278,7 +278,10 @@
         "accountSignOut",
         "close",
         "editAccountBrowserProof",
-        "accountVerifyBrowserProof"
+        "accountVerifyBrowserProof",
+        "accountRetryStorage",
+        "accountForgetStorage",
+        "accountUseMemory"
       ]
     }
   }

@@ -14,7 +14,7 @@ internal sealed class ApplicationWorkspace : UserControl
     private readonly LibraryController catalog;
     private readonly WatchSessionCoordinator watch;
     private readonly RoomController room = new();
-    private readonly AccountController account = new();
+    private readonly AccountController account;
     private readonly RoomWatchCoordinator shared;
     private readonly Design.ApplicationChrome chrome;
     private bool started;
@@ -23,6 +23,7 @@ internal sealed class ApplicationWorkspace : UserControl
     {
         this.owner = owner; this.application = application;
         preferences = application.Preferences!;
+        account = new AccountController(Path.GetDirectoryName(application.StatePath)!);
         catalog = new LibraryController(new Library.FileLibraryAccessStore(
             Path.Combine(Path.GetDirectoryName(application.StatePath)!, "library-access.json")), Dispatcher, preferences.State.SelectedMediaId, new LibraryMetadataReader(application.Media!));
         catalog.ConfigureOptions(preferences.State.Preferences.ScanSubfolders, preferences.State.Preferences.AutomaticRefresh);
@@ -41,6 +42,7 @@ internal sealed class ApplicationWorkspace : UserControl
         Loaded += async (_, _) =>
         {
             if (started) return; started = true;
+            account.Restore();
             catalog.Restore(); await watch.PrepareRuntimeAsync();
             await WatchAcceptance.RunAsync(owner, preferences, catalog, watch);
         };

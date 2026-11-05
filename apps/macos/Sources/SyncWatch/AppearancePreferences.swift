@@ -154,7 +154,7 @@ import SyncWatchLibrary
     @StateObject private var room: RoomController
     @StateObject private var watch: WatchSessionCoordinator
     @StateObject private var shared: RoomWatchCoordinator
-    @StateObject private var account = AccountController()
+    @StateObject private var account: AccountController
     private let lifecycle: ApplicationLifecycle
     init(lifecycle: ApplicationLifecycle) {
         self.lifecycle = lifecycle
@@ -167,6 +167,7 @@ import SyncWatchLibrary
             stateURL = AppearancePreferences.defaultURL
         }
         let preferences = AppearancePreferences(store: FileLocalStateStore(url: stateURL))
+        _account = StateObject(wrappedValue: AccountController(directory: stateURL.deletingLastPathComponent()))
         _preferences = StateObject(wrappedValue: preferences)
         let room = RoomController()
         let watch = WatchSessionCoordinator(
@@ -243,6 +244,7 @@ import SyncWatchLibrary
         .onChange(of: watch.playerPresented) { if $0 { library.dismissTracks() } }
         .onChange(of: room.connected) { _ in shared.membershipChanged() }
         .task {
+            account.restore()
             lifecycle.prepareForTermination = {
                 [
                     weak sessionOwner = watch, weak catalogOwner = library, weak roomOwner = room,

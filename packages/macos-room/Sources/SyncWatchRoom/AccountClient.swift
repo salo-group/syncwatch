@@ -97,13 +97,27 @@ public actor AccountClient {
         _ = try await request("sign-ins/" + signIn.id + "/cancel", body: ["proof": signIn.proof])
     }
     public func refresh(_ device: AccountDeviceSession) async throws -> AccountDeviceSession {
-        let id = try Self.secret()
+        try await resume(checkpoint(device))
+    }
+    public func checkpoint(_ device: AccountDeviceSession) throws -> AccountSavedSession {
+        try AccountSavedSession(
+            service: address.origin.absoluteString, accountID: device.account.id,
+            refreshToken: device.refresh, requestID: Self.secret())
+    }
+    public func resume(_ saved: AccountSavedSession) async throws -> AccountDeviceSession {
+        guard try RoomAddress(saved.service).origin == address.origin else { throw RoomProtocolFailure.malformed }
         // Retry only identical request bytes so a lost reply cannot look like refresh-token theft.
-        let body = ["refreshToken": device.refresh, "requestId": id]
-        do { return try Self.device(await request("refresh", body: body)["session"]) } catch is URLError {
+        let body = ["refreshToken": saved.refreshToken, "requestId": saved.requestID]
+        let result: AccountDeviceSession
+        do { result = try Self.device(await request("refresh", body: body)["session"]) } catch is URLError {
             try Task.checkCancellation()
-            return try Self.device(await request("refresh", body: body)["session"])
+            result = try Self.device(await request("refresh", body: body)["session"])
         }
+        guard result.account.id == saved.accountID else {
+            try? await logout(result)
+            throw RoomProtocolFailure.malformed
+        }
+        return result
     }
     public func logout(_ device: AccountDeviceSession) async throws {
         _ = try await request("logout", bearer: device.refresh)
@@ -137,7 +151,9 @@ public actor AccountClient {
         let envelope = try RoomWire.object(data)
         guard try RoomWire.integer(envelope["v"], maximum: 2) == 2
         else { throw RoomProtocolFailure.malformed }
-        guard (200...299).contains(http.statusCode) else { throw RoomProtocolFailure.rejected("accountUnavailable") }
+        guard (200...299).contains(http.statusCode) else {
+            throw RoomProtocolFailure.rejected(http.statusCode == 401 ? "accountSignInRequired" : "accountUnavailable")
+        }
         guard let result = envelope["result"] as? [String: Any] else { throw RoomProtocolFailure.malformed }
         return result
     }

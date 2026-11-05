@@ -638,6 +638,19 @@ public enum SyncWatchCopy {
             "accountVerifyBrowserProof": "Check account",
             "accountBrowserUnavailable":
                 "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in.",
+            "accountWillRemember": "Your SyncWatch sign-in will be saved in this device’s secure storage.",
+            "accountSavedOnDevice":
+                "Sign-in is saved securely on this device. Closing SyncWatch keeps it; Sign out removes it.",
+            "accountRestoring": "Restoring your saved SyncWatch sign-in…",
+            "accountStorageUnavailable":
+                "Saved sign-in could not be accessed or restored. Retry, forget it, or explicitly continue without saving.",
+            "accountSavedUnavailable": "A previous saved sign-in stays unchanged if you continue in memory only.",
+            "accountRetryStorage": "Retry saved sign-in",
+            "accountForgetStorage": "Forget on this device",
+            "accountUseMemory": "Use memory only",
+            "accountSignInRequired": "Saved sign-in expired or was revoked. Sign in again.",
+            "accountMemoryWithSaved": "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
+            "accountUnavailable": "The account service is unavailable. Retrying…",
         ],
         "ru": [
             "brand": "SyncWatch",
@@ -911,6 +924,19 @@ public enum SyncWatchCopy {
             "accountVerifyBrowserProof": "Проверить аккаунт",
             "accountBrowserUnavailable":
                 "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход.",
+            "accountWillRemember": "Вход в SyncWatch будет сохранён в защищённом хранилище устройства.",
+            "accountSavedOnDevice":
+                "Вход безопасно сохранён на устройстве. Закрытие SyncWatch сохраняет его; выход удаляет.",
+            "accountRestoring": "Восстанавливаем сохранённый вход в SyncWatch…",
+            "accountStorageUnavailable":
+                "Не удалось прочитать или восстановить вход. Повторите, удалите его или явно продолжите без сохранения.",
+            "accountSavedUnavailable": "При работе только в памяти прежний сохранённый вход остаётся без изменений.",
+            "accountRetryStorage": "Повторить вход",
+            "accountForgetStorage": "Забыть на устройстве",
+            "accountUseMemory": "Только в памяти",
+            "accountSignInRequired": "Сохранённый вход истёк или отозван. Войдите снова.",
+            "accountMemoryWithSaved": "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
+            "accountUnavailable": "Сервис аккаунтов недоступен. Повторяем попытку…",
         ],
     ]
     public static func text(_ key: String, language: String = "en") -> String {
@@ -2207,7 +2233,7 @@ public enum SyncWatchSelectionMenu {
 }
 
 public enum SyncWatchLayouts {
-    public static let sourceDigest = "2e6b57b21350b652a0061d97b61fe5776d7529b22ea61ed35df272c57a75a7de"
+    public static let sourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1"
     public static let coordinateSize = 20.0
     public static func themeColor(_ role: String, theme: SyncWatchTheme) -> Color? {
         switch role {
@@ -9409,7 +9435,7 @@ public enum SyncWatchLayouts {
                 "hoverBorder": "theme.accent",
                 "focusWidth": "@control.borderWidth",
                 "align": "leading",
-                "text": "~accountMemoryOnly",
+                "text": "~{storageNotice}",
                 "lines": "4",
             ],
             children: [])
@@ -9693,6 +9719,120 @@ public enum SyncWatchLayouts {
                 "when": "$signedIn",
             ],
             children: [accountaccountSignOutText])
+        let accountRetryStorageText = DesignNode(
+            id: "accountRetryStorageText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountRetryStorage",
+            ],
+            children: [])
+        let accountRetryStorage = DesignNode(
+            id: "accountRetryStorage", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountRetryStorage",
+                "enabled": "$can.accountRetryStorage",
+                "when": "$storageRecovery",
+                "label": "~accountRetryStorage",
+                "automation": "account.accountRetryStorage",
+            ],
+            children: [accountRetryStorageText])
+        let accountForgetStorageText = DesignNode(
+            id: "accountForgetStorageText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountForgetStorage",
+            ],
+            children: [])
+        let accountForgetStorage = DesignNode(
+            id: "accountForgetStorage", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountForgetStorage",
+                "enabled": "$can.accountForgetStorage",
+                "when": "$storageRecovery",
+                "label": "~accountForgetStorage",
+                "automation": "account.accountForgetStorage",
+            ],
+            children: [accountForgetStorageText])
+        let accountUseMemoryText = DesignNode(
+            id: "accountUseMemoryText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountUseMemory",
+            ],
+            children: [])
+        let accountUseMemory = DesignNode(
+            id: "accountUseMemory", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountUseMemory",
+                "enabled": "$can.accountUseMemory",
+                "when": "$storageRecovery",
+                "label": "~accountUseMemory",
+                "automation": "account.accountUseMemory",
+            ],
+            children: [accountUseMemoryText])
         let accountActions = DesignNode(
             id: "accountActions", kind: "row",
             props: [
@@ -9711,6 +9851,9 @@ public enum SyncWatchLayouts {
                 accountaccountConfirm,
                 accountaccountCancel,
                 accountaccountSignOut,
+                accountRetryStorage,
+                accountForgetStorage,
+                accountUseMemory,
             ])
         let accountDialog = DesignNode(
             id: "accountDialog", kind: "column",

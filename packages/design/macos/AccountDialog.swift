@@ -10,16 +10,21 @@ public struct AccountPresentation: Sendable, CustomStringConvertible, CustomDebu
     public var name = ""
     public var email = ""
     public var status = "accountSignedOut"
+    public var storageNotice = "accountMemoryOnly"
+    public var storageBlocked = false
     public init() {}
     public var context: DesignContext {
         let pending = ["pending", "authorizing"].contains(state)
         let confirmation = state == "confirmAccount"
         let codeRequired = state == "browserConfirmationRequired"
         let signedIn = state == "signedIn"
-        let canStart = state == "signedOut" || state == "failed"
+        let recovery = storageBlocked && (state == "signedOut" || state == "failed")
+        let canStart = !storageBlocked && (state == "signedOut" || state == "failed")
         return DesignContext([
             "namespace": "account", "service": service, "browserProof": browserProof, "name": name, "email": email,
-            "status": status,
+            "status": status, "storageNotice": storageNotice, "storageRecovery": String(recovery),
+            "can.accountRetryStorage": String(recovery), "can.accountForgetStorage": String(recovery),
+            "can.accountUseMemory": String(recovery),
             "pending": String(pending), "confirmation": String(confirmation), "codeRequired": String(codeRequired),
             "signedIn": String(signedIn),
             "hasProfile": String(confirmation || signedIn), "showSignIn": String(canStart),

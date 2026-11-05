@@ -3,6 +3,7 @@ using System.Text.Json;
 using SyncWatch.Room;
 
 AccountCredentialVaultChecks.Run();
+AccountSessionChecks.Run(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0]))!, "account-persistence.json"));
 
 using var fixture = JsonDocument.Parse(File.ReadAllBytes(args[0]));
 var identity = new RoomIdentity("run-room-client", "Room User");

@@ -264,7 +264,18 @@
       "accountConfirmationFailed": "The code could not be verified. Check it, or cancel and sign in again.",
       "accountBrowserProofRequired": "Enter the confirmation code shown in the browser to check the account.",
       "accountVerifyBrowserProof": "Check account",
-      "accountBrowserUnavailable": "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in."
+      "accountBrowserUnavailable": "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in.",
+      "accountWillRemember": "Your SyncWatch sign-in will be saved in this device’s secure storage.",
+      "accountSavedOnDevice": "Sign-in is saved securely on this device. Closing SyncWatch keeps it; Sign out removes it.",
+      "accountRestoring": "Restoring your saved SyncWatch sign-in…",
+      "accountStorageUnavailable": "Saved sign-in could not be accessed or restored. Retry, forget it, or explicitly continue without saving.",
+      "accountSavedUnavailable": "A previous saved sign-in stays unchanged if you continue in memory only.",
+      "accountRetryStorage": "Retry saved sign-in",
+      "accountForgetStorage": "Forget on this device",
+      "accountUseMemory": "Use memory only",
+      "accountSignInRequired": "Saved sign-in expired or was revoked. Sign in again.",
+      "accountMemoryWithSaved": "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
+      "accountUnavailable": "The account service is unavailable. Retrying…"
     },
     "ru": {
       "brand": "SyncWatch",
@@ -529,7 +540,18 @@
       "accountConfirmationFailed": "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
       "accountBrowserProofRequired": "Введите код из браузера, чтобы проверить аккаунт.",
       "accountVerifyBrowserProof": "Проверить аккаунт",
-      "accountBrowserUnavailable": "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход."
+      "accountBrowserUnavailable": "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход.",
+      "accountWillRemember": "Вход в SyncWatch будет сохранён в защищённом хранилище устройства.",
+      "accountSavedOnDevice": "Вход безопасно сохранён на устройстве. Закрытие SyncWatch сохраняет его; выход удаляет.",
+      "accountRestoring": "Восстанавливаем сохранённый вход в SyncWatch…",
+      "accountStorageUnavailable": "Не удалось прочитать или восстановить вход. Повторите, удалите его или явно продолжите без сохранения.",
+      "accountSavedUnavailable": "При работе только в памяти прежний сохранённый вход остаётся без изменений.",
+      "accountRetryStorage": "Повторить вход",
+      "accountForgetStorage": "Забыть на устройстве",
+      "accountUseMemory": "Только в памяти",
+      "accountSignInRequired": "Сохранённый вход истёк или отозван. Войдите снова.",
+      "accountMemoryWithSaved": "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
+      "accountUnavailable": "Сервис аккаунтов недоступен. Повторяем попытку…"
     }
   },
   "gallery": {

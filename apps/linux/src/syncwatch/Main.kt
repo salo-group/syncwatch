@@ -41,7 +41,10 @@ fun main(arguments: Array<String>) {
                 val path = arguments.getOrNull(index + 1)?.takeIf { index >= 0 }
                     ?.let { Path.of(it).toAbsolutePath().normalize().resolve("local-state.json") }
                     ?: AppearancePreferences.defaultPath()
-                ApplicationSession(media, display, scope, path, HelperConfiguration.read(arguments))
+                val accountIndex = arguments.indexOf("--account-store")
+                val accountHelper = arguments.getOrNull(accountIndex + 1)?.takeIf { accountIndex >= 0 }
+                    ?.let { Path.of(it).toAbsolutePath().normalize() } ?: Path.of("syncwatch-account-store").toAbsolutePath()
+                ApplicationSession(media, display, scope, path, HelperConfiguration.read(arguments), accountHelper)
             } else null
         }
         val state = rememberWindowState(width = SyncWatchTokens.layoutGalleryWidth.dp, height = SyncWatchTokens.layoutGalleryHeight.dp)
@@ -100,7 +103,7 @@ fun main(arguments: Array<String>) {
     var editor by remember { mutableStateOf(preferences.editor()) }
     val library = workspace.library
     LaunchedEffect(workspace) {
-        library.restore(); watch.prepareRuntime()
+        workspace.account.restore(); library.restore(); watch.prepareRuntime()
         WatchAcceptance.run(arguments, workspace, onClose)
     }
     DisposableEffect(library) { onDispose { library.close() } }

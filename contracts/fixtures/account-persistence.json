@@ -1,0 +1,190 @@
+{
+  "formatVersion": 1,
+  "cases": [
+    {
+      "name": "https",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": true
+    },
+    {
+      "name": "loopback",
+      "wire": "{\"v\":1,\"service\":\"http://127.0.0.1:8788/\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": true
+    },
+    {
+      "name": "missing-v",
+      "wire": "{\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "missing-service",
+      "wire": "{\"v\":1,\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "missing-accountId",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "missing-refreshToken",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "missing-requestId",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\"}",
+      "valid": false
+    },
+    {
+      "name": "version-0",
+      "wire": "{\"v\":0,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "version-2",
+      "wire": "{\"v\":2,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "version-True",
+      "wire": "{\"v\":true,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "version-1",
+      "wire": "{\"v\":\"1\",\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "version-None",
+      "wire": "{\"v\":null,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "plain-http",
+      "wire": "{\"v\":1,\"service\":\"http://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "dns-loopback",
+      "wire": "{\"v\":1,\"service\":\"http://localhost:8788\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "path",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example/rooms\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "query",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example/?token=x\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "userinfo",
+      "wire": "{\"v\":1,\"service\":\"https://user@syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "fragment",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example/#x\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "long-origin",
+      "wire": "{\"v\":1,\"service\":\"https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "accountId-short",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "accountId-long",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "accountId-unicode",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "accountId-null",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":null,\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "refreshToken-short",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "refreshToken-long",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "refreshToken-unicode",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "refreshToken-null",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":null,\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}",
+      "valid": false
+    },
+    {
+      "name": "requestId-short",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"}",
+      "valid": false
+    },
+    {
+      "name": "requestId-long",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"}",
+      "valid": false
+    },
+    {
+      "name": "requestId-unicode",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\\u0416\"}",
+      "valid": false
+    },
+    {
+      "name": "requestId-null",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":null}",
+      "valid": false
+    },
+    {
+      "name": "access-token-not-permitted",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\",\"accessToken\":\"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\"}",
+      "valid": false
+    },
+    {
+      "name": "unknown-field",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\",\"other\":1}",
+      "valid": false
+    },
+    {
+      "name": "duplicate",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\",\"requestId\":\"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\"}",
+      "valid": false
+    },
+    {
+      "name": "array",
+      "wire": "[{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}]",
+      "valid": false
+    },
+    {
+      "name": "truncated",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"",
+      "valid": false
+    },
+    {
+      "name": "oversized",
+      "wire": "{\"v\":1,\"service\":\"https://syncwatch.example\",\"accountId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"refreshToken\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"requestId\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\"}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ",
+      "valid": false
+    }
+  ]
+}

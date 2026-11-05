@@ -64,12 +64,18 @@ public sealed class AccountClient(RoomAddress address) : IDisposable
     }
     public async Task CancelAsync(AccountSignIn signIn, CancellationToken cancellation = default) =>
         _ = await Request("sign-ins/" + signIn.Id + "/cancel", new { v = 2, proof = signIn.Proof }, cancellation: cancellation);
-    public async Task<AccountDeviceSession> RefreshAsync(AccountDeviceSession session, CancellationToken cancellation = default)
+    public AccountSavedSession Checkpoint(AccountDeviceSession session) => new(address.Origin.AbsoluteUri, session.Account.Id, session.Refresh, Secret());
+    public Task<AccountDeviceSession> RefreshAsync(AccountDeviceSession session, CancellationToken cancellation = default) => ResumeAsync(Checkpoint(session), cancellation);
+    public async Task<AccountDeviceSession> ResumeAsync(AccountSavedSession saved, CancellationToken cancellation = default)
     {
-        var body = new { v = 2, refreshToken = session.Refresh, requestId = Secret() };
-        try { return Device((await Request("refresh", body, cancellation: cancellation)).GetProperty("session")); }
+        Need(new RoomAddress(saved.Service).Origin == address.Origin);
+        var body = new { v = 2, refreshToken = saved.RefreshToken, requestId = saved.RequestId };
+        AccountDeviceSession result;
+        try { result = Device((await Request("refresh", body, cancellation: cancellation)).GetProperty("session")); }
         catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException && !cancellation.IsCancellationRequested)
-        { return Device((await Request("refresh", body, cancellation: cancellation)).GetProperty("session")); }
+        { result = Device((await Request("refresh", body, cancellation: cancellation)).GetProperty("session")); }
+        if (result.Account.Id != saved.AccountId) { await LogoutAsync(result); throw new RoomProtocolException("malformed"); }
+        return result;
     }
     public async Task LogoutAsync(AccountDeviceSession session, CancellationToken cancellation = default) =>
         _ = await Request("logout", bearer: session.Refresh, cancellation: cancellation);
@@ -88,7 +94,7 @@ public sealed class AccountClient(RoomAddress address) : IDisposable
         Need(count <= 16384);
         using JsonDocument json = RoomWire.Parse(bytes.AsMemory(0, count));
         Need(json.RootElement.GetProperty("v").GetInt32() == 2);
-        if (!response.IsSuccessStatusCode) throw new RoomProtocolException("accountUnavailable");
+        if (!response.IsSuccessStatusCode) throw new RoomProtocolException(response.StatusCode == System.Net.HttpStatusCode.Unauthorized ? "accountSignInRequired" : "accountUnavailable");
         return json.RootElement.GetProperty("result").Clone();
     }
     private static AccountDeviceSession Device(JsonElement value)

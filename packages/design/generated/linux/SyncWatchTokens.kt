@@ -456,6 +456,17 @@ object SyncWatchCopy {
         "en" to "accountBrowserProofRequired" -> "Enter the confirmation code shown in the browser to check the account."
         "en" to "accountVerifyBrowserProof" -> "Check account"
         "en" to "accountBrowserUnavailable" -> "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in."
+        "en" to "accountWillRemember" -> "Your SyncWatch sign-in will be saved in this device’s secure storage."
+        "en" to "accountSavedOnDevice" -> "Sign-in is saved securely on this device. Closing SyncWatch keeps it; Sign out removes it."
+        "en" to "accountRestoring" -> "Restoring your saved SyncWatch sign-in…"
+        "en" to "accountStorageUnavailable" -> "Saved sign-in could not be accessed or restored. Retry, forget it, or explicitly continue without saving."
+        "en" to "accountSavedUnavailable" -> "A previous saved sign-in stays unchanged if you continue in memory only."
+        "en" to "accountRetryStorage" -> "Retry saved sign-in"
+        "en" to "accountForgetStorage" -> "Forget on this device"
+        "en" to "accountUseMemory" -> "Use memory only"
+        "en" to "accountSignInRequired" -> "Saved sign-in expired or was revoked. Sign in again."
+        "en" to "accountMemoryWithSaved" -> "This sign-in stays in memory. Any previous saved sign-in remains unchanged."
+        "en" to "accountUnavailable" -> "The account service is unavailable. Retrying…"
         "ru" to "brand" -> "SyncWatch"
         "ru" to "room" -> "Смотрим вместе"
         "ru" to "library" -> "Библиотека фильмов"
@@ -719,6 +730,17 @@ object SyncWatchCopy {
         "ru" to "accountBrowserProofRequired" -> "Введите код из браузера, чтобы проверить аккаунт."
         "ru" to "accountVerifyBrowserProof" -> "Проверить аккаунт"
         "ru" to "accountBrowserUnavailable" -> "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход."
+        "ru" to "accountWillRemember" -> "Вход в SyncWatch будет сохранён в защищённом хранилище устройства."
+        "ru" to "accountSavedOnDevice" -> "Вход безопасно сохранён на устройстве. Закрытие SyncWatch сохраняет его; выход удаляет."
+        "ru" to "accountRestoring" -> "Восстанавливаем сохранённый вход в SyncWatch…"
+        "ru" to "accountStorageUnavailable" -> "Не удалось прочитать или восстановить вход. Повторите, удалите его или явно продолжите без сохранения."
+        "ru" to "accountSavedUnavailable" -> "При работе только в памяти прежний сохранённый вход остаётся без изменений."
+        "ru" to "accountRetryStorage" -> "Повторить вход"
+        "ru" to "accountForgetStorage" -> "Забыть на устройстве"
+        "ru" to "accountUseMemory" -> "Только в памяти"
+        "ru" to "accountSignInRequired" -> "Сохранённый вход истёк или отозван. Войдите снова."
+        "ru" to "accountMemoryWithSaved" -> "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений."
+        "ru" to "accountUnavailable" -> "Сервис аккаунтов недоступен. Повторяем попытку…"
         else -> if (language != "en") text(key, "en") else key
     }
     val galleryStates = listOf("empty", "scanning", "selected", "missingMedia", "reconnecting")
@@ -933,7 +955,7 @@ object SyncWatchSelectionMenu {
 }
 
 object SyncWatchLayouts {
-    const val sourceDigest = "2e6b57b21350b652a0061d97b61fe5776d7529b22ea61ed35df272c57a75a7de"
+    const val sourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1"
     const val coordinateSize = 20.0f
     fun themeColor(role: String, theme: SyncWatchTheme): Long? = when (role) {
         "background" -> theme.background
@@ -6072,7 +6094,7 @@ object SyncWatchLayouts {
             "hoverBorder" to "theme.accent",
             "focusWidth" to "@control.borderWidth",
             "align" to "leading",
-            "text" to "~accountMemoryOnly",
+            "text" to "~{storageNotice}",
             "lines" to "4",
         ), listOf())
         val accountBoundary = DesignNode("accountBoundary", "text", mapOf(
@@ -6300,6 +6322,102 @@ object SyncWatchLayouts {
             "label" to "~accountSignOut",
             "when" to "\$signedIn",
         ), listOf(accountaccountSignOutText))
+        val accountRetryStorageText = DesignNode("accountRetryStorageText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountRetryStorage",
+        ), listOf())
+        val accountRetryStorage = DesignNode("accountRetryStorage", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountRetryStorage",
+            "enabled" to "\$can.accountRetryStorage",
+            "when" to "\$storageRecovery",
+            "label" to "~accountRetryStorage",
+            "automation" to "account.accountRetryStorage",
+        ), listOf(accountRetryStorageText))
+        val accountForgetStorageText = DesignNode("accountForgetStorageText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountForgetStorage",
+        ), listOf())
+        val accountForgetStorage = DesignNode("accountForgetStorage", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountForgetStorage",
+            "enabled" to "\$can.accountForgetStorage",
+            "when" to "\$storageRecovery",
+            "label" to "~accountForgetStorage",
+            "automation" to "account.accountForgetStorage",
+        ), listOf(accountForgetStorageText))
+        val accountUseMemoryText = DesignNode("accountUseMemoryText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountUseMemory",
+        ), listOf())
+        val accountUseMemory = DesignNode("accountUseMemory", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountUseMemory",
+            "enabled" to "\$can.accountUseMemory",
+            "when" to "\$storageRecovery",
+            "label" to "~accountUseMemory",
+            "automation" to "account.accountUseMemory",
+        ), listOf(accountUseMemoryText))
         val accountActions = DesignNode("accountActions", "row", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -6308,7 +6426,7 @@ object SyncWatchLayouts {
             "focusWidth" to "@control.borderWidth",
             "padding" to "@layout.settingsCardPadding",
             "gap" to "@control.compactGap",
-        ), listOf(accountaccountSignIn, accountaccountOpenBrowser, verifyaccountaccountConfirm, accountaccountConfirm, accountaccountCancel, accountaccountSignOut))
+        ), listOf(accountaccountSignIn, accountaccountOpenBrowser, verifyaccountaccountConfirm, accountaccountConfirm, accountaccountCancel, accountaccountSignOut, accountRetryStorage, accountForgetStorage, accountUseMemory))
         val accountDialog = DesignNode("accountDialog", "column", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",

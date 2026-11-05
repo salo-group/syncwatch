@@ -11,12 +11,15 @@ public sealed class AccountPresentation
     public string Name { get; set; } = "";
     public string Email { get; set; } = "";
     public string Status { get; set; } = "accountSignedOut";
+    public string StorageNotice { get; set; } = "accountMemoryOnly";
+    public bool StorageBlocked { get; set; }
     public DesignContext Context
     {
         get
         {
             bool codeRequired = State == "browserConfirmationRequired";
-            bool pending = State is "pending" or "authorizing", confirmation = State == "confirmAccount", signedIn = State == "signedIn", canStart = State is "signedOut" or "failed";
+            bool pending = State is "pending" or "authorizing", confirmation = State == "confirmAccount", signedIn = State == "signedIn", canStart = !StorageBlocked && State is ("signedOut" or "failed");
+            bool recovery = StorageBlocked && State is ("signedOut" or "failed");
             static string Flag(bool value) => value ? "true" : "false";
             return new()
             {
@@ -28,6 +31,11 @@ public sealed class AccountPresentation
                     ["name"] = Name,
                     ["email"] = Email,
                     ["status"] = Status,
+                    ["storageNotice"] = StorageNotice,
+                    ["storageRecovery"] = Flag(recovery),
+                    ["can.accountRetryStorage"] = Flag(recovery),
+                    ["can.accountForgetStorage"] = Flag(recovery),
+                    ["can.accountUseMemory"] = Flag(recovery),
                     ["pending"] = Flag(pending),
                     ["confirmation"] = Flag(confirmation),
                     ["codeRequired"] = Flag(codeRequired),

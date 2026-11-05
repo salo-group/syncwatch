@@ -5169,7 +5169,7 @@
                   "kind": "text",
                   "styles": [],
                   "props": {
-                    "text": "~accountMemoryOnly",
+                    "text": "~{storageNotice}",
                     "lines": "4"
                   },
                   "children": []
@@ -5348,6 +5348,84 @@
                   "styles": [],
                   "props": {
                     "text": "~accountSignOut"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "accountRetryStorage",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountRetryStorage",
+                "enabled": "$can.accountRetryStorage",
+                "when": "$storageRecovery",
+                "label": "~accountRetryStorage",
+                "automation": "account.accountRetryStorage"
+              },
+              "children": [
+                {
+                  "id": "accountRetryStorageText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountRetryStorage"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "accountForgetStorage",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountForgetStorage",
+                "enabled": "$can.accountForgetStorage",
+                "when": "$storageRecovery",
+                "label": "~accountForgetStorage",
+                "automation": "account.accountForgetStorage"
+              },
+              "children": [
+                {
+                  "id": "accountForgetStorageText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountForgetStorage"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "accountUseMemory",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "accountUseMemory",
+                "enabled": "$can.accountUseMemory",
+                "when": "$storageRecovery",
+                "label": "~accountUseMemory",
+                "automation": "account.accountUseMemory"
+              },
+              "children": [
+                {
+                  "id": "accountUseMemoryText",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~accountUseMemory"
                   },
                   "children": []
                 }
