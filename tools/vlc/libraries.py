@@ -1,12 +1,14 @@
 """Build the pinned codec, text and font libraries with implicit downloads disabled."""
 
+import json
 import shutil
 
 from build_context import shell_path
 from source_profile import restore_iconv
 from native_libraries import cmake, meson, zlib
 from native_x11 import build as build_x11
-from configuration import pulse_version
+from configuration import pulse_version, ffmpeg_files
+from source_files import digest
 
 
 def build(context, sources, profile):
@@ -63,6 +65,13 @@ def build(context, sources, profile):
     meson(context, sources, "libass", ["-D" + provider + "=enabled", "-Dlibunibreak=disabled", "-Dasm=enabled"])
     meson(context, sources, "dav1d", ["-Denable_tools=false", "-Denable_tests=false",
         "-Denable_examples=false", "-Denable_docs=false"])
+    original = {"libavformat/matroskadec.c": (sources["ffmpeg"] / "libavformat/matroskadec.c").read_bytes()}
+    derivatives = ffmpeg_files(original)
+    for name, data in derivatives.items():
+        (sources["ffmpeg"] / name).write_bytes(data)
+    (context.work / "ffmpeg-configuration-derivatives.json").write_text(json.dumps({
+        name: {"originalSha256": digest(original[name]), "configuredSha256": digest(data)}
+        for name, data in derivatives.items()}, indent=2) + "\n", encoding="utf-8", newline="\n")
     build = context.work / "ffmpeg-build"
     build.mkdir()
     flags = ["--prefix=" + shell_path(context.prefix), "--disable-autodetect", "--disable-programs", "--disable-doc",

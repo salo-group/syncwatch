@@ -5,7 +5,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from package_report import validate_seek_reset
+from package_report import validate_seek_reset, validate_subtitle_seek
 
 
 class SeekResetProofChecks(unittest.TestCase):
@@ -34,6 +34,21 @@ class SeekResetProofChecks(unittest.TestCase):
                 validate_seek_reset(self.valid | change)
         with self.assertRaises(ValueError):
             validate_seek_reset(None)
+
+
+class SubtitleSeekProofChecks(unittest.TestCase):
+    def test_complete_native_corpus_is_required(self):
+        valid = {name: {"seeks": 7, "restored": 5 if name in {"normal", "duplicate"} else 0,
+                       "ownedLibraryLoaded": True, "physicalOutputAccepted": False}
+                 for name in ["normal", "expired-duration", "wrong-track", "bad-offset", "bad-cluster", "duplicate"]}
+        validate_subtitle_seek(valid)
+        for name in valid:
+            with self.subTest(missing=name), self.assertRaises(ValueError):
+                validate_subtitle_seek({key: value for key, value in valid.items() if key != name})
+            with self.subTest(failed=name), self.assertRaises(ValueError):
+                validate_subtitle_seek(valid | {name: valid[name] | {"seeks": 0}})
+        with self.assertRaises(ValueError):
+            validate_subtitle_seek(None)
 
 
 if __name__ == "__main__":
