@@ -201,7 +201,8 @@ internal sealed class AccountController
                 device = null; saved = null;
                 owner.Dispose(); client = null;
                 try { if (!memoryOnly) await Task.Run(() => store!.Forget()); Reset(); Presentation.Status = "accountSignInRequired"; Changed?.Invoke(); }
-                catch (Exception) { BlockStorage(); } return;
+                catch (Exception) { BlockStorage(); }
+                return;
             }
             catch (Exception) { if (cancellation.IsCancellationRequested) return; Presentation.Status = "accountUnavailable"; Changed?.Invoke(); delay = TimeSpan.FromSeconds(15); }
         }
