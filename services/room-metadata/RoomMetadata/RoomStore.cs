@@ -141,6 +141,19 @@ public sealed class RoomStore
         }
     }
 
+    // Called only by the account authority around its own private store.
+    internal Admission Admit(string roomId, string run, string username)
+    {
+        lock (gate)
+        {
+            SweepCore(); Room room = Find(roomId);
+            Wire.Need(Wire.Id(run) && Wire.Text(username, 64));
+            Wire.Need(room.Members.Count < limits.MaximumMembers, "queueFull", 429);
+            Wire.Need(!room.Members.Values.Any(member => member.Binding.SyncplayUsername == username), "conflict", 409);
+            return AddMember(room, run, username, owner: false, null);
+        }
+    }
+
     private Admission AddMember(Room room, string run, string username, bool owner, string? invitation)
     {
         Wire.Need(room.Sequence < Wire.MaximumCounter, "unavailable", 503);
@@ -154,6 +167,18 @@ public sealed class RoomStore
     public Bootstrap Snapshot(string roomId, string token)
     {
         lock (gate) { (Room room, Member member) = Authorize(roomId, token); return BootstrapCore(room, member); }
+    }
+
+    // Authority checks must not create a new catalog view or invalidate a caller's cursor.
+    internal bool Contains(string roomId, string epoch, MemberBinding binding, string token)
+    {
+        lock (gate)
+        {
+            SweepCore();
+            return rooms.TryGetValue(roomId, out Room? room) && room.Epoch == epoch
+                && room.Members.TryGetValue(binding.MemberId, out Member? member)
+                && member.Binding == binding && Wire.SecretMatches(token, member.Token);
+        }
     }
 
     private Bootstrap BootstrapCore(Room room, Member member)

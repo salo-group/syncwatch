@@ -9,6 +9,7 @@ internal static class AccountChecks
     {
         AccountAuthorityChecks.Run();
         SyncAdmissionChecks.Run();
+        AuthenticatedRoomChecks.Run();
         string directory = Path.Combine(Path.GetTempPath(), "syncwatch-account-" + Guid.NewGuid().ToString("N"));
         var protection = new EphemeralDataProtectionProvider();
         var clock = new Clock();
