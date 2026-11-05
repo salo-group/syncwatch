@@ -13,6 +13,8 @@
     "helper-ipc": "v1/helper-ipc.schema.json",
     "room-selection": "v1/room-selection.schema.json",
     "account-request": "v2/account-request.schema.json",
-    "account-response": "v2/account-response.schema.json"
+    "account-response": "v2/account-response.schema.json",
+    "room-access-request": "v2/room-access-request.schema.json",
+    "room-access-response": "v2/room-access-response.schema.json"
   }
 }

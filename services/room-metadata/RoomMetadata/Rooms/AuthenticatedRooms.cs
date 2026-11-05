@@ -8,7 +8,7 @@ public sealed record RoomInvitation(string RoomId, string Invitation, int Expire
 {
     public override string ToString() => "[room invitation redacted]";
 }
-public sealed record AdmissionRequest(string Id, string Status, string Name);
+public sealed record AdmissionRequest(string Id, string Status, string Name, string AccountId, string Email);
 
 /// <summary>
 /// Account authority around a private ordered room store. Legacy membership credentials never
@@ -25,11 +25,12 @@ public sealed class AuthenticatedRooms
         internal byte[]? InviteHash;
         internal DateTimeOffset InviteUntil;
     }
-    private sealed class Request(AccountPrincipal principal, string roomId, string run, string name, string digest, DateTimeOffset until)
+    private sealed class Request(AccountPrincipal principal, AccountProfile profile, string roomId, string run, string digest, DateTimeOffset until)
     {
         internal readonly string Id = Wire.NewId("request-");
         internal readonly AccountPrincipal Principal = principal;
-        internal readonly string RoomId = roomId, Run = run, Name = name, Digest = digest;
+        internal readonly AccountProfile Profile = profile;
+        internal readonly string RoomId = roomId, Run = run, Name = profile.Name, Digest = digest;
         internal readonly DateTimeOffset Until = until;
         internal string Status = "pending";
         internal string? MemberId;
@@ -116,7 +117,7 @@ public sealed class AuthenticatedRooms
             Wire.Need(requests.Count < 256 && requests.Values.Count(request => request.RoomId == roomId && request.Status is "pending" or "approved") < limits.MaximumMembers
                 && requests.Values.Count(request => request.Principal.AccountId == principal.AccountId && request.Status is "pending" or "approved") < 8, "queueFull", 429);
             Wire.Need(!room.Members.Values.Any(member => Same(member.Principal, principal) && member.Binding.ClientRunId == run), "conflict", 409);
-            Request request = new(principal, roomId, run, name, digest, clock.GetUtcNow().AddMinutes(2));
+            Request request = new(principal, accounts.Profile(principal), roomId, run, digest, clock.GetUtcNow().AddMinutes(2));
             requests.Add(key, request); room.InviteHash = null;
             return View(request);
         }
@@ -297,7 +298,7 @@ public sealed class AuthenticatedRooms
         new(principal, name, admission, admission.Bootstrap.Snapshot.Members.Single(member => member.MemberId == admission.MemberId), owner);
     private AuthenticatedAdmission AdmissionFor(Member member) => new(member.Admission.RoomId, member.Binding.MemberId,
         member.Admission.ExpiresAt, metadata.Snapshot(member.Admission.RoomId, member.Admission.Token));
-    private static AdmissionRequest View(Request request) => new(request.Id, request.Status, request.Name);
+    private static AdmissionRequest View(Request request) => new(request.Id, request.Status, request.Name, request.Profile.Id, request.Profile.Email);
     private string Username()
     {
         string value;

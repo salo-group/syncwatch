@@ -151,7 +151,7 @@ public static class AccountModule
         context.Response.Headers.XFrameOptions = "DENY";
     }
     private static void Version(int version) => AccountWire.Need(version == 2, "unsupportedVersion");
-    private static string Bearer(HttpContext context)
+    internal static string Bearer(HttpContext context)
     {
         string value = context.Request.Headers.Authorization.ToString();
         AccountWire.Need(value.StartsWith("Bearer ", StringComparison.Ordinal) && AccountWire.Token(value[7..]), "unauthorized", 401);

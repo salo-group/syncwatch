@@ -34,8 +34,9 @@ internal static class AuthenticatedRoomChecks
             RoomInvitation invitation = rooms.Invite(owner, room, ownerMember, "owner-run");
             Require(!invitation.ToString().Contains(invitation.Invitation, StringComparison.Ordinal));
             Reject(() => rooms.RequestAdmission(guest, "Guest", room, "guest-run", "request-1", superseded.Invitation));
-            AdmissionRequest requested = rooms.RequestAdmission(guest, "Guest", room, "guest-run", "request-1", invitation.Invitation);
+            AdmissionRequest requested = rooms.RequestAdmission(guest, "Owner", room, "guest-run", "request-1", invitation.Invitation);
             Require(requested.Status == "pending" && requested.Id != "request-1");
+            Require(requested.Name == guestSession.Account.Name && requested.AccountId == guestSession.Account.Id && requested.Email == guestSession.Account.Email);
             Require(rooms.RequestAdmission(guest, "Guest", room, "guest-run", "request-1", invitation.Invitation).Id == requested.Id);
             Reject(() => rooms.RequestAdmission(guest, "Guest", room, "other-run", "request-1", invitation.Invitation), "conflict", 409);
             Reject(() => rooms.RequestAdmission(sibling, "Sibling", room, "sibling-run", "request-1", invitation.Invitation));

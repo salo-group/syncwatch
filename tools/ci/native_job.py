@@ -294,6 +294,14 @@ def main() -> int:
         if dotnet:
             package += ["--dotnet", str(dotnet)]
         report.execute("Assemble complete standalone native application", lambda: subprocess.run(package, cwd=ROOT, check=True))
+        if args.target == "windows":
+            report.execute("Prepare pinned server contract validator", lambda: subprocess.run(
+                [sys.executable, "tools/dependencies/build.py", "prepare", "--component", "fastjsonschema", "--platform", "windows-x64"],
+                cwd=ROOT, env=environment, check=True))
+            runtime = ROOT / "artifacts/application-ci/windows-x64/candidate/contents/SyncWatch/Syncplay"
+            report.execute("Authenticated room HTTP, Syncplay admission and owned host lifecycle", lambda: subprocess.run(
+                [sys.executable, "tools/server/check.py", "--dotnet", str(dotnet), "--admission-runtime", str(runtime)],
+                cwd=ROOT, env=environment, check=True))
         report.execute("Verify unchanged tracked source", lambda: subprocess.run(["git", "diff", "--exit-code"], cwd=ROOT, check=True))
         success = True
     except Exception:

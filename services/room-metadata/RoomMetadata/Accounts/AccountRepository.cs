@@ -83,6 +83,15 @@ public sealed class AccountRepository : IDisposable
         }
     }
 
+    public AccountProfile Profile(AccountPrincipal principal)
+    {
+        lock (gate)
+        {
+            AccountWire.Need(IsActive(principal), "unauthorized", 401);
+            return state.Users.Single(user => user.Profile.Id == principal.AccountId).Profile;
+        }
+    }
+
     public bool IsActive(AccountPrincipal principal)
     {
         lock (gate)

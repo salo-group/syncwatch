@@ -1422,5 +1422,251 @@
       }
     },
     "error": null
+  },
+  {
+    "name": "room-access-create",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "clientRunId": "native-run",
+      "requestId": "create-1"
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-request",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "clientRunId": "native-run",
+      "requestId": "request-1",
+      "invitation": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-decision",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "approvalId": "request-opaque",
+      "approve": true
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-endpoint-injection",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "clientRunId": "native-run",
+      "requestId": "create-1",
+      "syncplayHost": "untrusted.invalid"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-display-identity-injection",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "clientRunId": "native-run",
+      "requestId": "request-1",
+      "invitation": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "name": "Owner"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-truthy-approval",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "approvalId": "request-opaque",
+      "approve": 1
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-duplicate-version",
+    "schema": "room-access-request",
+    "frame": "{\"v\":2,\"v\":2,\"clientRunId\":\"run\",\"requestId\":\"request\"}",
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-admission",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "roomId": "room-1",
+        "memberId": "member-1",
+        "expiresAt": "2026-11-05T12:00:00+00:00",
+        "bootstrap": {
+          "snapshot": {
+            "v": 1,
+            "roomEpoch": "epoch-1",
+            "sequence": 10,
+            "watchGeneration": 4,
+            "watch": {
+              "status": "active",
+              "mediaId": "movie-1"
+            },
+            "members": [
+              {
+                "memberId": "member-1",
+                "clientRunId": "run-7",
+                "syncplayUsername": "Viewer"
+              }
+            ],
+            "meetUri": null
+          },
+          "connection": {
+            "host": "syncplay.example.invalid",
+            "port": 8999,
+            "room": "sw-room",
+            "requireTls": true
+          },
+          "catalogCursor": "cursor-1",
+          "missingMembers": []
+        }
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-legacy-member-token",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "roomId": "room-1",
+        "memberId": "member-1",
+        "expiresAt": "2026-11-05T12:00:00+00:00",
+        "bootstrap": {
+          "snapshot": {
+            "v": 1,
+            "roomEpoch": "epoch-1",
+            "sequence": 10,
+            "watchGeneration": 4,
+            "watch": {
+              "status": "active",
+              "mediaId": "movie-1"
+            },
+            "members": [
+              {
+                "memberId": "member-1",
+                "clientRunId": "run-7",
+                "syncplayUsername": "Viewer"
+              }
+            ],
+            "meetUri": null
+          },
+          "connection": {
+            "host": "syncplay.example.invalid",
+            "port": 8999,
+            "room": "sw-room",
+            "requireTls": true
+          },
+          "catalogCursor": "cursor-1",
+          "missingMembers": []
+        },
+        "token": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-plaintext-syncplay",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "roomId": "room-1",
+        "memberId": "member-1",
+        "expiresAt": "2026-11-05T12:00:00+00:00",
+        "bootstrap": {
+          "snapshot": {
+            "v": 1,
+            "roomEpoch": "epoch-1",
+            "sequence": 10,
+            "watchGeneration": 4,
+            "watch": {
+              "status": "active",
+              "mediaId": "movie-1"
+            },
+            "members": [
+              {
+                "memberId": "member-1",
+                "clientRunId": "run-7",
+                "syncplayUsername": "Viewer"
+              }
+            ],
+            "meetUri": null
+          },
+          "connection": {
+            "host": "syncplay.example.invalid",
+            "port": 8999,
+            "room": "sw-room",
+            "requireTls": false
+          },
+          "catalogCursor": "cursor-1",
+          "missingMembers": []
+        }
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-ticket",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "ticket": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "expiresIn": 30
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-ticket-lifetime",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "ticket": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "expiresIn": 300
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-verified-pending",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": [
+        {
+          "id": "request-opaque",
+          "status": "pending",
+          "name": "Guest",
+          "accountId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "email": "guest@example.invalid"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-error",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "error": {
+        "code": "admissionRequired"
+      }
+    },
+    "error": null
   }
 ]

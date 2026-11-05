@@ -49,22 +49,9 @@ internal static class SyncAuthorityChecks
     {
         string directory = Path.Combine(Path.GetTempPath(), "syncwatch-sync-host-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
-        using ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP256), leafKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var rootRequest = new CertificateRequest("CN=SyncWatch owned test root", rootKey, HashAlgorithmName.SHA256);
-        rootRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
-        rootRequest.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));
-        using X509Certificate2 root = rootRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
-        var request = new CertificateRequest("CN=SyncWatch owned loopback", leafKey, HashAlgorithmName.SHA256);
-        var alternative = new SubjectAlternativeNameBuilder(); alternative.AddIpAddress(IPAddress.Loopback);
-        request.CertificateExtensions.Add(alternative.Build());
-        request.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
-        request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, true));
-        using X509Certificate2 leaf = request.Create(root, DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow.AddHours(1), RandomNumberGenerator.GetBytes(16));
+        using X509Certificate2 root = CreateIdentity(directory);
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(directory, "privkey.pem"), leafKey.ExportPkcs8PrivateKeyPem());
-            await File.WriteAllTextAsync(Path.Combine(directory, "cert.pem"), leaf.ExportCertificatePem());
-            await File.WriteAllTextAsync(Path.Combine(directory, "chain.pem"), root.ExportCertificatePem());
             using var reservation = new TcpListener(IPAddress.Loopback, 0); reservation.Start();
             int port = ((IPEndPoint)reservation.LocalEndpoint).Port; reservation.Stop();
             using var accounts = new AccountRepository(Path.Combine(directory, "accounts"), new EphemeralDataProtectionProvider());
@@ -79,15 +66,7 @@ internal static class SyncAuthorityChecks
             NetworkStream network = tcp.GetStream();
             await Send(network, new { TLS = new { startTLS = "send" } });
             Require((await Receive(network)).GetProperty("TLS").GetProperty("startTLS").GetString() == "true");
-            using var secured = new SslStream(network, leaveInnerStreamOpen: true, (_, certificate, _, errors) =>
-            {
-                if (certificate is null || (errors & ~SslPolicyErrors.RemoteCertificateChainErrors) != 0) return false;
-                using var chain = new X509Chain();
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust; chain.ChainPolicy.CustomTrustStore.Add(root);
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                using var presented = new X509Certificate2(certificate);
-                return chain.Build(presented);
-            });
+            using var secured = new SslStream(network, leaveInnerStreamOpen: true, Trust(root));
             using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(20));
             await secured.AuthenticateAsClientAsync(new SslClientAuthenticationOptions { TargetHost = "127.0.0.1", EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13 }, deadline.Token);
             MemberBinding member = room.Bootstrap.Snapshot.Members.Single();
@@ -127,13 +106,42 @@ internal static class SyncAuthorityChecks
         finally { Directory.Delete(directory, recursive: true); }
     }
 
-    private static async Task Send(Stream stream, object value)
+    internal static X509Certificate2 CreateIdentity(string directory)
+    {
+        using ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP256), leafKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var rootRequest = new CertificateRequest("CN=SyncWatch owned test root", rootKey, HashAlgorithmName.SHA256);
+        rootRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
+        rootRequest.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));
+        using X509Certificate2 root = rootRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+        var request = new CertificateRequest("CN=SyncWatch owned loopback", leafKey, HashAlgorithmName.SHA256);
+        var alternative = new SubjectAlternativeNameBuilder(); alternative.AddIpAddress(IPAddress.Loopback);
+        request.CertificateExtensions.Add(alternative.Build());
+        request.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
+        request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, true));
+        using X509Certificate2 leaf = request.Create(root, DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow.AddHours(1), RandomNumberGenerator.GetBytes(16));
+        File.WriteAllText(Path.Combine(directory, "privkey.pem"), leafKey.ExportPkcs8PrivateKeyPem());
+        File.WriteAllText(Path.Combine(directory, "cert.pem"), leaf.ExportCertificatePem());
+        File.WriteAllText(Path.Combine(directory, "chain.pem"), root.ExportCertificatePem());
+        return X509CertificateLoader.LoadCertificate(root.RawData);
+    }
+
+    internal static RemoteCertificateValidationCallback Trust(X509Certificate2 root) => (_, certificate, _, errors) =>
+    {
+        if (certificate is null || (errors & ~SslPolicyErrors.RemoteCertificateChainErrors) != 0) return false;
+        using var chain = new X509Chain();
+        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust; chain.ChainPolicy.CustomTrustStore.Add(root);
+        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+        using var presented = new X509Certificate2(certificate);
+        return chain.Build(presented);
+    };
+
+    internal static async Task Send(Stream stream, object value)
     {
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(5));
         await stream.WriteAsync(JsonSerializer.SerializeToUtf8Bytes(value), timeout.Token);
         await stream.WriteAsync(new byte[] { (byte)'\r', (byte)'\n' }, timeout.Token); await stream.FlushAsync(timeout.Token);
     }
-    private static async Task<JsonElement> Receive(Stream stream)
+    internal static async Task<JsonElement> Receive(Stream stream)
     {
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(5));
         using MemoryStream frame = new(); byte[] item = new byte[1];
@@ -145,7 +153,7 @@ internal static class SyncAuthorityChecks
         }
         throw new InvalidOperationException("Private host test frame too large");
     }
-    private static async Task<JsonElement> Until(Stream stream, string type)
+    internal static async Task<JsonElement> Until(Stream stream, string type)
     {
         for (int index = 0; index < 32; index++)
         {
