@@ -290,6 +290,8 @@ class AdmissionFactory(SyncFactory):
             raise ValueError("The admission listener requires its owned TLS certificate")
 
     def buildProtocol(self, address):
+        if len(self.connections) >= 128:
+            return None
         return AdmissionProtocol(self)
 
     def claim(self, connection):
@@ -332,6 +334,10 @@ class AdmissionFactory(SyncFactory):
             key = (lease.room_epoch, lease.member_id)
             if self.members.get(key) is connection:
                 del self.members[key]
+            try:
+                self.authority.release(lease)
+            except Exception:
+                self.close()
 
     def close(self):
         for connection in tuple(self.connections):

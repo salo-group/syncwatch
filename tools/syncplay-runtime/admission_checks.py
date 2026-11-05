@@ -68,6 +68,10 @@ class SyntheticAuthority:
     def is_active(self, lease):
         return self.available and lease.member_id in self.active
 
+    def release(self, lease):
+        # Membership in this fixture is independent of a single transport.
+        pass
+
 
 def run_admission(root):
     failures, clients = [], []
