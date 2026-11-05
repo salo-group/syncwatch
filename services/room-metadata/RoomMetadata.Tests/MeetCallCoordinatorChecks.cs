@@ -83,7 +83,7 @@ internal static class MeetCallCoordinatorChecks
                 provider.FailRead = false;
                 // A retry verifies the known space and never repeats spaces.create.
                 for (int attempt = 0; attempt < 20 && coordinator.Get(second).Status != "ready"; attempt++)
-                { _ = coordinator.Start(second, secondRequest); await Task.Delay(10); }
+                { _ = coordinator.Start(second, AccountWire.Secret()); await Task.Delay(10); }
                 var ready = coordinator.Get(second); Require(ready.Status == "ready" && ready.MeetUri == "https://meet.google.com/abc-defg-hij" && provider.Creates == 2);
                 var invitation = rooms.Invite(principal, second.RoomId, second.MemberId, second.ClientRunId);
                 string joinRequest = AccountWire.Secret();

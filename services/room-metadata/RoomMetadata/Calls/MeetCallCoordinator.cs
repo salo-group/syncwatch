@@ -28,6 +28,12 @@ internal sealed class MeetCallCoordinator(AuthenticatedRooms rooms, MeetGrantRep
         lock (gate)
         {
             if (!grants.HasAuthorization(scope.Principal)) return View(scope, journal.Latest(scope));
+            var known = journal.Latest(scope);
+            if (known?.State is "created" or "createRejected")
+            {
+                // An explicit recovery can only re-read this known space, irrespective of a new native request ID.
+                Queue(scope, known, "read"); return View(scope, journal.Latest(scope));
+            }
             var (call, dispatch) = journal.Begin(scope, requestId);
             if (dispatch || call.State is "created" or "createRejected") Queue(scope, call, dispatch ? "create" : "read");
             return View(scope, journal.Latest(scope));
