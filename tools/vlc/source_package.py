@@ -4,7 +4,7 @@ import subprocess
 
 from source_profile import ROOT
 from source_files import archive_bytes, digest, encoded
-from configuration import vlc_files, pulse_version
+from configuration import vlc_files, pulse_version, ffmpeg_files
 from sdk_material import notices
 from font_configuration import contents as font_contents
 
@@ -36,6 +36,8 @@ def expected(snapshots, profile, context):
         files["sources/configured/pulseaudio/.tarball-version"] = pulse_version(snapshots["pulseaudio"], profile)
     for name, data in vlc_files(snapshots["vlc"], profile).items():
         files["sources/configured/vlc/" + name] = data
+    for name, data in ffmpeg_files(snapshots["ffmpeg"]).items():
+        files["sources/configured/ffmpeg/" + name] = data
     inventory = {}
     for name, specification in sorted(profile["sources"].items()):
         original = snapshots[name]
@@ -72,10 +74,10 @@ def expected(snapshots, profile, context):
         "The SDK tools are external build inputs, not application dependencies.\n"
         "Configured VLC metadata, player filter inheritance, embedded subtitle codec\n"
         "mapping, audio/video-only avformat clock, complete decoder picture reset\n"
-        "and GNU iconv restoration\n"
-        "are declared by those recipes. Configured VLC files are also retained in\n"
-        "sources/configured/vlc/ with their original grants and a change notice;\n"
-        "recipes; original source bytes remain unchanged in the source archives.\n"
+        "and GNU iconv restoration, plus bounded FFmpeg Matroska subtitle preroll,\n"
+        "are declared by those recipes. Configured VLC and FFmpeg files are retained\n"
+        "in sources/configured/ with their original grants and a change notice;\n"
+        "original source bytes remain unchanged in the source archives.\n"
         "Keep the dynamic libraries replaceable and retain corresponding sources\n"
         "and grants when distributing this SDK or an application containing it.\n\n"
         "Native client surfaces and physical output are not qualified by this\n"

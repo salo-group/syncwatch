@@ -22,7 +22,7 @@ def environment(package, target):
     return env
 
 
-def compile_consumer(context, package, directory, source, name):
+def compile_consumer(context, package, directory, source, name, extra_libraries=()):
     suffix = ".exe" if context.target == "windows-x64" else ""
     executable = directory / (name + suffix)
     libraries = package / ("bin" if context.target == "windows-x64" else "lib")
@@ -34,6 +34,7 @@ def compile_consumer(context, package, directory, source, name):
         "-DSW_VLC_REVISION=" + json.dumps(profile_data()["sources"]["vlc"]["revision"]),
         "-I" + str(package / "include"), str(ROOT / "tools/vlc" / source),
         "-L" + str(package / "lib"), "-lvlc", "-o", str(executable)]
+    command.extend("-l" + name for name in extra_libraries)
     if context.target == "windows-x64":
         command.extend(["-static-libgcc", "-static-libstdc++"])
     else:
@@ -69,7 +70,8 @@ def verify(context, package):
             raise ValueError("Native media proof differs from its required behavior")
         results[name] = result
     effects = verify_effects(context, package, directory, media)
-    return {"media": results, "effects": effects, "seekReset": verify_seek_reset(context, package, directory)}
+    return {"media": results, "effects": effects, "seekReset": verify_seek_reset(context, package, directory),
+            "subtitleSeek": verify_subtitle_seek(context, package, directory)}
 
 
 def verify_seek_reset(context, package, directory):
@@ -119,3 +121,30 @@ def verify_effects(context, package, directory, media):
             raise ValueError("Native media effect proof differs from its required behavior")
         results[name] = result
     return results
+
+
+def verify_subtitle_seek(context, package, directory):
+    executable, actual = compile_consumer(context, package, directory, "subtitle_seek_probe.c",
+                                          "subtitle-seek-probe", ("avformat", "avcodec", "avutil"))
+    from subtitle_seek_fixtures import cases
+    fixture = embedded_tracks(directory)
+    results = {}
+    try:
+        variants = cases(fixture.read_bytes())
+        for name, (data, expectation) in variants.items():
+            fixture.write_bytes(data)
+            process = subprocess.run([str(executable), str(fixture), str(actual), expectation],
+                env=environment(package, context.target), stdin=subprocess.DEVNULL,
+                capture_output=True, timeout=30)
+            if process.returncode:
+                raise ValueError("Indexed subtitle seek regression " + name + ": " + process.stderr.decode(errors="replace"))
+            result = json.loads(process.stdout)
+            expected = {"seeks": 7, "restored": 5 if expectation == "normal" else 0,
+                        "ownedLibraryLoaded": True, "physicalOutputAccepted": False}
+            if result != expected:
+                raise ValueError("Subtitle seek proof differs from its required behavior")
+            results[name] = result
+        return results
+    finally:
+        executable.unlink(missing_ok=True)
+        fixture.unlink(missing_ok=True)
