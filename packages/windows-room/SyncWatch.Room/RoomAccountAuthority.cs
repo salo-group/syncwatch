@@ -20,6 +20,7 @@ public sealed class RoomAccountAuthority : IDisposable
     private TaskCompletionSource<AccountRoomCredential>? pending;
     private bool paused, closed;
     private int waiters;
+    internal int PendingRequests { get { lock (gate) return waiters; } }
     internal RoomAccountAuthority(RoomAddress address, AccountDeviceSession session, Guid owner)
     {
         AccountRoomCredential credential = AccountRoomCredential.From(session);

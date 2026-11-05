@@ -50,6 +50,14 @@ The nested ordered watch protocol remains v1: bootstrap, snapshots, catalogs, se
 
 The requesting client retains its own `requestId` for status and acceptance. The owner uses the distinct server-generated request `id` as `approvalId`. Requests expire after two minutes. Display identity comes from the account repository; a requester cannot submit another person's name or email. Pending or denied clients receive no catalog, Syncplay ticket or meeting URI.
 
+## Desktop account authority
+
+The native room SDKs borrow a `RoomAccountAuthority` from their account client after the device-session checkpoint succeeds. This in-memory authority binds the service origin, account-client lifetime and account identity. Pause it before refresh rotation, publish the replacement only after its secure checkpoint, and mark it unavailable if rotation or storage fails. Closing a room cancels and joins its own HTTP, event connection and credential waits; it does not close the borrowed account authority.
+
+An authenticated admission carries no legacy membership credential. Its member, process run and authority scope must match before a native adapter sends a request. Legacy clients reject authenticated admissions, and account clients reject legacy create/join operations. The service supplies the synchronization destination and username. The SDK preserves existing ordered content models while unwrapping strict v2 HTTP envelopes. Redirects, cookies, arbitrary response errors and credential-bearing query strings remain disabled.
+
+If HTTP returns401 during rotation, a native adapter may repeat the same correlated request once only when the same authority supplies a different access token. It never repeats an unchanged token or switches service/account to recover. Every synchronization transport obtains a new short-lived ticket through the account room port. These adapters do not establish native UI, media synchronization or calling acceptance on their own.
+
 Each ticket is single-use, short-lived, and bound to the exact room, epoch, device, run, username and TLS destination. Every new transport needs a fresh ticket. Live leases are rechecked against account and room authority; logout, leave, revocation and expiry close metadata and synchronization connections. Account-token rotation retains the device authority, while old bearer tokens cease authorizing new HTTP requests.
 
 ## Calling boundary

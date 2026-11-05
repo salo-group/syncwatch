@@ -8,6 +8,12 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using SyncWatch.RoomMetadata;
 
+if (args.Length is 2 or 3 && args[0] == "--native-account-room-fixture")
+{
+    await NativeAccountRoomFixture.Run(args[1], args.Length == 3 ? int.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 0);
+    return;
+}
+
 int assertions = 0;
 List<object> observed = [];
 void Check(bool value, string message)

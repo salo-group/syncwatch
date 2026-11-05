@@ -25,6 +25,7 @@ class RoomAccountAuthority internal constructor(val address: RoomAddress, sessio
     private var paused = false
     private var closed = false
     private var waiters = 0
+    internal val pendingRequests: Int get() = synchronized(gate) { waiters }
     init {
         val initial = requireNotNull(current)
         if (initial.origin != address.origin || initial.owner != owner) throw RoomProtocolException("malformed")
