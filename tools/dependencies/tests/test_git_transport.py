@@ -39,6 +39,26 @@ class GitTransportTests(unittest.TestCase):
         self.assertEqual(calls[0].kwargs["stdout"], subprocess.PIPE)
         self.assertFalse(waits)
 
+    def test_http2_stream_reset_retries_the_same_immutable_binary_object_read(self):
+        error = b"error: RPC failed; curl 92 HTTP/2 stream 3 was not closed cleanly: PROTOCOL_ERROR (err 1)"
+        payload = b"\0\xfforiginal source\r\n"
+        arguments = ["cat-file", "blob", "a" * 40 + ":src/source.c"]
+        result, calls, waits = self.exercise([self.result(128, error), self.result(0, data=payload)],
+                                            arguments, capture_output=True)
+        self.assertEqual(result.stdout, payload)
+        self.assertEqual(calls[0], calls[1])
+        self.assertEqual(calls[1].args[0], ["git", *arguments])
+        self.assertEqual([call.args[0] for call in waits], [1])
+
+    def test_http2_diagnostic_does_not_override_an_object_integrity_failure(self):
+        error = b"curl 92 HTTP/2 stream error\nfatal: object hash mismatch"
+        with patch.object(git_transport.subprocess, "run", return_value=self.result(128, error)) as command, \
+                patch.object(git_transport.time, "sleep") as wait, contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(subprocess.CalledProcessError):
+                git_transport.run(["cat-file", "blob", "a" * 40], cwd=Path("owned-source"))
+            self.assertEqual(command.call_count, 1)
+            wait.assert_not_called()
+
     def test_git_diagnostics_do_not_depend_on_python_text_code_page(self):
         binary = io.BytesIO()
         stream = io.TextIOWrapper(binary, encoding="ascii")

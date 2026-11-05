@@ -7,7 +7,7 @@ import time
 
 
 RETRY_DELAYS = (1, 2)
-SERVER_ERROR = re.compile(rb"(?:URL returned error:|HTTP)\s+(?:500|502|503|504)\b", re.I)
+SERVER_ERROR = re.compile(rb"(?:URL returned error:|HTTP)\s+(?:500|502|503|504)\b|curl\s+92\s+HTTP/2\b", re.I)
 PERMANENT_ERROR = re.compile(
     rb"URL returned error:\s*(?:400|401|403|404|410|422)\b|not our ref|couldn't find remote ref|"
     rb"authentication failed|permission denied|object hash mismatch|repository not found|"
