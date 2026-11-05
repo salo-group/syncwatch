@@ -72,6 +72,15 @@ internal static class AuthenticatedRoomHttpChecks
             string ownerMember = admission.MemberId;
             await Request(HttpMethod.Get, path + "/snapshot", sibling.AccessToken, ownerMember, "http-owner-run", status: HttpStatusCode.Unauthorized);
             await Request(HttpMethod.Get, path + "/snapshot", owner.AccessToken, ownerMember, "foreign-run", status: HttpStatusCode.Unauthorized);
+            RoomInvitation withdrawal = (await Request(HttpMethod.Post, path + "/invitation", owner.AccessToken, ownerMember, "http-owner-run")).Deserialize<RoomInvitation>(Wire.Json)!;
+            await Request(HttpMethod.Post, path + "/admission-requests", guest.AccessToken, body: new { v = 2, clientRunId = "http-cancel-run", requestId = "http-cancel", invitation = withdrawal.Invitation });
+            await Request(HttpMethod.Post, "/v2/room-admissions/http-cancel/cancel", sibling.AccessToken, body: new { v = 2, clientRunId = "http-cancel-run" }, status: HttpStatusCode.Unauthorized);
+            await Request(HttpMethod.Post, "/v2/room-admissions/http-cancel/cancel", guest.AccessToken, body: new { v = 2, clientRunId = "foreign-run" }, status: HttpStatusCode.Unauthorized);
+            await Request(HttpMethod.Post, "/v2/room-admissions/http-cancel/cancel", guest.AccessToken, body: new { v = 2, clientRunId = "http-cancel-run" });
+            await Request(HttpMethod.Post, "/v2/room-admissions/http-cancel/cancel", guest.AccessToken, body: new { v = 2, clientRunId = "http-cancel-run" });
+            JsonElement cancelled = await Request(HttpMethod.Get, "/v2/room-admissions/http-cancel", guest.AccessToken, run: "http-cancel-run");
+            Require(cancelled.GetProperty("status").GetString() == "revoked", "Correlated cancellation");
+            await Request(HttpMethod.Post, "/v2/room-admissions/http-cancel/accept", guest.AccessToken, body: new { v = 2, clientRunId = "http-cancel-run" }, status: HttpStatusCode.Forbidden);
             RoomInvitation invitation = (await Request(HttpMethod.Post, path + "/invitation", owner.AccessToken, ownerMember, "http-owner-run")).Deserialize<RoomInvitation>(Wire.Json)!;
             object join = new { v = 2, clientRunId = "http-guest-run", requestId = "http-join", invitation = invitation.Invitation };
             AdmissionRequest requested = (await Request(HttpMethod.Post, path + "/admission-requests", guest.AccessToken, body: join)).Deserialize<AdmissionRequest>(Wire.Json)!;

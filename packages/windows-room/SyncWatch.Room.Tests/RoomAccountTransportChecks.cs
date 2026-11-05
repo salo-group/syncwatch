@@ -37,6 +37,15 @@ internal static class RoomAccountTransportChecks
         Require((await host.CatalogAsync(admission, current, current.CatalogCursor)).Items.Count == 0);
         var first = await peer.SyncTicketAsync(joined); var second = await peer.SyncTicketAsync(joined);
         Require(first.Credential.Value != second.Credential.Value);
+        var withdrawal = await peer.RequestAdmissionAsync(await host.InviteAsync(admission), "withdraw-" + Guid.NewGuid().ToString("N"), "withdraw-" + Guid.NewGuid().ToString("N"));
+        await peer.CancelAdmissionAsync(withdrawal); await peer.CancelAdmissionAsync(withdrawal);
+        Require((await peer.AdmissionStatusAsync(withdrawal)).Status == "revoked");
+        var race = await peer.RequestAdmissionAsync(await host.InviteAsync(admission), "race-" + Guid.NewGuid().ToString("N"), "race-" + Guid.NewGuid().ToString("N"));
+        await host.DecideAsync(admission, race.Request.Id, true);
+        _ = await peer.AcceptAsync(race);
+        await peer.CancelAdmissionAsync(race);
+        Require((await host.SnapshotAsync(admission)).Snapshot.Members.Count == 2);
+        Require((await peer.AdmissionStatusAsync(race)).Status == "revoked");
         owner.Pause();
         var rotated = await ownerAccount.ResumeAsync(ownerAccount.Checkpoint(ownerDevice));
         _ = ownerAccount.Checkpoint(rotated); owner.Commit(rotated);

@@ -37,6 +37,7 @@ The nested ordered watch protocol remains v1: bootstrap, snapshots, catalogs, se
 | `POST /v2/rooms/{room}/admission-requests` | Account; `v`, `clientRunId`, correlated `requestId`, `invitation` |
 | `GET /v2/room-admissions/{requestId}` | Requesting device and run; its original client request ID |
 | `POST /v2/room-admissions/{requestId}/accept` | Approved requesting device; `v`, `clientRunId` |
+| `POST /v2/room-admissions/{requestId}/cancel` | Requesting device; `v`, `clientRunId`; withdraw or release a raced admission |
 | `GET /v2/rooms/{room}/pending` | Owner; pending requests with provider-derived account ID, name and email |
 | `POST /v2/rooms/{room}/decision` | Owner; `v`, opaque `approvalId`, boolean `approve` |
 | `GET /v2/rooms/{room}/snapshot` | Member; bootstrap |
@@ -49,6 +50,8 @@ The nested ordered watch protocol remains v1: bootstrap, snapshots, catalogs, se
 | `POST /v2/rooms/{room}/leave` | Member; empty body; owner departure closes the room |
 
 The requesting client retains its own `requestId` for status and acceptance. The owner uses the distinct server-generated request `id` as `approvalId`. Requests expire after two minutes. Display identity comes from the account repository; a requester cannot submit another person's name or email. Pending or denied clients receive no catalog, Syncplay ticket or meeting URI.
+
+Cancel by that original client request ID when an attempt ends before its accept outcome is known. Cancellation is idempotent while the correlated request is retained: it withdraws a pending/approved request or removes its already-admitted guest and revokes that member's synchronization authority. It never removes the owner or another device/run. Known members normally use `leave`; request records are retained only for the bounded admission/recovery window.
 
 ## Desktop account authority
 

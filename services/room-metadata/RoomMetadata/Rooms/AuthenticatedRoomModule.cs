@@ -45,6 +45,13 @@ internal static class AuthenticatedRoomModule
             JsonElement body = await Read(context, "clientRunId");
             await Reply(context, rooms.Accept(principal, RouteId(context, "requestId"), Id(body, "clientRunId")));
         });
+        group.MapPost("/room-admissions/{requestId}/cancel", async context =>
+        {
+            (AuthenticatedRooms rooms, AccountPrincipal principal) = Identity(context);
+            JsonElement body = await Read(context, "clientRunId");
+            rooms.CancelAdmission(principal, RouteId(context, "requestId"), Id(body, "clientRunId"));
+            await Reply(context, new { status = "revoked" });
+        });
         group.MapGet("/rooms/{roomId}/pending", context =>
         {
             var (rooms, principal, room, member, run) = Member(context);

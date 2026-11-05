@@ -52,6 +52,11 @@ extension RoomClient {
             await request("POST", "v2/room-admissions/\(attempt.requestID)/accept", body: body),
             runID: attempt.runID, scope: authority.scope, expectedRoom: attempt.roomID)
     }
+    public func cancelAdmission(_ attempt: RoomAdmissionAttempt) async throws {
+        _ = try validate(attempt)
+        let body = try RoomWire.encode(["v": 2, "clientRunId": attempt.runID])
+        try RoomAccessWire.status(await request("POST", "v2/room-admissions/\(attempt.requestID)/cancel", body: body), "revoked")
+    }
     public func pending(_ admission: RoomAdmission) async throws -> [RoomAdmissionRequest] {
         _ = try accountAuthority()
         let bytes = try await request("GET", "v2/rooms/\(admission.roomID)/pending", admission: admission)

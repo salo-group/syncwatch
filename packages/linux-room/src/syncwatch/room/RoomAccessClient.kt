@@ -35,6 +35,11 @@ suspend fun RoomClient.accept(attempt: RoomAdmissionAttempt): RoomAdmission {
     val body = RoomWire.encode(mapOf("v" to 2L, "clientRunId" to attempt.runId))
     return RoomAccessWire.admission(request("POST", "v2/room-admissions/${attempt.requestId}/accept", body = body), attempt.runId, owner.scope, attempt.roomId)
 }
+suspend fun RoomClient.cancelAdmission(attempt: RoomAdmissionAttempt) {
+    validate(attempt)
+    val body = RoomWire.encode(mapOf("v" to 2L, "clientRunId" to attempt.runId))
+    RoomAccessWire.status(request("POST", "v2/room-admissions/${attempt.requestId}/cancel", body = body), "revoked")
+}
 suspend fun RoomClient.pending(admission: RoomAdmission): List<RoomAdmissionRequest> {
     needAccount()
     val items = RoomWire.value(request("GET", "v2/rooms/${admission.roomId}/pending", admission = admission)) as? List<*> ?: throw RoomWire.bad()

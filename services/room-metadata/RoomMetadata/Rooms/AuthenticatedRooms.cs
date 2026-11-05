@@ -175,6 +175,22 @@ public sealed class AuthenticatedRooms
         }
     }
 
+    /// <summary>Withdraw by the original device/run correlation, including a lost accept response.</summary>
+    public void CancelAdmission(AccountPrincipal principal, string requestId, string run)
+    {
+        lock (gate)
+        {
+            SweepCore(); Request request = OwnRequest(principal, requestId, run);
+            if (request.Status == "admitted" && rooms.TryGetValue(request.RoomId, out Room? room)
+                && room.Members.TryGetValue(request.MemberId!, out Member? member))
+            {
+                Wire.Need(!member.Owner && Same(member.Principal, principal) && member.Binding.ClientRunId == run, "unauthorized", 401);
+                Remove(room, member);
+            }
+            else if (request.Status is "pending" or "approved") request.Status = "revoked";
+        }
+    }
+
     public Bootstrap Snapshot(AccountPrincipal principal, string roomId, string memberId, string run)
     {
         lock (gate) { (_, Member member) = Authorize(principal, roomId, memberId, run); return metadata.Snapshot(roomId, member.Admission.Token); }

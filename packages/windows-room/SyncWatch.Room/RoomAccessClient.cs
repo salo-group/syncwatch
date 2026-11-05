@@ -47,6 +47,12 @@ public sealed partial class RoomClient
         byte[] body = RoomWire.Encode(new { v = 2, clientRunId = attempt.RunId });
         return RoomAccessWire.Admission(await RequestAsync(HttpMethod.Post, $"v2/room-admissions/{attempt.RequestId}/accept", null, body, cancellation), attempt.RunId, authority.Scope, attempt.RoomId);
     }
+    public async Task CancelAdmissionAsync(RoomAdmissionAttempt attempt, CancellationToken cancellation = default)
+    {
+        _ = Validate(attempt);
+        byte[] body = RoomWire.Encode(new { v = 2, clientRunId = attempt.RunId });
+        RoomAccessWire.Status(await RequestAsync(HttpMethod.Post, $"v2/room-admissions/{attempt.RequestId}/cancel", null, body, cancellation), "revoked");
+    }
     public async Task<IReadOnlyList<RoomAdmissionRequest>> PendingAsync(RoomAdmission admission, CancellationToken cancellation = default)
     {
         _ = NeedAccount();

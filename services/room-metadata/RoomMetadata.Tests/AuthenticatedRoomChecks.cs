@@ -78,6 +78,37 @@ internal static class AuthenticatedRoomChecks
             Reject(() => rooms.Snapshot(guest, room, guestMember, "guest-run"));
             Reject(() => rooms.Accept(guest, "request-1", "guest-run"), "admissionRequired", 403);
 
+            // Cancellation owns the attempt even when the accept response was never received.
+            AdmissionRequest CancellationRequest(string id)
+            {
+                RoomInvitation offered = rooms.Invite(owner, room, ownerMember, "owner-run");
+                return rooms.RequestAdmission(guest, "Guest", room, id + "-run", id, offered.Invitation);
+            }
+            AdmissionRequest withdrawn = CancellationRequest("cancel-pending");
+            Reject(() => rooms.CancelAdmission(sibling, "cancel-pending", "cancel-pending-run"));
+            Reject(() => rooms.CancelAdmission(guest, "cancel-pending", "foreign-run"));
+            Require(rooms.Status(guest, "cancel-pending", "cancel-pending-run").Status == "pending");
+            rooms.CancelAdmission(guest, "cancel-pending", "cancel-pending-run");
+            rooms.CancelAdmission(guest, "cancel-pending", "cancel-pending-run");
+            Require(rooms.Status(guest, "cancel-pending", "cancel-pending-run").Status == "revoked");
+            Require(!rooms.Pending(owner, room, ownerMember, "owner-run").Any(request => request.Id == withdrawn.Id));
+            Reject(() => rooms.Decide(owner, room, ownerMember, "owner-run", withdrawn.Id, true), "conflict", 409);
+            AdmissionRequest approvedCancellation = CancellationRequest("cancel-approved");
+            rooms.Decide(owner, room, ownerMember, "owner-run", approvedCancellation.Id, true);
+            rooms.CancelAdmission(guest, "cancel-approved", "cancel-approved-run");
+            Reject(() => rooms.Accept(guest, "cancel-approved", "cancel-approved-run"), "admissionRequired", 403);
+            AdmissionRequest raced = CancellationRequest("cancel-admitted");
+            rooms.Decide(owner, room, ownerMember, "owner-run", raced.Id, true);
+            AuthenticatedAdmission racedAdmission = rooms.Accept(guest, "cancel-admitted", "cancel-admitted-run");
+            using RoomStream racedStream = rooms.Attach(guest, room, racedAdmission.MemberId, "cancel-admitted-run", null, null);
+            SyncAdmissionTicket racedTicket = rooms.Synchronize(guest, room, racedAdmission.MemberId, "cancel-admitted-run");
+            rooms.CancelAdmission(guest, "cancel-admitted", "cancel-admitted-run");
+            rooms.CancelAdmission(guest, "cancel-admitted", "cancel-admitted-run");
+            Require(racedStream.Stopped.IsCancellationRequested && !ownerStream.Stopped.IsCancellationRequested);
+            Require(rooms.Snapshot(owner, room, ownerMember, "owner-run").Snapshot.Members.Single().MemberId == ownerMember);
+            Reject(() => rooms.Tickets.Consume(racedTicket.Ticket, "cancel-admitted-run", racedAdmission.Bootstrap.Snapshot.Members.Single(member => member.MemberId == racedAdmission.MemberId).SyncplayUsername, racedAdmission.Bootstrap.Connection));
+            Reject(() => rooms.CancelAdmission(owner, "create-1", "owner-run"));
+
             // Two devices may choose the same retry ID. Approval uses a server handle.
             RoomInvitation first = rooms.Invite(owner, room, ownerMember, "owner-run");
             AdmissionRequest guestAgain = rooms.RequestAdmission(guest, "Guest", room, "guest-run-2", "same-id", first.Invitation);
