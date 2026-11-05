@@ -134,7 +134,8 @@ struct LocalPlaybackLaunch {
     /// this transport. Native playback ownership stays with this controller.
     func connectShared(
         transport: any HelperTransport, endpoint: SyncplayEndpoint, media: SharedMedia, revision: String,
-        requireDeclaredIdentity: Bool = false, authority: (@MainActor () -> Bool)? = nil
+        requireDeclaredIdentity: Bool = false, authority: (@MainActor () -> Bool)? = nil,
+        admissionProvider: (@MainActor () async throws -> SyncplayAdmission)? = nil
     )
         async throws
     {
@@ -146,7 +147,7 @@ struct LocalPlaybackLaunch {
             let session = try HelperSession(
                 transport: transport, player: player, nativeScope: scope,
                 endpoint: endpoint, media: media, revision: revision,
-                requireDeclaredIdentity: requiresSharedAdmission || requireDeclaredIdentity
+                requireDeclaredIdentity: requiresSharedAdmission || requireDeclaredIdentity, admissionProvider: admissionProvider
             ) { [weak self] state in
                 if state.connection == .reconnecting { self?.checkpoint?.interrupt() }
                 self?.sharedState = state

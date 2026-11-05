@@ -236,7 +236,8 @@ class AdmissionProtocol(SyncServerProtocol):
 
     def _valid_command(self, command, value):
         if command == "List":
-            return value == {}
+            # The pinned client emits null; both forms mean an unfiltered list.
+            return value is None or value == {}
         if command == "State":
             if not isinstance(value, dict) or not set(value) <= {"playstate", "ping", "ignoringOnTheFly"} or not all(isinstance(part, dict) for part in value.values()):
                 return False

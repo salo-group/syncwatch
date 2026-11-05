@@ -1,5 +1,7 @@
 """Bind the pipe controller to the real upstream engine; no synchronization policy."""
 
+import secrets
+
 from syncwatch_ipc.contracts import ContractError
 
 
@@ -44,6 +46,7 @@ class Engine:
     def __init__(self, controller, *, trust_roots=None):
         self.controller, self.trust_roots = controller, trust_roots
         self.session = None
+        self.pending_admission = None
         self.port = None
         self.media = None
         self.status = None
@@ -62,7 +65,8 @@ class Engine:
         self.last_identity = self.last_ready = self.last_participants = None
         self.port = PlayerPort(self.controller)
         self.session = Session(payload["host"], payload["port"], payload["username"], payload["room"],
-                               self.port, self.event, trust_roots=self.trust_roots)
+                               self.port, self.event, trust_roots=self.trust_roots,
+                               admission=self.request_admission if payload.get("accountAdmission") is True else None)
         # The application selection coordinator owns native media. The stock
         # playlist must not independently reopen/rewind an already owned file.
         self.session.getConfig()["sharedPlaylistEnabled"] = False
@@ -74,6 +78,25 @@ class Engine:
             self.apply_media()
         self.connection("connecting")
         self.session.connect()
+
+    def request_admission(self, consume):
+        if self.pending_admission is not None or self.session is None or self.terminal:
+            raise ContractError("invalidState")
+        nonce = secrets.token_hex(16)
+        self.pending_admission = (nonce, consume)
+        self.controller.event("sync.admissionRequired", {"nonce": nonce})
+        def cancel():
+            if self.pending_admission == (nonce, consume):
+                self.pending_admission = None
+        return cancel
+
+    def admit(self, payload):
+        pending = self.pending_admission
+        if pending is None or pending[0] != payload["nonce"] or self.session is None or self.terminal:
+            raise ContractError("invalidState")
+        # A ticket is transferred once, never reused by a reconnecting protocol.
+        self.pending_admission = None
+        pending[1]({"ticket": payload["ticket"], "clientRunId": payload["clientRunId"]})
 
     def event(self, kind, payload):
         # Raw upstream text may contain room/user/file data. It is never
@@ -163,6 +186,7 @@ class Engine:
 
     def disconnect(self, done):
         session, self.session = self.session, None
+        self.pending_admission = None
         if session is None:
             done()
         else:

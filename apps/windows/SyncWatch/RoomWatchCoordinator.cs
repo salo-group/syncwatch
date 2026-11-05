@@ -131,7 +131,16 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
                 await owned.ConnectSharedAsync(transport,
                     new(connection.Host, connection.Port, connection.Room, intent.Membership.Identity.SyncplayUsername),
                     new("loaded-" + Guid.NewGuid().ToString("N"), remote.Title, local.DurationMs!.Value, (ulong)local.FileSizeBytes),
-                    runtime.Revision, requireDeclaredIdentity: true, authority: Authorized);
+                    runtime.Revision, requireDeclaredIdentity: true, authority: Authorized,
+                    admissionProvider: room.AccountAuthority is null ? null : async cancellation =>
+                    {
+                        if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
+                        var fresh = await room.WatchContextAsync(intent.Membership, cancellation);
+                        RequireSameGeneration(current, fresh); RequireMatch(local, fresh);
+                        var ticket = await room.SyncTicketAsync(intent.Membership, cancellation);
+                        if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
+                        return new(ticket.AdmissionCredential(), intent.Membership.Identity.ClientRunId);
+                    });
             }
             catch { await transport.DisposeAsync(); throw; }
             long readyDeadline = Environment.TickCount64 + 20000;
@@ -258,6 +267,10 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
             && current.Snapshot.Epoch == value.Context.Bootstrap.Snapshot.Epoch
             && current.Snapshot.WatchGeneration == value.Context.Bootstrap.Snapshot.WatchGeneration && current.Snapshot.WatchStatus == "active";
     }
+    private bool CanAdmitTransport() => Authorized() && active is { } current && room.IsCurrent(current.Membership)
+        && room.WatchBootstrap is { } latest && latest.Snapshot.Epoch == current.Context.Bootstrap.Snapshot.Epoch
+        && latest.Snapshot.WatchGeneration == current.Context.Bootstrap.Snapshot.WatchGeneration
+        && latest.Snapshot.WatchStatus == "active" && latest.Snapshot.MediaId == current.Context.Bootstrap.Snapshot.MediaId;
     internal static string FailureKey(Exception error, bool identityRejected) => identityRejected ? "sharedWatchIdentityRejected"
         : error is RoomProtocolException { Message: "staleGeneration" } ? "sharedWatchRoomChanged"
         : error is SharedMediaUnavailableException ? "sharedWatchMediaMissing" : "sharedWatchFailed";

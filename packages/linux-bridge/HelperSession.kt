@@ -43,13 +43,15 @@ data class HelperSessionState(val connection: HelperConnection = HelperConnectio
 class HelperSession(
     private val transport: HelperTransport, private val player: PlaybackPort, private val nativeScope: PlaybackScope,
     private val endpoint: SyncplayEndpoint, private val media: SharedMedia, private val revision: String,
-    owner: CoroutineScope, private val requireDeclaredIdentity: Boolean = false, private val changed: (HelperSessionState) -> Unit = {},
+    owner: CoroutineScope, private val requireDeclaredIdentity: Boolean = false, private val admissionProvider: (suspend () -> SyncplayAdmission)? = null, private val changed: (HelperSessionState) -> Unit = {},
 ) {
     val wireScope = PlaybackScope.fresh().replacingMedia()
     var state = HelperSessionState()
         private set
     private val ownerThread = Thread.currentThread().threadId()
     private val scope = CoroutineScope(owner.coroutineContext + SupervisorJob(owner.coroutineContext[Job]))
+    private val admissionNonces = ArrayDeque<String>()
+    private var pendingAdmissionNonce: String? = null
     private val commands = HelperCommands(wireScope)
     private val fence = PlaybackActionFence(nativeScope)
     private sealed interface Intent {
@@ -87,7 +89,7 @@ class HelperSession(
     private var termination: Deferred<Unit>? = null
 
     init {
-        commands.connect(1, endpoint.host, endpoint.port, endpoint.room, endpoint.username)
+        commands.connect(1, endpoint.host, endpoint.port, endpoint.room, endpoint.username, accountAdmission = admissionProvider != null)
         commands.loaded(1, media.handle, media.name, media.durationMs, media.fileSizeBytes)
         if (media.durationMs <= 0 || !revision.matches(Regex("[0-9a-f]{40}"))) bad()
     }
@@ -154,7 +156,7 @@ class HelperSession(
                 if (inbox.isEmpty()) { waitSignal(); continue }
                 val data = inbox.removeFirst(); val value = PlayerCorrection.frameValue(data)
                 if (value["replyTo"] == "cmd-$id") {
-                    val reply = HelperReply.decode(data, wireScope, id, expected, revision)
+                    val reply = HelperReply.decode(data, wireScope, id, expected, revision, requireAdmission = admissionProvider != null)
                     if (reply is HelperReply.Rejected) bad()
                     replies += ReplyRecord(id, expected, reply); if (replies.size > 128) replies.removeAt(0)
                     return
@@ -171,10 +173,16 @@ class HelperSession(
         request(HelperReplyKind.ready, commands::hello)
         request(HelperReplyKind.applied) { commands.loaded(it, media.handle, media.name, media.durationMs, media.fileSizeBytes) }
         publish(state.copy(connection = HelperConnection.connecting))
-        request(HelperReplyKind.applied) { commands.connect(it, endpoint.host, endpoint.port, endpoint.room, endpoint.username) }
+        request(HelperReplyKind.applied) { commands.connect(it, endpoint.host, endpoint.port, endpoint.room, endpoint.username, accountAdmission = admissionProvider != null) }
         while (!closed) {
             checkOpen()
             while (inbox.isNotEmpty()) { val data = inbox.removeFirst(); receive(data, PlayerCorrection.frameValue(data)) }
+            val nonce = pendingAdmissionNonce
+            if (nonce != null && admissionProvider != null) {
+                pendingAdmissionNonce = null; setDeadline(5)
+                val credential = admissionProvider(); checkOpen(); deadline = null
+                request(HelperReplyKind.applied) { commands.admit(it, nonce, credential) }; continue
+            }
             cancelSuperseded()
             if (users.isNotEmpty()) { val next = users.removeFirst(); user(next.first, next.second); continue }
             val first = corrections.firstOrNull()
@@ -268,7 +276,7 @@ class HelperSession(
         val kind = PlayerCorrection.text(value, "type")
         if (value.containsKey("replyTo")) {
             val record = replies.firstOrNull { value["replyTo"] == "cmd-${it.id}" } ?: bad()
-            if (HelperReply.decode(data, wireScope, record.id, record.expected, revision) != record.reply) bad()
+            if (HelperReply.decode(data, wireScope, record.id, record.expected, revision, requireAdmission = admissionProvider != null) != record.reply) bad()
             return
         }
         if (kind.startsWith("player.")) {
@@ -287,6 +295,13 @@ class HelperSession(
         wireScope.check(PlaybackScope(PlayerCorrection.text(value, "clientRunId"), PlayerCorrection.integer(value["mediaGeneration"], PlaybackScope.MAXIMUM_GENERATION)))
         eventSequence = ordinal; val payload = Json.`object`(value["payload"])
         when (kind) {
+            "sync.admissionRequired" -> {
+                PlayerCorrection.keys(payload, setOf("nonce")); val nonce = text(payload["nonce"], 32)
+                if (admissionProvider == null || pendingAdmissionNonce != null || state.connection !in setOf(HelperConnection.connecting, HelperConnection.reconnecting) ||
+                    !nonce.matches(Regex("[0-9a-f]{32}")) || nonce in admissionNonces) bad()
+                if (admissionNonces.size == 128) admissionNonces.removeFirst()
+                admissionNonces.addLast(nonce); pendingAdmissionNonce = nonce
+            }
             "sync.identity" -> {
                 PlayerCorrection.keys(payload, setOf("username")); val username = text(payload["username"], 64)
                 if (requireDeclaredIdentity && username != endpoint.username) { state = state.copy(identityRejected = true); bad() }

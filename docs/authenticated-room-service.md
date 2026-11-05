@@ -1,6 +1,6 @@
 # Authenticated room service
 
-The optional v2 authority connects Google-backed SyncWatch device sessions, private room metadata and one owned TLS Syncplay listener. Local media stays on each desktop. Desktop admission adapters and the complete room-to-Meet journey are still being integrated; the API alone does not qualify those workflows.
+The optional v2 authority connects Google-backed SyncWatch device sessions, private room metadata and one owned TLS Syncplay listener. Local media stays on each desktop. Native admission adapters and the per-transport ticket bridge are implemented for all three desktops. Packaged account-room watch acceptance and the complete room-to-Meet journey remain in progress.
 
 ## Deployment
 

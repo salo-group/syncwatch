@@ -128,7 +128,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         sharedMediaPreparation = new(); requiresSharedAdmission = !releaseAdmission;
     }
     // Transfer only after the room coordinator admits the selected local media.
-    internal async Task ConnectSharedAsync(IHelperTransport transport, SyncplayEndpoint endpoint, SharedMedia media, string revision, bool requireDeclaredIdentity = false, Func<bool>? authority = null)
+    internal async Task ConnectSharedAsync(IHelperTransport transport, SyncplayEndpoint endpoint, SharedMedia media, string revision, bool requireDeclaredIdentity = false, Func<bool>? authority = null, Func<CancellationToken, Task<SyncplayAdmission>>? admissionProvider = null)
     {
         try
         {
@@ -137,7 +137,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
             await sharedMediaPreparation.ValidateAsync(player, scope);
             if (closing || !attached || sharedSession is not null || authority?.Invoke() == false) throw new InvalidOperationException("Shared playback unavailable");
             var session = new HelperSession(transport, player, scope, endpoint, media, revision, state =>
-            { if (state.Connection == HelperConnection.Reconnecting) checkpoint.Interrupt(); SharedState = state; GateSharedActions(); RenderChrome(); }, requiresSharedAdmission || requireDeclaredIdentity);
+            { if (state.Connection == HelperConnection.Reconnecting) checkpoint.Interrupt(); SharedState = state; GateSharedActions(); RenderChrome(); }, requiresSharedAdmission || requireDeclaredIdentity, admissionProvider: admissionProvider);
             sharedSession = session; SharedState = session.State; GateSharedActions(); RenderChrome();
             session.Start();
         }

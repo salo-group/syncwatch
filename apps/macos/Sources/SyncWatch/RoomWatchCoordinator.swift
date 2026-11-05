@@ -165,6 +165,19 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                 guard authorized() else { throw HelperSessionFailure.unavailable }
                 let connection = current.bootstrap.connection
                 let remote = current.definition.selection!.media
+                let admissionProvider: (@MainActor () async throws -> SyncplayAdmission)?
+                if room.accountAuthority == nil { admissionProvider = nil }
+                else {
+                    admissionProvider = { [weak self] in
+                        guard let self, self.canAdmitTransport() else { throw HelperSessionFailure.unavailable }
+                        let fresh = try await self.room.watchContext(intent.membership)
+                        try Self.requireSameGeneration(current, fresh)
+                        try Self.requireMatch(local, fresh)
+                        let ticket = try await self.room.syncTicket(intent.membership)
+                        guard self.canAdmitTransport() else { throw HelperSessionFailure.unavailable }
+                        return try SyncplayAdmission(credential: ticket.admissionCredential(), clientRunID: intent.membership.identity.clientRunID)
+                    }
+                }
                 try await player.connectShared(
                     transport: transport,
                     endpoint: SyncplayEndpoint(
@@ -174,7 +187,8 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                         handle: "loaded-" + UUID().uuidString, name: remote.title,
                         durationMs: local.durationMs!, fileSizeBytes: UInt64(local.fileSizeBytes)),
                     revision: runtime.revision, requireDeclaredIdentity: true,
-                    authority: { [weak self] in self?.authorized() == true })
+                    authority: { [weak self] in self?.authorized() == true },
+                    admissionProvider: admissionProvider)
             } catch {
                 await transport.close()
                 throw error
@@ -326,6 +340,13 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
         return current.snapshot.epoch == active.context.bootstrap.snapshot.epoch
             && current.snapshot.watchGeneration == active.context.bootstrap.snapshot.watchGeneration
             && current.snapshot.watchStatus == "active"
+    }
+    private func canAdmitTransport() -> Bool {
+        guard authorized(), let active, room.isCurrent(active.membership), let latest = room.watchBootstrap else { return false }
+        return latest.snapshot.epoch == active.context.bootstrap.snapshot.epoch
+            && latest.snapshot.watchGeneration == active.context.bootstrap.snapshot.watchGeneration
+            && latest.snapshot.watchStatus == "active"
+            && latest.snapshot.mediaID == active.context.bootstrap.snapshot.mediaID
     }
     static func failureKey(_ error: Error, identityRejected: Bool) -> String {
         if identityRejected { return "sharedWatchIdentityRejected" }

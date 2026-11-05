@@ -31,7 +31,10 @@ public sealed class RoomAdmissionAttempt
     { RoomId = room; Request = request; RequestId = requestId; RunId = run; Scope = scope; }
 }
 
-public sealed record RoomSyncTicket(RoomSecret Credential, long ExpiresIn);
+public sealed record RoomSyncTicket(RoomSecret Credential, long ExpiresIn)
+{
+    public string AdmissionCredential() => Credential.Value;
+}
 
 internal static class RoomAccessWire
 {

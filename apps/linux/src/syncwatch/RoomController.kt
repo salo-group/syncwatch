@@ -175,6 +175,13 @@ internal class RoomController(private val scope: CoroutineScope, legacyValidatio
             }
         }
     }
+    suspend fun syncTicket(membership: RoomWatchMembership): RoomSyncTicket {
+        check(accountAuthority != null && isCurrent(membership))
+        val ticket = membership.owner.syncTicket()
+        currentCoroutineContext().ensureActive()
+        check(accountAuthority != null && isCurrent(membership))
+        return ticket
+    }
     suspend fun beginWatch(): Pair<RoomWatchMembership, RoomWatchContext> {
         verifyOwner()
         val owner = session ?: throw RoomProtocolException("closed")

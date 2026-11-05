@@ -19,6 +19,9 @@ class Engine:
     def connect(self, payload):
         self.actions.append(("connect", payload))
 
+    def admit(self, payload):
+        self.actions.append(("admit", payload))
+
     def observe(self, payload, *, user_initiated=False):
         self.actions.append(("observe", payload, user_initiated))
 
@@ -56,6 +59,17 @@ class ProtocolTests(unittest.TestCase):
         with self.assertRaises(ContractError) as caught:
             self.receive(value)
         self.assertEqual(caught.exception.code, code)
+
+    def test_admission_capability_and_scoped_transfer(self):
+        self.receive(self.command())
+        self.assertEqual(json.loads(self.sent[-1])["payload"]["admissionVersion"], 1)
+        payload = {"nonce": "a" * 32, "ticket": "A" * 64, "clientRunId": "room-run"}
+        command = self.command("sync.admit", 2, payload=payload)
+        self.receive(command)
+        self.receive(command)
+        self.assertEqual(self.controller.engine.actions, [("admit", payload)])
+        self.rejection("foreignRun", self.command("sync.admit", 3, payload=payload, clientRunId="obsolete"))
+        self.rejection("malformed", self.command("sync.admit", 3, payload=payload | {"accessToken": "forbidden"}))
 
     def test_partial_and_coalesced_frames(self):
         frames = Frames(8)

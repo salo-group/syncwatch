@@ -23,7 +23,9 @@ class RoomAdmissionRequest(val id: String, val status: String, val account: Acco
 class RoomAdmissionAttempt internal constructor(val roomId: String, val request: RoomAdmissionRequest,
     internal val requestId: String, internal val runId: String, internal val scope: UUID)
 
-class RoomSyncTicket(val credential: RoomSecret, val expiresIn: Long)
+class RoomSyncTicket(val credential: RoomSecret, val expiresIn: Long) {
+    fun admissionCredential(): String = credential.value
+}
 
 internal object RoomAccessWire {
     fun result(bytes: ByteArray): ByteArray {

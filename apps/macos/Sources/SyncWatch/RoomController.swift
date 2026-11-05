@@ -254,6 +254,13 @@ struct RoomPreparedPublication {
         default: return false
         }
     }
+    func syncTicket(_ membership: RoomWatchMembership) async throws -> RoomSyncTicket {
+        guard accountAuthority != nil, isCurrent(membership) else { throw RoomProtocolFailure.closed }
+        let ticket = try await membership.owner.syncTicket()
+        try Task.checkCancellation()
+        guard accountAuthority != nil, isCurrent(membership) else { throw RoomProtocolFailure.closed }
+        return ticket
+    }
     func beginWatch() async throws -> (membership: RoomWatchMembership, context: RoomWatchContext) {
         guard let session, let admission,
             let member = admission.bootstrap.snapshot.members.first(where: { $0.memberID == admission.memberID })

@@ -68,8 +68,9 @@ Each request or observation has `id`; a response has `replyTo`. These forms are 
 
 | Family | Correlation and payload |
 |---|---|
-| `bridge.hello` / `bridge.ready` | Supported version request / selected protocol and pinned Syncplay revision response |
-| `sync.connect`, `disconnect`, `setReady` | TLS endpoint, room, accepted-name request, optional opaque secret handle / disconnect / readiness |
+| `bridge.hello` / `bridge.ready` | Supported version request / pinned Syncplay revision and optional admission capability response |
+| `sync.connect`, `disconnect`, `setReady` | TLS endpoint, room, accepted-name request, optional `accountAdmission: true` / disconnect / readiness |
+| `sync.admissionRequired` / `sync.admit` | Helper transport nonce / same nonce, one-use ticket and the authenticated room client-run ID; inherited pipes only |
 | `player.setPaused`, `setPosition`, `setSpeed`, `openFile` | Native player command; open uses an authorized opaque local media handle |
 | `player.state` | Actual player observation; the payload has playback fields without duplicate envelope fields |
 | `sync.connection`, `participants`, `readiness` | Engine observations; connection failure may include a sanitized typed error |

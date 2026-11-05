@@ -62,6 +62,9 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
     private let media: SharedMedia
     private let revision: String
     private let requireDeclaredIdentity: Bool
+    private let admissionProvider: (@MainActor () async throws -> SyncplayAdmission)?
+    private var admissionNonces: [String] = []
+    private var pendingAdmissionNonce: String?
     private let changed: @MainActor (HelperSessionState) -> Void
     private var fence: PlaybackActionFence
     private let commands: HelperCommands
@@ -101,12 +104,13 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
     public init(
         transport: any HelperTransport, player: any PlaybackPort, nativeScope: PlaybackScope,
         endpoint: SyncplayEndpoint, media: SharedMedia, revision: String, requireDeclaredIdentity: Bool = false,
+        admissionProvider: (@MainActor () async throws -> SyncplayAdmission)? = nil,
         changed: @escaping @MainActor (HelperSessionState) -> Void = { _ in }
     ) throws {
         let scope = try PlaybackScope.fresh().replacingMedia()
         let encoder = HelperCommands(wireScope: scope)
         _ = try encoder.connect(
-            1, host: endpoint.host, port: endpoint.port, room: endpoint.room, username: endpoint.username)
+            1, host: endpoint.host, port: endpoint.port, room: endpoint.room, username: endpoint.username, accountAdmission: admissionProvider != nil)
         _ = try encoder.loaded(
             1, handle: media.handle, name: media.name, durationMs: media.durationMs, fileSizeBytes: media.fileSizeBytes)
         guard revision.range(of: "\\A[0-9a-f]{40}\\z", options: .regularExpression) != nil, media.durationMs > 0 else {
@@ -119,6 +123,7 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
         self.media = media
         self.revision = revision
         self.requireDeclaredIdentity = requireDeclaredIdentity
+        self.admissionProvider = admissionProvider
         self.changed = changed
         wireScope = scope
         commands = encoder
@@ -245,7 +250,7 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
                 let value = try HelperJSON.object(data)
                 if value["replyTo"] as? String == "cmd-\(id)" {
                     let reply = try HelperReply.decode(
-                        data, wireScope: wireScope, commandID: id, expected: expected, expectedRevision: revision)
+                        data, wireScope: wireScope, commandID: id, expected: expected, expectedRevision: revision, requireAdmission: admissionProvider != nil)
                     if case .rejected = reply { throw HelperSessionFailure.unavailable }
                     replies.append((id, expected, reply))
                     if replies.count > 128 { replies.removeFirst() }
@@ -276,13 +281,22 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
         changed(state)
         try await request(.applied) {
             try commands.connect(
-                $0, host: endpoint.host, port: endpoint.port, room: endpoint.room, username: endpoint.username)
+                $0, host: endpoint.host, port: endpoint.port, room: endpoint.room, username: endpoint.username, accountAdmission: admissionProvider != nil)
         }
         while !closed {
             try checkOpen()
             while !inbox.isEmpty {
                 let data = inbox.removeFirst()
                 try await receive(data, HelperJSON.object(data))
+            }
+            if let nonce = pendingAdmissionNonce, let admissionProvider {
+                pendingAdmissionNonce = nil
+                deadline = .now.advanced(by: .seconds(5))
+                let credential = try await admissionProvider()
+                try checkOpen()
+                deadline = nil
+                try await request(.applied) { try commands.admit($0, nonce: nonce, authority: credential) }
+                continue
             }
             try await cancelSuperseded()
             if !users.isEmpty {
@@ -435,7 +449,7 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
         if value["replyTo"] != nil {
             guard let record = replies.first(where: { value["replyTo"] as? String == "cmd-\($0.0)" }),
                 try HelperReply.decode(
-                    data, wireScope: wireScope, commandID: record.0, expected: record.1, expectedRevision: revision)
+                    data, wireScope: wireScope, commandID: record.0, expected: record.1, expectedRevision: revision, requireAdmission: admissionProvider != nil)
                     == record.2
             else { throw HelperSessionFailure.malformed }
             return
@@ -469,6 +483,16 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
             mediaGeneration: HelperJSON.integer(value["mediaGeneration"], maximum: PlaybackScope.maximumGeneration))
         eventSequence = ordinal
         switch kind {
+        case "sync.admissionRequired":
+            try HelperJSON.keys(payload, required: ["nonce"])
+            let nonce = try text(payload["nonce"], maximum: 32)
+            guard admissionProvider != nil, pendingAdmissionNonce == nil,
+                [.connecting, .reconnecting].contains(state.connection),
+                nonce.range(of: "\\A[0-9a-f]{32}\\z", options: .regularExpression) != nil,
+                !admissionNonces.contains(nonce)
+            else { throw HelperSessionFailure.malformed }
+            if admissionNonces.count == 128 { admissionNonces.removeFirst() }
+            admissionNonces.append(nonce); pendingAdmissionNonce = nonce
         case "sync.identity":
             try HelperJSON.keys(payload, required: ["username"])
             let username = try text(payload["username"], maximum: 64)

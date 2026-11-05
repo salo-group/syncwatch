@@ -1668,5 +1668,86 @@
       }
     },
     "error": null
+  },
+  {
+    "name": "helper-admission-required",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "type": "sync.admissionRequired",
+      "id": "event-1",
+      "payload": {
+        "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "helper-admit",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "type": "sync.admit",
+      "id": "cmd-41",
+      "payload": {
+        "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ticket": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "clientRunId": "room-run"
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "helper-admit-short-ticket",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "type": "sync.admit",
+      "id": "cmd-42",
+      "payload": {
+        "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ticket": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "clientRunId": "room-run"
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "helper-admission-foreign-field",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "type": "sync.admissionRequired",
+      "id": "event-1",
+      "payload": {
+        "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "host": "untrusted"
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
   }
 ]

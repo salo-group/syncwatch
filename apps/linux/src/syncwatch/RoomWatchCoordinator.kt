@@ -133,7 +133,15 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                 val connection = current.bootstrap.connection; val remote = checkNotNull(current.definition.selection).media
                 player.connectShared(checkNotNull(transport), SyncplayEndpoint(connection.host, connection.port, connection.room, ticket.identity.syncplayUsername),
                     SharedMedia("loaded-" + UUID.randomUUID(), remote.title, checkNotNull(local.durationMs), local.fileSizeBytes),
-                    runtime.revision, requireDeclaredIdentity = true, authority = ::authorized)
+                    runtime.revision, requireDeclaredIdentity = true, authority = ::authorized,
+                    admissionProvider = if (room.accountAuthority == null) null else suspend {
+                        check(canAdmitTransport()) { "watch-revoked" }
+                        val fresh = room.watchContext(ticket)
+                        requireSameGeneration(current, fresh); requireMatch(local, fresh)
+                        val admission = room.syncTicket(ticket)
+                        check(canAdmitTransport()) { "watch-revoked" }
+                        SyncplayAdmission(admission.admissionCredential(), ticket.identity.clientRunId)
+                    })
                 transport = null
             } finally { withContext(NonCancellable + Dispatchers.IO) { transport?.close() } }
             val readyDeadline = System.nanoTime() + 20_000_000_000L
@@ -322,6 +330,12 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
     suspend fun close() = withContext(NonCancellable) {
         closing = true; accountBinding++
         accountBindingLock.withLock { stop() }
+    }
+    private fun canAdmitTransport(): Boolean {
+        val current = active ?: return false; val latest = room.watchBootstrap ?: return false
+        return authorized() && room.isCurrent(current.membership) && latest.snapshot.epoch == current.context.bootstrap.snapshot.epoch &&
+            latest.snapshot.watchGeneration == current.context.bootstrap.snapshot.watchGeneration && latest.snapshot.watchStatus == "active" &&
+            latest.snapshot.mediaId == current.context.bootstrap.snapshot.mediaId
     }
     companion object {
         fun completedPlaylistAvailable(expected: RoomSnapshot, latest: RoomSnapshot): Boolean {

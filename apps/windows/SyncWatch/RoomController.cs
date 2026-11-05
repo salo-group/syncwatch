@@ -193,6 +193,14 @@ internal sealed class RoomController
         OperationCanceledException => true,
         _ => false
     };
+    internal async Task<RoomSyncTicket> SyncTicketAsync(RoomWatchMembership membership, CancellationToken cancellation = default)
+    {
+        if (AccountAuthority is null || !IsCurrent(membership)) throw new RoomProtocolException("closed");
+        var ticket = await membership.Owner.SyncTicketAsync(cancellation);
+        cancellation.ThrowIfCancellationRequested();
+        if (AccountAuthority is null || !IsCurrent(membership)) throw new RoomProtocolException("closed");
+        return ticket;
+    }
     internal async Task<(RoomWatchMembership Membership, RoomWatchContext Context)> BeginWatchAsync(CancellationToken cancellation = default)
     {
         dispatcher.VerifyAccess();

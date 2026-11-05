@@ -13,7 +13,7 @@ sealed interface HelperReply {
     data class Rejected(val code: String, val retryable: Boolean) : HelperReply
 
     companion object {
-        fun decode(frame: ByteArray, wireScope: PlaybackScope, commandId: Long, expected: HelperReplyKind, expectedRevision: String? = null): HelperReply {
+        fun decode(frame: ByteArray, wireScope: PlaybackScope, commandId: Long, expected: HelperReplyKind, expectedRevision: String? = null, requireAdmission: Boolean = false): HelperReply {
             if (commandId !in 1..PlaybackScope.MAXIMUM_GENERATION) bad()
             val value = PlayerCorrection.frameValue(frame)
             PlayerCorrection.keys(value, setOf("v", "replyTo", "type", "clientRunId", "mediaGeneration", "payload"))
@@ -29,7 +29,9 @@ sealed interface HelperReply {
             }
             return when (expected) {
                 HelperReplyKind.ready -> {
-                    PlayerCorrection.keys(payload, setOf("syncplayRevision"))
+                    PlayerCorrection.keys(payload, setOf("syncplayRevision"), setOf("admissionVersion"))
+                    if ("admissionVersion" in payload) { if (PlayerCorrection.integer(payload["admissionVersion"], 1) != 1L) bad() }
+                    else if (requireAdmission) bad()
                     if (kind != "bridge.ready" || expectedRevision == null || !expectedRevision.matches(Regex("[0-9a-f]{40}")) || payload["syncplayRevision"] != expectedRevision) bad()
                     Ready(expectedRevision)
                 }

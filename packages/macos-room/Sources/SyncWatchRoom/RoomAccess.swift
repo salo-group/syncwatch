@@ -37,6 +37,7 @@ public struct RoomAdmissionAttempt: Sendable {
 public struct RoomSyncTicket: Sendable {
     public let credential: RoomSecret
     public let expiresIn: UInt64
+    public func admissionCredential() -> String { credential.value }
 }
 
 extension RoomAdmission {

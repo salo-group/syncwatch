@@ -9,7 +9,7 @@ import Testing
     let url = URL(filePath: path).deletingLastPathComponent().appendingPathComponent("helper-commands.json")
     let corpus = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
     let cases = try #require(corpus["cases"] as? [[String: Any]])
-    #expect(cases.count == 26)
+    #expect(cases.count == 31)
     let encoder = HelperCommands(wireScope: try PlaybackScope(clientRunID: "helper-run", mediaGeneration: 7))
     let native = try PlaybackScope(clientRunID: "native-owner", mediaGeneration: 2)
     for fixture in cases {
@@ -31,7 +31,10 @@ import Testing
             case "connect":
                 frame = try encoder.connect(
                     id, host: args["host"] as? String ?? "127.0.0.1", port: args["port"] as? Int ?? 8999,
-                    room: args["room"] as? String ?? "room", username: args["username"] as? String ?? "Viewer")
+                    room: args["room"] as? String ?? "room", username: args["username"] as? String ?? "Viewer", accountAdmission: args["accountAdmission"] as? Bool == true)
+            case "admit":
+                frame = try encoder.admit(id, nonce: args["nonce"] as? String ?? String(repeating: "a", count: 32),
+                    authority: SyncplayAdmission(credential: args["ticket"] as? String ?? String(repeating: "A", count: 64), clientRunID: args["clientRunId"] as? String ?? "room-run"))
             case "observation", "user":
                 let owner =
                     args["foreignNative"] as? Bool == true

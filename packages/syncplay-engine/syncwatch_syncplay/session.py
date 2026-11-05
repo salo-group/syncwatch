@@ -33,12 +33,13 @@ class Session(SyncplayClient):
     ownsReactor = False
     handshake_timeout = 10.0
 
-    def __init__(self, host, port, name, room, player_port, events, *, trust_roots=None):
+    def __init__(self, host, port, name, room, player_port, events, *, trust_roots=None, admission=None):
         install()
         self._owner_thread = threading.get_ident()
         if not isinstance(host, str) or not host or type(port) is not int or not 0 < port < 65536:
             raise ValueError("Invalid Syncplay endpoint")
         self.events = events
+        self.admission = admission
         certificates = [str(value).encode("ascii") for value in pem.parse_file(certifi.where())]
         # Fixtures may supply owned CA certificates, never a replacement TLS
         # context that could bypass endpoint verification or the TLS minimum.

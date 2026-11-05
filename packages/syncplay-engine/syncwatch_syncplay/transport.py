@@ -29,6 +29,7 @@ class StrictClientProtocol(SyncClientProtocol):
         super().__init__(client)
         self._phase = "new"
         self._deadline = None
+        self._cancel_admission = None
 
     def connectionMade(self):
         self._client.initProtocol(self)
@@ -45,11 +46,20 @@ class StrictClientProtocol(SyncClientProtocol):
             return
         self._phase = "failed"
         self._cancel_deadline()
+        self._clear_admission()
         self._client.transport_failed(code)
         self.abort()
 
     def handleMessages(self, messages):
-        if not isinstance(messages, dict):
+        if self._phase == "admitting":
+            expected = {"Admission": {"accepted": True, "username": self._client.getUsername(), "room": self._client.getRoom()}}
+            if messages != expected or type(messages.get("Admission", {}).get("accepted")) is not bool:
+                self._reject("admission_rejected")
+                return
+            self._phase = "secured"
+            self._cancel_deadline()
+            super().sendHello()
+        elif not isinstance(messages, dict):
             self._reject("malformed_syncplay_message")
         elif self._phase != "secured" and (self._phase != "requested" or set(messages) != {"TLS"}):
             self._reject("unauthenticated_syncplay_message")
@@ -78,12 +88,31 @@ class StrictClientProtocol(SyncClientProtocol):
         if self._phase != "secured":
             self._reject("cleartext_hello_forbidden")
             return
-        super().sendHello()
+        if self._client.admission is None:
+            super().sendHello()
+        else:
+            self._phase = "ticket"
+            self._deadline = reactor.callLater(self._client.handshake_timeout, self._reject, "admission_timeout")
+            self._cancel_admission = self._client.admission(self._admit)
+
+    def _admit(self, credential):
+        if self._phase != "ticket":
+            raise ValueError("stale admission transport")
+        self._clear_admission()
+        self._phase = "admitting"
+        self.sendMessage({"Admission": credential | {"username": self._client.getUsername(), "room": self._client.getRoom()}})
+
+    def _clear_admission(self):
+        cancel, self._cancel_admission = self._cancel_admission, None
+        if cancel is not None:
+            cancel()
 
     def connectionLost(self, reason):
+        phase, self._phase = self._phase, "lost"
         self._cancel_deadline()
+        self._clear_admission()
         super().connectionLost(reason)
-        self._client.transport_failed(loss_code(self._phase, reason))
+        self._client.transport_failed(loss_code(phase, reason))
 
 
 class StrictClientFactory(SyncClientFactory):

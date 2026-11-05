@@ -118,14 +118,14 @@ internal class PlaybackController(
         if (!closing) { sharedMediaPreparation = SharedMediaPreparation(work); requiresSharedAdmission = !releaseAdmission }
     }
     /** The room coordinator admits local media before transferring this transport. */
-    suspend fun connectShared(transport: HelperTransport, endpoint: SyncplayEndpoint, media: SharedMedia, revision: String, requireDeclaredIdentity: Boolean = false, authority: (() -> Boolean)? = null) {
+    suspend fun connectShared(transport: HelperTransport, endpoint: SyncplayEndpoint, media: SharedMedia, revision: String, requireDeclaredIdentity: Boolean = false, authority: (() -> Boolean)? = null, admissionProvider: (suspend () -> SyncplayAdmission)? = null) {
         check(EventQueue.isDispatchThread())
         try {
             check(!closing && started && sharedSession == null && authority?.invoke() != false)
             sharedAuthority = authority
             sharedMediaPreparation.validate(player, scope)
             check(!closing && started && sharedSession == null && authority?.invoke() != false)
-            val session = HelperSession(transport, player, scope, endpoint, media, revision, work, requiresSharedAdmission || requireDeclaredIdentity) { state ->
+            val session = HelperSession(transport, player, scope, endpoint, media, revision, work, requiresSharedAdmission || requireDeclaredIdentity, admissionProvider = admissionProvider) { state ->
                 if (state.connection == HelperConnection.reconnecting) checkpoint.interrupt()
                 sharedState = state; gateSharedActions()
             }
