@@ -6,6 +6,8 @@ import SyncWatchRoom
 /// Window-owned authorization, durable refresh checkpoints and independent playback lifetimes.
 @MainActor final class AccountController: ObservableObject {
     @Published var presentation = AccountPresentation()
+    @Published private(set) var roomAuthority: RoomAccountAuthority?
+    private var authorityCleanup: Task<Void, Never>?
     private let store: AccountSessionStore?
     private var saved: AccountSavedSession?
     private var memoryOnly: Bool
@@ -56,7 +58,7 @@ import SyncWatchRoom
                 guard generation == scope else { return }
                 try await checkpoint(result, owner: owner)
                 guard generation == scope else { return }
-                activate(result, owner: owner)
+                try await activate(result, owner: owner)
             } catch is CancellationError {} catch RoomProtocolFailure.rejected("accountSignInRequired") {
                 await client?.close()
                 client = nil
@@ -247,7 +249,7 @@ import SyncWatchRoom
                     return
                 }
                 self.attempt = nil
-                activate(session, owner: client)
+                try await activate(session, owner: client)
             } catch {
                 guard generation == scope else { return }
                 presentation.state = "confirmAccount"
@@ -264,6 +266,7 @@ import SyncWatchRoom
                 try await store.save(record)
             }
         } catch {
+            await roomAuthority?.unavailable()
             try? await owner.logout(session)
             try? await store?.forget()
             saved = nil
@@ -272,7 +275,18 @@ import SyncWatchRoom
         }
         saved = record
     }
-    private func activate(_ session: AccountDeviceSession, owner: AccountClient) {
+    private func activate(_ session: AccountDeviceSession, owner: AccountClient) async throws {
+        let current = generation
+        await authorityCleanup?.value
+        try Task.checkCancellation()
+        guard current == generation else { throw CancellationError() }
+        if let roomAuthority {
+            try await roomAuthority.commit(session)
+            try Task.checkCancellation()
+            guard current == generation else { throw CancellationError() }
+        } else {
+            roomAuthority = try owner.roomAuthority(session)
+        }
         device = session
         presentation.browserProof = ""
         presentation.state = "signedIn"
@@ -288,10 +302,13 @@ import SyncWatchRoom
                 do {
                     try await Task.sleep(for: .seconds(delay))
                     guard let self, let record = self.saved else { return }
+                    try await roomAuthority?.pause()
                     let result = try await owner.resume(record)
                     guard generation == scope else { return }
                     try await checkpoint(result, owner: owner)
                     guard generation == scope else { return }
+                    try await roomAuthority?.commit(result)
+                    guard generation == scope, !Task.isCancelled else { return }
                     device = result
                     delay = 480
                     presentation.status = "accountSignedIn"
@@ -302,6 +319,7 @@ import SyncWatchRoom
                     return
                 } catch RoomProtocolFailure.rejected("accountSignInRequired") {
                     guard let self else { return }
+                    dropRoomAuthority()
                     device = nil
                     saved = nil
                     await owner.close()
@@ -314,6 +332,7 @@ import SyncWatchRoom
                     return
                 } catch {
                     guard !Task.isCancelled else { return }
+                    await self?.roomAuthority?.unavailable()
                     self?.presentation.status = "accountUnavailable"
                     delay = 15
                 }
@@ -337,7 +356,9 @@ import SyncWatchRoom
             }
             presentation.status = "accountWorking"
             do {
+                try await roomAuthority?.pause()
                 try await client.logout(device)
+                dropRoomAuthority()
                 self.device = nil
                 if !memoryOnly { try await store?.forget() }
                 saved = nil
@@ -350,8 +371,10 @@ import SyncWatchRoom
                     self.client = nil
                     blockStorage()
                 } else {
-                    if generation == scope { activate(device, owner: client) }
-                    presentation.status = "accountSignOutFailed"
+                    if generation == scope {
+                        do { try await activate(device, owner: client) } catch { blockStorage(); return }
+                        presentation.status = "accountSignOutFailed"
+                    }
                 }
             }
         }
@@ -369,6 +392,8 @@ import SyncWatchRoom
     }
     func close() async {
         generation = UUID()
+        dropRoomAuthority()
+        await authorityCleanup?.value
         work?.cancel()
         refreshWork?.cancel()
         await work?.value
@@ -389,6 +414,8 @@ import SyncWatchRoom
         if attempt != nil && saved != nil && !memoryOnly { try? await store?.forget() }
         attempt = nil
         if device == nil {
+            dropRoomAuthority()
+            await authorityCleanup?.value
             await client?.close()
             client = nil
         }
@@ -400,7 +427,14 @@ import SyncWatchRoom
         presentation.service = service
         presentation.storageNotice = memoryOnly ? memoryNotice : "accountWillRemember"
     }
+    private func dropRoomAuthority() {
+        guard let previous = roomAuthority else { return }
+        roomAuthority = nil
+        let cleanup = authorityCleanup
+        authorityCleanup = Task { await cleanup?.value; await previous.close() }
+    }
     private func blockStorage() {
+        dropRoomAuthority()
         device = nil
         presentation.state = "failed"
         presentation.storageBlocked = true

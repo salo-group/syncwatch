@@ -8,6 +8,8 @@ import syncwatch.room.*
 
 /** Window-owned account work; no account failure changes movie or synchronization state. */
 internal class AccountController(private val scope: CoroutineScope, private val store: AccountSessionStore? = null) {
+    var roomAuthority: RoomAccountAuthority? = null
+        private set
     var presentation by mutableStateOf(AccountPresentation()); private set
     private var saved: AccountSavedSession? = null
     private var memoryOnly = store == null
@@ -138,6 +140,7 @@ internal class AccountController(private val scope: CoroutineScope, private val 
         val record = owner.checkpoint(session)
         try { if (!memoryOnly) requireNotNull(store).save(record) }
         catch (_: Exception) {
+            roomAuthority?.unavailable()
             try { owner.logout(session) } catch (_: Exception) { }
             try { store?.forget() } catch (_: Exception) { }
             saved = null; device = null; throw CheckpointException()
@@ -145,6 +148,7 @@ internal class AccountController(private val scope: CoroutineScope, private val 
         saved = record
     }
     private fun activate(session: AccountDeviceSession, owner: AccountClient) {
+        roomAuthority?.commit(session) ?: run { roomAuthority = owner.roomAuthority(session) }
         device = session
         presentation = presentation.copy(state = "signedIn", status = "accountSignedIn", browserProof = "", name = session.account.name,
             email = session.account.email, storageBlocked = false, storageNotice = if (memoryOnly) memoryNotice else "accountSavedOnDevice")
@@ -154,22 +158,25 @@ internal class AccountController(private val scope: CoroutineScope, private val 
             while (isActive) {
                 try {
                     delay(wait); val record = saved ?: return@launch
+                    roomAuthority?.pause()
                     val result = owner.resume(record)
                     if (generation != current) return@launch
                     checkpoint(result, owner)
                     if (generation != current) return@launch
+                    roomAuthority?.commit(result)
                     device = result; wait = 480000L; presentation = presentation.copy(status = "accountSignedIn")
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (_: CheckpointException) { owner.close(); client = null; blockStorage(); return@launch }
                 catch (error: RoomProtocolException) {
                     if (error.code == "accountSignInRequired") {
-                        device = null; saved = null
+                        dropRoomAuthority(); device = null; saved = null
                         owner.close(); client = null
                         try { if (!memoryOnly) store?.forget(); reset(); presentation = presentation.copy(status = "accountSignInRequired") }
                         catch (_: Exception) { blockStorage() }; return@launch
                     }
+                    roomAuthority?.unavailable()
                     wait = 15000; presentation = presentation.copy(status = "accountUnavailable")
-                } catch (_: Exception) { ensureActive(); wait = 15000; presentation = presentation.copy(status = "accountUnavailable") }
+                } catch (_: Exception) { ensureActive(); roomAuthority?.unavailable(); wait = 15000; presentation = presentation.copy(status = "accountUnavailable") }
             }
         }
     }
@@ -180,7 +187,7 @@ internal class AccountController(private val scope: CoroutineScope, private val 
             refresh?.cancelAndJoin(); refresh = null
             val session = device ?: run { blockStorage(); return@launch }
             presentation = presentation.copy(status = "accountWorking")
-            try { owner.logout(session); device = null; if (!memoryOnly) store?.forget(); saved = null; owner.close(); client = null; reset() }
+            try { roomAuthority?.pause(); owner.logout(session); dropRoomAuthority(); device = null; if (!memoryOnly) store?.forget(); saved = null; owner.close(); client = null; reset() }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { if (device == null) { owner.close(); client = null; blockStorage() } else { if (generation == current) activate(session, owner); presentation = presentation.copy(status = "accountSignOutFailed") } }
         }
@@ -192,7 +199,7 @@ internal class AccountController(private val scope: CoroutineScope, private val 
         }
     }
     suspend fun close() {
-        generation++; work?.cancelAndJoin(); refresh?.cancelAndJoin()
+        generation++; dropRoomAuthority(); work?.cancelAndJoin(); refresh?.cancelAndJoin()
         val owner = client; val session = device
         if (memoryOnly && owner != null && session != null) { try { owner.logout(session) } catch (_: Exception) { } }
         device = null; cancel(); saved = null; store?.close()
@@ -201,9 +208,10 @@ internal class AccountController(private val scope: CoroutineScope, private val 
         val owner = client; val signIn = attempt
         if (owner != null && signIn != null) { try { owner.cancel(signIn) } catch (_: Exception) { } }
         if (signIn != null && saved != null && !memoryOnly) { try { store?.forget() } catch (_: Exception) { } }
-        attempt = null; owner?.close(); client = null; reset()
+        dropRoomAuthority(); attempt = null; owner?.close(); client = null; reset()
     }
     private fun reset() { presentation = AccountPresentation(service = presentation.service, storageNotice = if (memoryOnly) memoryNotice else "accountWillRemember") }
-    private fun blockStorage() { device = null; presentation = presentation.copy(state = "failed", status = "accountStorageUnavailable", storageBlocked = true, storageNotice = "accountSavedUnavailable", name = "", email = "", browserProof = "") }
+    private fun dropRoomAuthority() { roomAuthority?.close(); roomAuthority = null }
+    private fun blockStorage() { dropRoomAuthority(); device = null; presentation = presentation.copy(state = "failed", status = "accountStorageUnavailable", storageBlocked = true, storageNotice = "accountSavedUnavailable", name = "", email = "", browserProof = "") }
     private fun fail() { presentation = presentation.copy(state = "failed", status = "accountFailed") }
 }

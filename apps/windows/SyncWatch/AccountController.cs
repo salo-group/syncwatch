@@ -8,6 +8,7 @@ internal sealed class AccountController
 {
     public Design.AccountPresentation Presentation { get; private set; } = new();
     public event Action? Changed;
+    public RoomAccountAuthority? RoomAuthority { get; private set; }
     private readonly AccountSessionStore? store;
     private AccountSavedSession? saved;
     private bool memoryOnly, restoring, initialized, storageWork;
@@ -159,6 +160,7 @@ internal sealed class AccountController
         try { if (!memoryOnly) await Task.Run(() => store!.Save(record)); }
         catch (Exception)
         {
+            RoomAuthority?.Unavailable();
             try { await owner.LogoutAsync(session); } catch (Exception) { }
             try { await Task.Run(() => store!.Forget()); } catch (Exception) { }
             saved = null; device = null; throw new CheckpointException();
@@ -167,6 +169,8 @@ internal sealed class AccountController
     }
     private void Activate(AccountDeviceSession session, AccountClient owner)
     {
+        if (RoomAuthority is null) RoomAuthority = owner.RoomAuthority(session);
+        else RoomAuthority.Commit(session);
         device = session; Presentation.BrowserProof = ""; Presentation.State = "signedIn"; Presentation.Status = "accountSignedIn";
         Presentation.Name = session.Account.Name; Presentation.Email = session.Account.Email; Presentation.StorageBlocked = false;
         Presentation.StorageNotice = memoryOnly ? memoryNotice : "accountSavedOnDevice"; Changed?.Invoke();
@@ -188,23 +192,25 @@ internal sealed class AccountController
             try
             {
                 await Task.Delay(delay, cancellation); if (saved is null) return;
+                RoomAuthority?.Pause();
                 AccountDeviceSession result = await owner.ResumeAsync(saved, cancellation);
                 if (generation != current) return;
                 await Checkpoint(result, owner);
                 if (generation != current) return;
+                RoomAuthority?.Commit(result);
                 device = result; delay = TimeSpan.FromMinutes(8); Presentation.Status = "accountSignedIn"; Changed?.Invoke();
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { return; }
             catch (CheckpointException) { owner.Dispose(); client = null; BlockStorage(); return; }
             catch (RoomProtocolException error) when (error.Message == "accountSignInRequired")
             {
-                device = null; saved = null;
+                DropRoomAuthority(); device = null; saved = null;
                 owner.Dispose(); client = null;
                 try { if (!memoryOnly) await Task.Run(() => store!.Forget()); Reset(); Presentation.Status = "accountSignInRequired"; Changed?.Invoke(); }
                 catch (Exception) { BlockStorage(); }
                 return;
             }
-            catch (Exception) { if (cancellation.IsCancellationRequested) return; Presentation.Status = "accountUnavailable"; Changed?.Invoke(); delay = TimeSpan.FromSeconds(15); }
+            catch (Exception) { if (cancellation.IsCancellationRequested) return; RoomAuthority?.Unavailable(); Presentation.Status = "accountUnavailable"; Changed?.Invoke(); delay = TimeSpan.FromSeconds(15); }
         }
     }
     private async Task SignOut()
@@ -214,7 +220,7 @@ internal sealed class AccountController
         long current = generation; refreshStop.Cancel(); await refresh;
         if (device is not AccountDeviceSession session) { BlockStorage(); return; }
         Presentation.Status = "accountWorking"; Changed?.Invoke();
-        try { await owner.LogoutAsync(session); device = null; if (!memoryOnly) await Task.Run(() => store!.Forget()); saved = null; owner.Dispose(); client = null; Reset(); }
+        try { RoomAuthority?.Pause(); await owner.LogoutAsync(session); DropRoomAuthority(); device = null; if (!memoryOnly) await Task.Run(() => store!.Forget()); saved = null; owner.Dispose(); client = null; Reset(); }
         catch (Exception) { if (device is null) { owner.Dispose(); client = null; BlockStorage(); } else { if (generation == current) Activate(session, owner); Presentation.Status = "accountSignOutFailed"; Changed?.Invoke(); } }
     }
     private async Task CancelAfter(Task previous) { await previous; await Cancel(); }
@@ -222,7 +228,7 @@ internal sealed class AccountController
     {
         if (attempt is AccountSignIn signIn && client is AccountClient owner) { try { await owner.CancelAsync(signIn); } catch (Exception) { } }
         if (attempt is not null && saved is not null && !memoryOnly) { try { await Task.Run(() => store!.Forget()); } catch (Exception) { } }
-        attempt = null; client?.Dispose(); client = null; Reset();
+        DropRoomAuthority(); attempt = null; client?.Dispose(); client = null; Reset();
     }
     public async Task DismissAsync()
     {
@@ -233,11 +239,12 @@ internal sealed class AccountController
     public Task CloseAsync() => closing.IsCompleted ? closing = CloseCore() : closing;
     private async Task CloseCore()
     {
-        generation++; stop.Cancel(); refreshStop.Cancel(); await work; await refresh;
+        generation++; DropRoomAuthority(); stop.Cancel(); refreshStop.Cancel(); await work; await refresh;
         if (memoryOnly && device is AccountDeviceSession session && client is AccountClient owner) { try { await owner.LogoutAsync(session); } catch (Exception) { } }
         device = null; await Cancel(); saved = null; store?.Dispose(); stop.Dispose(); refreshStop.Dispose(); stop = new(); refreshStop = new();
     }
     private void Reset() { string service = Presentation.Service; Presentation = new() { Service = service, StorageNotice = memoryOnly ? memoryNotice : "accountWillRemember" }; Changed?.Invoke(); }
-    private void BlockStorage() { device = null; Presentation.State = "failed"; Presentation.StorageBlocked = true; Presentation.Status = "accountStorageUnavailable"; Presentation.StorageNotice = "accountSavedUnavailable"; Presentation.Name = ""; Presentation.Email = ""; Presentation.BrowserProof = ""; Changed?.Invoke(); }
+    private void DropRoomAuthority() { RoomAuthority?.Dispose(); RoomAuthority = null; }
+    private void BlockStorage() { DropRoomAuthority(); device = null; Presentation.State = "failed"; Presentation.StorageBlocked = true; Presentation.Status = "accountStorageUnavailable"; Presentation.StorageNotice = "accountSavedUnavailable"; Presentation.Name = ""; Presentation.Email = ""; Presentation.BrowserProof = ""; Changed?.Invoke(); }
     private void Fail() { Presentation.State = "failed"; Presentation.Status = "accountFailed"; Changed?.Invoke(); }
 }
