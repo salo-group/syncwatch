@@ -78,6 +78,10 @@ Google identity must protect the synchronization channel too. An unguessable Syn
 
 Room revocation immediately invalidates metadata and synchronization access. Existing generation, ordering, reconnect, and media-identity checks remain mandatory. Only play, pause, seek, and movie/playlist selection affect peer playback. Neither Google account state nor call membership adds a fifth playback command.
 
+The first-party `syncwatch_syncplay.server.AdmissionFactory` implements the server protocol boundary around the pinned engine. It requires STARTTLS before an `Admission` frame, a single-use authority decision before `Hello`, and a short, renewable authority lease for the exact member, epoch, run and accepted identity. It isolates room listings, rejects room switching, controller creation, cross-user readiness, duplicate/mixed frames and private file paths before dispatch, and fails closed on revocation or authority loss. Renewal includes a transport lease identity so a delayed renewal cannot revive another connection. Upstream timing and watcher behavior remain the synchronization implementation.
+
+This boundary is a library, not a deployed authenticated service. Its runtime checks use real TLS and the pinned server with a synthetic authority; they do not qualify account authorization, native player behavior or an end-to-end room. The private service control channel, authenticated room API and all-three-desktop admission lifecycle must be connected before enabling authenticated rooms. The legacy listener must never serve as a fallback for that mode.
+
 ## One room, one associated call
 
 The server stores the room-to-call association as a separate aggregate: room ID/epoch, call generation, organizer user ID, provider space name, canonical meeting URI, verified access configuration, and provisioning state. No Google token enters room events. A fresh room gets a fresh space; the same room reuses its current space across transport reconnects. Replacing a call increments call generation independently of watch generation and requires an explicit organizer action.
