@@ -449,6 +449,25 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
         watch.end()
         status = ""
     }
+    private var accountBinding = UUID()
+    private var accountBindingWork: Task<Void, Never>?
+    func bindAccount(_ authority: RoomAccountAuthority?, name: String) async {
+        guard !closing else { return }
+        let revision = UUID()
+        accountBinding = revision
+        let previous = accountBindingWork
+        // View task cancellation must not interrupt revocation or race the next account.
+        let job = Task { [self] in
+            await previous?.value
+            guard !closing, accountBinding == revision else { return }
+            if room.accountAuthority !== authority && room.hasRoomScope { await leave() }
+            guard !closing, accountBinding == revision else { return }
+            room.bindAccount(authority, name: name)
+        }
+        accountBindingWork = job
+        await job.value
+        if accountBinding == revision { accountBindingWork = nil }
+    }
     func leave() async {
         await stop()
         await room.close()
@@ -462,7 +481,10 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
         await work?.value
     }
     func close() async {
+        accountBinding = UUID()
         closing = true
+        await accountBindingWork?.value
+        accountBindingWork = nil
         await stop()
     }
 }

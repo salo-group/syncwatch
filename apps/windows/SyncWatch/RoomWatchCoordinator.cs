@@ -351,11 +351,26 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
         }
         watch.End(); Status = ""; Changed?.Invoke();
     }
+    private long accountBinding;
+    private Task accountBindingWork = Task.CompletedTask;
+    internal Task BindAccountAsync(RoomAccountAuthority? authority, string name)
+    {
+        if (closing) return Task.CompletedTask;
+        long revision = ++accountBinding;
+        return accountBindingWork = BindAccountAfterAsync(accountBindingWork, authority, name, revision);
+    }
+    private async Task BindAccountAfterAsync(Task previous, RoomAccountAuthority? authority, string name, long revision)
+    {
+        await previous;
+        if (closing || accountBinding != revision) return;
+        if (!ReferenceEquals(room.AccountAuthority, authority) && room.HasRoomScope) await LeaveAsync();
+        if (!closing && accountBinding == revision) room.BindAccount(authority, name);
+    }
     internal async Task LeaveAsync()
     {
         await StopAsync(); await room.CloseAsync();
         if (watch.Player is { } player) await player.RevokeSharedAsync(releaseAdmission: true);
         Status = ""; seenMembership = false; Changed?.Invoke();
     }
-    internal async Task CloseAsync() { closing = true; await StopAsync(); }
+    internal async Task CloseAsync() { accountBinding++; closing = true; await accountBindingWork; await StopAsync(); }
 }

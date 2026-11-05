@@ -8,7 +8,7 @@ import syncwatch.design.LibraryPresentation
 import syncwatch.design.LibraryVisualState
 
 internal suspend fun roomPlaybackGateChecks(scope: CoroutineScope) {
-    val controller = RoomController(scope)
+    val controller = RoomController(scope, legacyValidation = true)
     controller.editor = controller.editor.selectMode("joinRoom").edit("serviceAddress", "https://rooms.example.com").edit("username", "Peer")
     val credential = "A".repeat(64)
     controller.pasteInvitation("room-paste\r\n" + credential)
@@ -40,7 +40,7 @@ private suspend fun completeCatalog(scope: CoroutineScope) {
     val address = System.getenv("SYNCWATCH_ROOM_SERVICE") ?: return
     val room = System.getenv("SYNCWATCH_CATALOG_ROOM") ?: return
     val invitation = System.getenv("SYNCWATCH_CATALOG_INVITATION") ?: return
-    val controller = RoomController(scope)
+    val controller = RoomController(scope, legacyValidation = true)
     controller.editor = controller.editor.selectMode("joinRoom").edit("serviceAddress", address)
         .edit("username", "Linux workspace catalog").edit("roomID", room).edit("invitation", invitation)
     val peer = syncwatch.room.RoomClient(syncwatch.room.RoomAddress(address))

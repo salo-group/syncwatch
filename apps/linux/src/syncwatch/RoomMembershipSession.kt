@@ -10,6 +10,10 @@ internal data class RoomWatchContext(val bootstrap: RoomBootstrap, val definitio
 
 /** One application-owned membership serializes bootstrap walks and command numbering. */
 internal class RoomMembershipSession(private val client: RoomClient, private val admission: RoomAdmission, private val identity: RoomIdentity) {
+    suspend fun invitation(): RoomInvitation = client.invite(admission)
+    suspend fun pendingAdmissions(): List<RoomAdmissionRequest> = client.pending(admission)
+    suspend fun decideAdmission(id: String, approve: Boolean) { client.decide(admission, id, approve) }
+    suspend fun syncTicket(): RoomSyncTicket = client.syncTicket(admission)
     private val gate = Mutex()
     private var minimumSequence = admission.bootstrap.snapshot.sequence
     private var number = 0L

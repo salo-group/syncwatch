@@ -8,6 +8,10 @@ internal sealed record RoomWatchContext(RoomBootstrap Bootstrap, RoomSelectionDe
 /// <summary>One application-owned membership serializes bootstrap walks and command numbering.</summary>
 internal sealed class RoomMembershipSession(RoomClient client, RoomAdmission admission, RoomIdentity identity)
 {
+    internal Task<RoomInvitation> InvitationAsync(CancellationToken cancellation = default) => client.InviteAsync(admission, cancellation);
+    internal Task<IReadOnlyList<RoomAdmissionRequest>> PendingAdmissionsAsync(CancellationToken cancellation = default) => client.PendingAsync(admission, cancellation);
+    internal Task DecideAdmissionAsync(string id, bool approve, CancellationToken cancellation = default) => client.DecideAsync(admission, id, approve, cancellation);
+    internal Task<RoomSyncTicket> SyncTicketAsync(CancellationToken cancellation = default) => client.SyncTicketAsync(admission, cancellation);
     private readonly SemaphoreSlim gate = new(1, 1);
     private long minimumSequence = admission.Bootstrap.Snapshot.Sequence;
     private long number;

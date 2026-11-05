@@ -651,6 +651,20 @@ public enum SyncWatchCopy {
             "accountSignInRequired": "Saved sign-in expired or was revoked. Sign in again.",
             "accountMemoryWithSaved": "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
             "accountUnavailable": "The account service is unavailable. Retrying…",
+            "roomAccountRequired":
+                "Sign in with Google to create a room or request admission. Local playback remains available without signing in.",
+            "roomAdmissionPending": "Waiting for the room owner to approve your request.",
+            "roomAdmissionDenied": "The owner declined this request. Ask for a new invitation to try again.",
+            "roomAdmissionExpired": "This request expired or the room closed. Ask for a new invitation.",
+            "roomRequestUnavailable":
+                "The request could not complete. Check your account and connection, or ask the owner for a new invitation.",
+            "roomApprovalRequests": "Admission requests",
+            "approveRoomAdmission": "Approve",
+            "denyRoomAdmission": "Deny",
+            "roomPendingUnavailable":
+                "Requests could not be refreshed. Approval is paused until the connection returns.",
+            "roomAdmissionChanged": "This request changed or expired. The list is being refreshed.",
+            "roomCancelRequest": "Cancel request",
         ],
         "ru": [
             "brand": "SyncWatch",
@@ -937,6 +951,19 @@ public enum SyncWatchCopy {
             "accountSignInRequired": "Сохранённый вход истёк или отозван. Войдите снова.",
             "accountMemoryWithSaved": "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
             "accountUnavailable": "Сервис аккаунтов недоступен. Повторяем попытку…",
+            "roomAccountRequired":
+                "Войдите через Google, чтобы создать комнату или запросить допуск. Локальный просмотр доступен без входа.",
+            "roomAdmissionPending": "Ожидание одобрения владельца комнаты.",
+            "roomAdmissionDenied": "Владелец отклонил запрос. Для повторной попытки попросите новое приглашение.",
+            "roomAdmissionExpired": "Срок запроса истёк или комната закрыта. Попросите новое приглашение.",
+            "roomRequestUnavailable":
+                "Не удалось завершить запрос. Проверьте аккаунт и соединение или попросите владельца выдать новое приглашение.",
+            "roomApprovalRequests": "Запросы на допуск",
+            "approveRoomAdmission": "Разрешить",
+            "denyRoomAdmission": "Отказать",
+            "roomPendingUnavailable": "Не удалось обновить запросы. Одобрение приостановлено до восстановления связи.",
+            "roomAdmissionChanged": "Запрос изменился или истёк. Список обновляется.",
+            "roomCancelRequest": "Отменить запрос",
         ],
     ]
     public static func text(_ key: String, language: String = "en") -> String {
@@ -1042,7 +1069,18 @@ public struct SyncWatchRoomFormField: Sendable {
 
 public enum SyncWatchRoomForm {
     public static let sections = ["connection", "createRoom", "joinRoom"]
-    public static let states = ["disconnected", "connecting", "connected", "failed"]
+    public static let states = ["disconnected", "connecting", "connected", "failed", "reconnecting", "awaitingApproval"]
+    public static let defaultFlow = "account"
+    public static let flows: [String: [String]] = [
+        "legacy": ["serviceAddress", "username", "creationKey", "syncplayHost", "syncplayPort", "roomName", "roomID", "invitation"],
+        "account": ["roomID", "invitation"],
+    ]
+    public static let signInFlows = ["account"]
+    public static let statusCopy: [String: String] = [
+        "connecting": "roomConnecting",
+        "reconnecting": "reconnecting",
+        "awaitingApproval": "roomAdmissionPending",
+    ]
     public static let defaults: [String: String] = [
         "serviceAddress": "",
         "username": "",
@@ -2233,7 +2271,7 @@ public enum SyncWatchSelectionMenu {
 }
 
 public enum SyncWatchLayouts {
-    public static let sourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1"
+    public static let sourceDigest = "db6545b5a8fe74d2ee6db27411c14069bcba1f57902087f695d2111e4d0ccaa9"
     public static let coordinateSize = 20.0
     public static func themeColor(_ role: String, theme: SyncWatchTheme) -> Color? {
         switch role {
@@ -8806,6 +8844,105 @@ public enum SyncWatchLayouts {
                 "text": "~roomConnectionHint",
             ],
             children: [])
+        let roomAccountRequiredText = DesignNode(
+            id: "roomAccountRequiredText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~roomAccountRequired",
+            ],
+            children: [])
+        let roomAccountSignInLabel = DesignNode(
+            id: "roomAccountSignInLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountSignIn",
+            ],
+            children: [])
+        let roomAccountSignIn = DesignNode(
+            id: "roomAccountSignIn", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "openAccount",
+                "automation": "{namespace}.openAccount",
+                "enabled": "$can.openAccount",
+                "label": "~accountSignIn",
+            ],
+            children: [roomAccountSignInLabel])
+        let roomAccountRequired = DesignNode(
+            id: "roomAccountRequired", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "when": "$needsAccount",
+                "gap": "@control.compactGap",
+            ],
+            children: [roomAccountRequiredText, roomAccountSignIn])
+        let roomAccountName = DesignNode(
+            id: "roomAccountName", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{~openAccount}: {accountName}",
+            ],
+            children: [])
+        let roomAccountService = DesignNode(
+            id: "roomAccountService", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{~roomService}: {accountService}",
+            ],
+            children: [])
+        let roomAccountIdentity = DesignNode(
+            id: "roomAccountIdentity", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "when": "$showAccountIdentity",
+                "gap": "@control.compactGap",
+            ],
+            children: [roomAccountName, roomAccountService])
         let roomCreateModeLabel = DesignNode(
             id: "roomCreateModeLabel", kind: "text",
             props: [
@@ -9009,6 +9146,179 @@ public enum SyncWatchLayouts {
                 "gap": "@control.compactGap",
             ],
             children: [roomConnectedLabel, roomIdFact, roomMembersFact])
+        let roomPendingHeading = DesignNode(
+            id: "roomPendingHeading", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~roomApprovalRequests",
+            ],
+            children: [])
+        let roomPendingName = DesignNode(
+            id: "roomPendingName", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{name}",
+            ],
+            children: [])
+        let roomPendingEmail = DesignNode(
+            id: "roomPendingEmail", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{email}",
+            ],
+            children: [])
+        let roomPendingPerson = DesignNode(
+            id: "roomPendingPerson", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "width": "fill",
+                "gap": "@control.compactGap",
+            ],
+            children: [roomPendingName, roomPendingEmail])
+        let roomApproveAdmissionLabel = DesignNode(
+            id: "roomApproveAdmissionLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~approveRoomAdmission",
+            ],
+            children: [])
+        let roomApproveAdmission = DesignNode(
+            id: "roomApproveAdmission", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "approveRoomAdmission",
+                "automation": "{namespace}.approveRoomAdmission.{requestID}",
+                "enabled": "$can.decide",
+                "label": "{~approveRoomAdmission}: {name}",
+                "payload": "$requestID",
+            ],
+            children: [roomApproveAdmissionLabel])
+        let roomDenyAdmissionLabel = DesignNode(
+            id: "roomDenyAdmissionLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~denyRoomAdmission",
+            ],
+            children: [])
+        let roomDenyAdmission = DesignNode(
+            id: "roomDenyAdmission", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "denyRoomAdmission",
+                "automation": "{namespace}.denyRoomAdmission.{requestID}",
+                "enabled": "$can.decide",
+                "label": "{~denyRoomAdmission}: {name}",
+                "payload": "$requestID",
+            ],
+            children: [roomDenyAdmissionLabel])
+        let roomPendingRow = DesignNode(
+            id: "roomPendingRow", kind: "row",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "gap": "@control.compactGap",
+                "paddingY": "@control.compactGap",
+            ],
+            children: [roomPendingPerson, roomApproveAdmission, roomDenyAdmission])
+        let roomPendingRows = DesignNode(
+            id: "roomPendingRows", kind: "repeat",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "items": "pendingRequests",
+            ],
+            children: [roomPendingRow])
+        let roomPendingStatus = DesignNode(
+            id: "roomPendingStatus", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~{pendingStatus}",
+            ],
+            children: [])
+        let roomPendingRequests = DesignNode(
+            id: "roomPendingRequests", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "when": "$showPendingRequests",
+                "gap": "@control.compactGap",
+            ],
+            children: [roomPendingHeading, roomPendingRows, roomPendingStatus])
         let roomStatus = DesignNode(
             id: "roomStatus", kind: "text",
             props: [
@@ -9033,7 +9343,16 @@ public enum SyncWatchLayouts {
                 "padding": "@layout.settingsCardPadding",
                 "gap": "@layout.settingsCardPadding",
             ],
-            children: [roomHint, roomModeSelector, roomFields, roomConnectedFacts, roomStatus])
+            children: [
+                roomHint,
+                roomAccountRequired,
+                roomAccountIdentity,
+                roomModeSelector,
+                roomFields,
+                roomConnectedFacts,
+                roomPendingRequests,
+                roomStatus,
+            ])
         let roomBody = DesignNode(
             id: "roomBody", kind: "scroll",
             props: [
@@ -9175,6 +9494,44 @@ public enum SyncWatchLayouts {
                 "when": "$can.leaveRoom",
             ],
             children: [roomLeaveLabel])
+        let roomCancelAdmissionLabel = DesignNode(
+            id: "roomCancelAdmissionLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~roomCancelRequest",
+            ],
+            children: [])
+        let roomCancelAdmission = DesignNode(
+            id: "roomCancelAdmission", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "leaveRoom",
+                "automation": "{namespace}.leaveRoom",
+                "enabled": "$can.cancelRequest",
+                "label": "~roomCancelRequest",
+                "when": "$can.cancelRequest",
+            ],
+            children: [roomCancelAdmissionLabel])
         let roomConnectLabel = DesignNode(
             id: "roomConnectLabel", kind: "text",
             props: [
@@ -9225,7 +9582,7 @@ public enum SyncWatchLayouts {
                 "padding": "@layout.settingsCardPadding",
                 "gap": "@control.compactGap",
             ],
-            children: [roomFooterSpace, roomPaste, roomCopy, roomLeave, roomConnect])
+            children: [roomFooterSpace, roomPaste, roomCopy, roomLeave, roomCancelAdmission, roomConnect])
         let roomDialog = DesignNode(
             id: "roomDialog", kind: "column",
             props: [

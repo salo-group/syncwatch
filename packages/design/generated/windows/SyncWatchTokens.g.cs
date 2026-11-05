@@ -638,6 +638,17 @@ public static class SyncWatchCopy
         ("en", "accountSignInRequired") => "Saved sign-in expired or was revoked. Sign in again.",
         ("en", "accountMemoryWithSaved") => "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
         ("en", "accountUnavailable") => "The account service is unavailable. Retrying…",
+        ("en", "roomAccountRequired") => "Sign in with Google to create a room or request admission. Local playback remains available without signing in.",
+        ("en", "roomAdmissionPending") => "Waiting for the room owner to approve your request.",
+        ("en", "roomAdmissionDenied") => "The owner declined this request. Ask for a new invitation to try again.",
+        ("en", "roomAdmissionExpired") => "This request expired or the room closed. Ask for a new invitation.",
+        ("en", "roomRequestUnavailable") => "The request could not complete. Check your account and connection, or ask the owner for a new invitation.",
+        ("en", "roomApprovalRequests") => "Admission requests",
+        ("en", "approveRoomAdmission") => "Approve",
+        ("en", "denyRoomAdmission") => "Deny",
+        ("en", "roomPendingUnavailable") => "Requests could not be refreshed. Approval is paused until the connection returns.",
+        ("en", "roomAdmissionChanged") => "This request changed or expired. The list is being refreshed.",
+        ("en", "roomCancelRequest") => "Cancel request",
         ("ru", "brand") => "SyncWatch",
         ("ru", "room") => "Смотрим вместе",
         ("ru", "library") => "Библиотека фильмов",
@@ -912,6 +923,17 @@ public static class SyncWatchCopy
         ("ru", "accountSignInRequired") => "Сохранённый вход истёк или отозван. Войдите снова.",
         ("ru", "accountMemoryWithSaved") => "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
         ("ru", "accountUnavailable") => "Сервис аккаунтов недоступен. Повторяем попытку…",
+        ("ru", "roomAccountRequired") => "Войдите через Google, чтобы создать комнату или запросить допуск. Локальный просмотр доступен без входа.",
+        ("ru", "roomAdmissionPending") => "Ожидание одобрения владельца комнаты.",
+        ("ru", "roomAdmissionDenied") => "Владелец отклонил запрос. Для повторной попытки попросите новое приглашение.",
+        ("ru", "roomAdmissionExpired") => "Срок запроса истёк или комната закрыта. Попросите новое приглашение.",
+        ("ru", "roomRequestUnavailable") => "Не удалось завершить запрос. Проверьте аккаунт и соединение или попросите владельца выдать новое приглашение.",
+        ("ru", "roomApprovalRequests") => "Запросы на допуск",
+        ("ru", "approveRoomAdmission") => "Разрешить",
+        ("ru", "denyRoomAdmission") => "Отказать",
+        ("ru", "roomPendingUnavailable") => "Не удалось обновить запросы. Одобрение приостановлено до восстановления связи.",
+        ("ru", "roomAdmissionChanged") => "Запрос изменился или истёк. Список обновляется.",
+        ("ru", "roomCancelRequest") => "Отменить запрос",
         _ when language != "en" => Text(key, "en"),
         _ => key,
     };
@@ -963,7 +985,20 @@ public sealed record SyncWatchRoomFormField(string Id, string Section, string Ki
 public static class SyncWatchRoomForm
 {
     public static string[] Sections => ["connection", "createRoom", "joinRoom"];
-    public static string[] States => ["disconnected", "connecting", "connected", "failed"];
+    public static string[] States => ["disconnected", "connecting", "connected", "failed", "reconnecting", "awaitingApproval"];
+    public const string DefaultFlow = "account";
+    public static System.Collections.Generic.IReadOnlyDictionary<string, string[]> Flows => new System.Collections.Generic.Dictionary<string, string[]>
+    {
+        ["legacy"] = ["serviceAddress", "username", "creationKey", "syncplayHost", "syncplayPort", "roomName", "roomID", "invitation"],
+        ["account"] = ["roomID", "invitation"],
+    };
+    public static string[] SignInFlows => ["account"];
+    public static System.Collections.Generic.IReadOnlyDictionary<string, string> StatusCopy => new System.Collections.Generic.Dictionary<string, string>
+    {
+        ["connecting"] = "roomConnecting",
+        ["reconnecting"] = "reconnecting",
+        ["awaitingApproval"] = "roomAdmissionPending",
+    };
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults => new System.Collections.Generic.Dictionary<string, string>
     {
         ["serviceAddress"] = "",
@@ -1143,7 +1178,7 @@ public static class SyncWatchSelectionMenu
 
 public static class SyncWatchLayouts
 {
-    public const string SourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1";
+    public const string SourceDigest = "db6545b5a8fe74d2ee6db27411c14069bcba1f57902087f695d2111e4d0ccaa9";
     public const double CoordinateSize = 20;
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults { get; } = new System.Collections.Generic.Dictionary<string, string>
     {
@@ -6124,6 +6159,91 @@ public static class SyncWatchLayouts
             ["align"] = "leading",
             ["text"] = "~roomConnectionHint",
         }, []);
+        var roomAccountRequiredText = new DesignNode("roomAccountRequiredText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~roomAccountRequired",
+        }, []);
+        var roomAccountSignInLabel = new DesignNode("roomAccountSignInLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountSignIn",
+        }, []);
+        var roomAccountSignIn = new DesignNode("roomAccountSignIn", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "openAccount",
+            ["automation"] = "{namespace}.openAccount",
+            ["enabled"] = "$can.openAccount",
+            ["label"] = "~accountSignIn",
+        }, [roomAccountSignInLabel]);
+        var roomAccountRequired = new DesignNode("roomAccountRequired", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["when"] = "$needsAccount",
+            ["gap"] = "@control.compactGap",
+        }, [roomAccountRequiredText, roomAccountSignIn]);
+        var roomAccountName = new DesignNode("roomAccountName", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{~openAccount}: {accountName}",
+        }, []);
+        var roomAccountService = new DesignNode("roomAccountService", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{~roomService}: {accountService}",
+        }, []);
+        var roomAccountIdentity = new DesignNode("roomAccountIdentity", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["when"] = "$showAccountIdentity",
+            ["gap"] = "@control.compactGap",
+        }, [roomAccountName, roomAccountService]);
         var roomCreateModeLabel = new DesignNode("roomCreateModeLabel", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6301,6 +6421,155 @@ public static class SyncWatchLayouts
             ["when"] = "$connected",
             ["gap"] = "@control.compactGap",
         }, [roomConnectedLabel, roomIdFact, roomMembersFact]);
+        var roomPendingHeading = new DesignNode("roomPendingHeading", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~roomApprovalRequests",
+        }, []);
+        var roomPendingName = new DesignNode("roomPendingName", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{name}",
+        }, []);
+        var roomPendingEmail = new DesignNode("roomPendingEmail", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{email}",
+        }, []);
+        var roomPendingPerson = new DesignNode("roomPendingPerson", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["width"] = "fill",
+            ["gap"] = "@control.compactGap",
+        }, [roomPendingName, roomPendingEmail]);
+        var roomApproveAdmissionLabel = new DesignNode("roomApproveAdmissionLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~approveRoomAdmission",
+        }, []);
+        var roomApproveAdmission = new DesignNode("roomApproveAdmission", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "approveRoomAdmission",
+            ["automation"] = "{namespace}.approveRoomAdmission.{requestID}",
+            ["enabled"] = "$can.decide",
+            ["label"] = "{~approveRoomAdmission}: {name}",
+            ["payload"] = "$requestID",
+        }, [roomApproveAdmissionLabel]);
+        var roomDenyAdmissionLabel = new DesignNode("roomDenyAdmissionLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~denyRoomAdmission",
+        }, []);
+        var roomDenyAdmission = new DesignNode("roomDenyAdmission", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "denyRoomAdmission",
+            ["automation"] = "{namespace}.denyRoomAdmission.{requestID}",
+            ["enabled"] = "$can.decide",
+            ["label"] = "{~denyRoomAdmission}: {name}",
+            ["payload"] = "$requestID",
+        }, [roomDenyAdmissionLabel]);
+        var roomPendingRow = new DesignNode("roomPendingRow", "row", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["gap"] = "@control.compactGap",
+            ["paddingY"] = "@control.compactGap",
+        }, [roomPendingPerson, roomApproveAdmission, roomDenyAdmission]);
+        var roomPendingRows = new DesignNode("roomPendingRows", "repeat", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["items"] = "pendingRequests",
+        }, [roomPendingRow]);
+        var roomPendingStatus = new DesignNode("roomPendingStatus", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~{pendingStatus}",
+        }, []);
+        var roomPendingRequests = new DesignNode("roomPendingRequests", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["when"] = "$showPendingRequests",
+            ["gap"] = "@control.compactGap",
+        }, [roomPendingHeading, roomPendingRows, roomPendingStatus]);
         var roomStatus = new DesignNode("roomStatus", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6321,7 +6590,7 @@ public static class SyncWatchLayouts
             ["align"] = "leading",
             ["padding"] = "@layout.settingsCardPadding",
             ["gap"] = "@layout.settingsCardPadding",
-        }, [roomHint, roomModeSelector, roomFields, roomConnectedFacts, roomStatus]);
+        }, [roomHint, roomAccountRequired, roomAccountIdentity, roomModeSelector, roomFields, roomConnectedFacts, roomPendingRequests, roomStatus]);
         var roomBody = new DesignNode("roomBody", "scroll", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6447,6 +6716,40 @@ public static class SyncWatchLayouts
             ["label"] = "~leaveRoom",
             ["when"] = "$can.leaveRoom",
         }, [roomLeaveLabel]);
+        var roomCancelAdmissionLabel = new DesignNode("roomCancelAdmissionLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~roomCancelRequest",
+        }, []);
+        var roomCancelAdmission = new DesignNode("roomCancelAdmission", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "leaveRoom",
+            ["automation"] = "{namespace}.leaveRoom",
+            ["enabled"] = "$can.cancelRequest",
+            ["label"] = "~roomCancelRequest",
+            ["when"] = "$can.cancelRequest",
+        }, [roomCancelAdmissionLabel]);
         var roomConnectLabel = new DesignNode("roomConnectLabel", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6491,7 +6794,7 @@ public static class SyncWatchLayouts
             ["focusWidth"] = "@control.borderWidth",
             ["padding"] = "@layout.settingsCardPadding",
             ["gap"] = "@control.compactGap",
-        }, [roomFooterSpace, roomPaste, roomCopy, roomLeave, roomConnect]);
+        }, [roomFooterSpace, roomPaste, roomCopy, roomLeave, roomCancelAdmission, roomConnect]);
         var roomDialog = new DesignNode("roomDialog", "column", new()
         {
             ["disabledOpacity"] = "0.4",

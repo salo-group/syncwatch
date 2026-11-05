@@ -3,6 +3,8 @@ package syncwatch
 import androidx.compose.runtime.*
 import java.util.UUID
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import syncwatch.bridge.*
 import syncwatch.design.*
 import syncwatch.library.LocalMediaFile
@@ -299,11 +301,28 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
         }
         watch.end(); status = ""
     }
+    private var accountBinding = 0L
+    private val accountBindingLock = Mutex()
+    suspend fun bindAccount(authority: RoomAccountAuthority?, name: String) {
+        if (closing) return
+        val revision = ++accountBinding
+        // Compose may cancel the caller when its account key changes. Finish owned revocation first.
+        withContext(NonCancellable) {
+            accountBindingLock.withLock {
+                if (closing || accountBinding != revision) return@withLock
+                if (room.accountAuthority !== authority && room.hasRoomScope) leave()
+                if (!closing && accountBinding == revision) room.bindAccount(authority, name)
+            }
+        }
+    }
     suspend fun leave() {
         stop(); room.close(); watch.player?.revokeShared(releaseAdmission = true)
         status = ""; seenMembership = false
     }
-    suspend fun close() = withContext(NonCancellable) { closing = true; stop() }
+    suspend fun close() = withContext(NonCancellable) {
+        closing = true; accountBinding++
+        accountBindingLock.withLock { stop() }
+    }
     companion object {
         fun completedPlaylistAvailable(expected: RoomSnapshot, latest: RoomSnapshot): Boolean {
             if (expected.epoch != latest.epoch || expected.watchStatus != "active" || expected.mediaId == null || expected.mediaId != latest.mediaId) return false

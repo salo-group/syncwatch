@@ -13,17 +13,19 @@ internal sealed class ApplicationWorkspace : UserControl
     private readonly Design.LibraryWorkspace library = new();
     private readonly LibraryController catalog;
     private readonly WatchSessionCoordinator watch;
-    private readonly RoomController room = new();
+    private readonly RoomController room;
     private readonly AccountController account;
     private readonly RoomWatchCoordinator shared;
     private readonly Design.ApplicationChrome chrome;
-    private bool started;
+    private bool started, closing;
+    private Task accountBinding = Task.CompletedTask;
 
     public ApplicationWorkspace(Window owner, App application)
     {
         this.owner = owner; this.application = application;
         preferences = application.Preferences!;
         account = new AccountController(Path.GetDirectoryName(application.StatePath)!);
+        room = new RoomController(accountSource: () => account.RoomAuthority);
         catalog = new LibraryController(new Library.FileLibraryAccessStore(
             Path.Combine(Path.GetDirectoryName(application.StatePath)!, "library-access.json")), Dispatcher, preferences.State.SelectedMediaId, new LibraryMetadataReader(application.Media!));
         catalog.ConfigureOptions(preferences.State.Preferences.ScanSubfolders, preferences.State.Preferences.AutomaticRefresh);
@@ -35,7 +37,7 @@ internal sealed class ApplicationWorkspace : UserControl
         watch.OnEndWatching = async () => await shared.EndAsync();
         chrome = new Design.ApplicationChrome(library); Content = chrome;
         catalog.Changed += Refresh; watch.Changed += Refresh; room.Changed += Refresh;
-        account.Changed += Refresh;
+        account.Changed += AccountChanged;
         shared.Changed += Refresh;
         library.ActionRequested += Action;
         library.SelectionRequested += catalog.SelectTrack; library.SelectionDismissed += catalog.DismissTracks;
@@ -48,7 +50,18 @@ internal sealed class ApplicationWorkspace : UserControl
         };
         Refresh();
     }
-    public async Task CloseAsync() { await account.CloseAsync(); await shared.CloseAsync(); await watch.CloseAsync(); await room.CloseAsync(); await catalog.CloseAsync(); }
+    public async Task CloseAsync()
+    {
+        closing = true; await accountBinding;
+        await shared.CloseAsync(); await watch.CloseAsync(); await room.CloseAsync(); await account.CloseAsync(); await catalog.CloseAsync();
+    }
+    private void AccountChanged()
+    {
+        if (closing) return;
+        var authority = account.RoomAuthority;
+        accountBinding = shared.BindAccountAsync(authority, account.Presentation.Name);
+        Refresh();
+    }
     private void Refresh()
     {
         room.UpdateLibrary(catalog.RoomRevision, () => catalog.RoomFiles);
@@ -85,10 +98,10 @@ internal sealed class ApplicationWorkspace : UserControl
         else if (action == "openAccount") OpenAccount();
         else if (action == "openSettings") OpenSettings();
     }
-    private void OpenAccount()
+    private void OpenAccount(Window? parent = null)
     {
         if (account.Presentation.Service.Length == 0) account.Presentation.Service = room.Editor.Values.GetValueOrDefault("serviceAddress", "");
-        var view = new Design.AccountDialog(); var window = CreateDialog(view); bool released = false;
+        var view = new Design.AccountDialog(); var window = CreateDialog(view); if (parent is not null) window.Owner = parent; bool released = false;
         void Render() => view.Render(account.Presentation, preferences.State.Preferences.Language);
         account.Changed += Render;
         view.ActionRequested += async (action, value) =>
@@ -109,21 +122,27 @@ internal sealed class ApplicationWorkspace : UserControl
         var view = new Design.RoomDialog(room.Editor, preferences.State.Preferences.Language);
         var window = CreateDialog(view); bool released = false;
         room.Changed += view.Refresh;
+        view.AdmissionDecisionRequested += room.DecideAdmission;
         view.ActionRequested += async action =>
         {
             if (action == "connectRoom") room.Connect();
+            else if (action == "openAccount") OpenAccount(window);
             else if (action == "leaveRoom") await shared.LeaveAsync();
             else if (action == "pasteInvitation")
             {
                 try { room.PasteInvitation(Clipboard.GetText()); }
                 catch (System.Runtime.InteropServices.ExternalException) { room.PasteInvitation(""); }
             }
-            else if (action == "copyInvitation" && room.InvitationToCopy() is string invitation)
+            else if (action == "copyInvitation")
             {
-                bool copied;
-                try { Clipboard.SetText(invitation); copied = true; }
-                catch (System.Runtime.InteropServices.ExternalException) { copied = false; }
-                room.InvitationCopyCompleted(copied);
+                var transfer = await room.InvitationForCopyAsync();
+                if (transfer is not null && room.CanCopy(transfer))
+                {
+                    bool copied;
+                    try { Clipboard.SetText(transfer.Invitation.CopyText()); copied = true; }
+                    catch (System.Runtime.InteropServices.ExternalException) { copied = false; }
+                    room.InvitationCopyCompleted(copied, transfer);
+                }
             }
             else if (action == "close") { if (room.Editor.Busy) await room.CloseAsync(); released = true; window.Close(); }
         };

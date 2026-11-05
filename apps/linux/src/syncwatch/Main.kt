@@ -145,8 +145,12 @@ fun main(arguments: Array<String>) {
             library.clearError(); watch.clearError(); shared.clearError()
         }
     }
+    LaunchedEffect(account.roomAuthority, account.presentation.name) {
+        shared.bindAccount(account.roomAuthority, account.presentation.name)
+    }
+    var accountFromRoom by remember { mutableStateOf(false) }
     if (accountOpen) {
-        fun closeAccount() { roomWork.launch { account.dismiss(); accountOpen = false } }
+        fun closeAccount() { roomWork.launch { account.dismiss(); accountOpen = false; if (accountFromRoom) { accountFromRoom = false; roomOpen = true } } }
         DialogWindow(onCloseRequest = ::closeAccount, title = SyncWatchCopy.text("openAccount", language),
             state = rememberDialogState(width = SyncWatchTokens.layoutSettingsWidth.dp, height = SyncWatchTokens.layoutSettingsHeight.dp)) {
             AccountDialog(account.presentation, language, theme) { action, value ->
@@ -158,17 +162,21 @@ fun main(arguments: Array<String>) {
         fun closeDialog() { if (room.editor.busy) roomWork.launch { room.close(); roomOpen = false } else { room.editor = room.editor.clearSecrets(); roomOpen = false } }
         DialogWindow(onCloseRequest = ::closeDialog, title = SyncWatchCopy.text("openRoom", language),
             state = rememberDialogState(width = SyncWatchTokens.layoutSettingsWidth.dp, height = SyncWatchTokens.layoutSettingsHeight.dp)) {
-            RoomDialog(room.editor, { room.editor = it }, language, theme) { action -> when (action) {
+            RoomDialog(room.editor, { room.editor = it }, language, theme, onAdmissionDecision = room::decideAdmission) { action -> when (action) {
                 "connectRoom" -> room.connect()
+                "openAccount" -> { room.editor = room.editor.clearSecrets(); roomOpen = false; accountFromRoom = true; accountOpen = true }
                 "leaveRoom" -> roomWork.launch { shared.leave() }
                 "pasteInvitation" -> room.pasteInvitation(runCatching {
                     java.awt.Toolkit.getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String
                 }.getOrNull() ?: "")
-                "copyInvitation" -> room.invitationToCopy()?.let { value ->
-                    val copied = try { java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(value), null); true }
-                        catch (_: IllegalStateException) { false }
-                        catch (_: SecurityException) { false }
-                    room.invitationCopyCompleted(copied)
+                "copyInvitation" -> roomWork.launch {
+                    val transfer = room.invitationForCopy()
+                    if (transfer != null && room.canCopy(transfer)) {
+                        val copied = try { java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(transfer.invitation.copyText()), null); true }
+                            catch (_: IllegalStateException) { false }
+                            catch (_: SecurityException) { false }
+                        room.invitationCopyCompleted(copied, transfer)
+                    }
                 }
                 "close" -> closeDialog()
             } }

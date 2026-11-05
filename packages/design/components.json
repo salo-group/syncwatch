@@ -246,7 +246,9 @@
         "disconnected",
         "connecting",
         "connected",
-        "failed"
+        "failed",
+        "reconnecting",
+        "awaitingApproval"
       ],
       "actions": [
         "chooseRoomMode",
@@ -254,7 +256,11 @@
         "connectRoom",
         "leaveRoom",
         "copyInvitation",
-        "close"
+        "close",
+        "pasteInvitation",
+        "openAccount",
+        "approveRoomAdmission",
+        "denyRoomAdmission"
       ]
     },
     "Account": {

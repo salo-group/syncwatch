@@ -467,6 +467,17 @@ object SyncWatchCopy {
         "en" to "accountSignInRequired" -> "Saved sign-in expired or was revoked. Sign in again."
         "en" to "accountMemoryWithSaved" -> "This sign-in stays in memory. Any previous saved sign-in remains unchanged."
         "en" to "accountUnavailable" -> "The account service is unavailable. Retrying…"
+        "en" to "roomAccountRequired" -> "Sign in with Google to create a room or request admission. Local playback remains available without signing in."
+        "en" to "roomAdmissionPending" -> "Waiting for the room owner to approve your request."
+        "en" to "roomAdmissionDenied" -> "The owner declined this request. Ask for a new invitation to try again."
+        "en" to "roomAdmissionExpired" -> "This request expired or the room closed. Ask for a new invitation."
+        "en" to "roomRequestUnavailable" -> "The request could not complete. Check your account and connection, or ask the owner for a new invitation."
+        "en" to "roomApprovalRequests" -> "Admission requests"
+        "en" to "approveRoomAdmission" -> "Approve"
+        "en" to "denyRoomAdmission" -> "Deny"
+        "en" to "roomPendingUnavailable" -> "Requests could not be refreshed. Approval is paused until the connection returns."
+        "en" to "roomAdmissionChanged" -> "This request changed or expired. The list is being refreshed."
+        "en" to "roomCancelRequest" -> "Cancel request"
         "ru" to "brand" -> "SyncWatch"
         "ru" to "room" -> "Смотрим вместе"
         "ru" to "library" -> "Библиотека фильмов"
@@ -741,6 +752,17 @@ object SyncWatchCopy {
         "ru" to "accountSignInRequired" -> "Сохранённый вход истёк или отозван. Войдите снова."
         "ru" to "accountMemoryWithSaved" -> "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений."
         "ru" to "accountUnavailable" -> "Сервис аккаунтов недоступен. Повторяем попытку…"
+        "ru" to "roomAccountRequired" -> "Войдите через Google, чтобы создать комнату или запросить допуск. Локальный просмотр доступен без входа."
+        "ru" to "roomAdmissionPending" -> "Ожидание одобрения владельца комнаты."
+        "ru" to "roomAdmissionDenied" -> "Владелец отклонил запрос. Для повторной попытки попросите новое приглашение."
+        "ru" to "roomAdmissionExpired" -> "Срок запроса истёк или комната закрыта. Попросите новое приглашение."
+        "ru" to "roomRequestUnavailable" -> "Не удалось завершить запрос. Проверьте аккаунт и соединение или попросите владельца выдать новое приглашение."
+        "ru" to "roomApprovalRequests" -> "Запросы на допуск"
+        "ru" to "approveRoomAdmission" -> "Разрешить"
+        "ru" to "denyRoomAdmission" -> "Отказать"
+        "ru" to "roomPendingUnavailable" -> "Не удалось обновить запросы. Одобрение приостановлено до восстановления связи."
+        "ru" to "roomAdmissionChanged" -> "Запрос изменился или истёк. Список обновляется."
+        "ru" to "roomCancelRequest" -> "Отменить запрос"
         else -> if (language != "en") text(key, "en") else key
     }
     val galleryStates = listOf("empty", "scanning", "selected", "missingMedia", "reconnecting")
@@ -787,7 +809,18 @@ data class SyncWatchRoomFormField(val id: String, val section: String, val kind:
 
 object SyncWatchRoomForm {
     val sections = listOf("connection", "createRoom", "joinRoom")
-    val states = listOf("disconnected", "connecting", "connected", "failed")
+    val states = listOf("disconnected", "connecting", "connected", "failed", "reconnecting", "awaitingApproval")
+    const val defaultFlow = "account"
+    val flows = mapOf(
+        "legacy" to listOf("serviceAddress", "username", "creationKey", "syncplayHost", "syncplayPort", "roomName", "roomID", "invitation"),
+        "account" to listOf("roomID", "invitation"),
+    )
+    val signInFlows = listOf("account")
+    val statusCopy = mapOf(
+        "connecting" to "roomConnecting",
+        "reconnecting" to "reconnecting",
+        "awaitingApproval" to "roomAdmissionPending",
+    )
     val defaults = mapOf(
         "serviceAddress" to "",
         "username" to "",
@@ -955,7 +988,7 @@ object SyncWatchSelectionMenu {
 }
 
 object SyncWatchLayouts {
-    const val sourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1"
+    const val sourceDigest = "db6545b5a8fe74d2ee6db27411c14069bcba1f57902087f695d2111e4d0ccaa9"
     const val coordinateSize = 20.0f
     fun themeColor(role: String, theme: SyncWatchTheme): Long? = when (role) {
         "background" -> theme.background
@@ -5581,6 +5614,84 @@ object SyncWatchLayouts {
             "align" to "leading",
             "text" to "~roomConnectionHint",
         ), listOf())
+        val roomAccountRequiredText = DesignNode("roomAccountRequiredText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~roomAccountRequired",
+        ), listOf())
+        val roomAccountSignInLabel = DesignNode("roomAccountSignInLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountSignIn",
+        ), listOf())
+        val roomAccountSignIn = DesignNode("roomAccountSignIn", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "openAccount",
+            "automation" to "{namespace}.openAccount",
+            "enabled" to "\$can.openAccount",
+            "label" to "~accountSignIn",
+        ), listOf(roomAccountSignInLabel))
+        val roomAccountRequired = DesignNode("roomAccountRequired", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "when" to "\$needsAccount",
+            "gap" to "@control.compactGap",
+        ), listOf(roomAccountRequiredText, roomAccountSignIn))
+        val roomAccountName = DesignNode("roomAccountName", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{~openAccount}: {accountName}",
+        ), listOf())
+        val roomAccountService = DesignNode("roomAccountService", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{~roomService}: {accountService}",
+        ), listOf())
+        val roomAccountIdentity = DesignNode("roomAccountIdentity", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "when" to "\$showAccountIdentity",
+            "gap" to "@control.compactGap",
+        ), listOf(roomAccountName, roomAccountService))
         val roomCreateModeLabel = DesignNode("roomCreateModeLabel", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5745,6 +5856,143 @@ object SyncWatchLayouts {
             "when" to "\$connected",
             "gap" to "@control.compactGap",
         ), listOf(roomConnectedLabel, roomIdFact, roomMembersFact))
+        val roomPendingHeading = DesignNode("roomPendingHeading", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~roomApprovalRequests",
+        ), listOf())
+        val roomPendingName = DesignNode("roomPendingName", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{name}",
+        ), listOf())
+        val roomPendingEmail = DesignNode("roomPendingEmail", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{email}",
+        ), listOf())
+        val roomPendingPerson = DesignNode("roomPendingPerson", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "width" to "fill",
+            "gap" to "@control.compactGap",
+        ), listOf(roomPendingName, roomPendingEmail))
+        val roomApproveAdmissionLabel = DesignNode("roomApproveAdmissionLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~approveRoomAdmission",
+        ), listOf())
+        val roomApproveAdmission = DesignNode("roomApproveAdmission", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "approveRoomAdmission",
+            "automation" to "{namespace}.approveRoomAdmission.{requestID}",
+            "enabled" to "\$can.decide",
+            "label" to "{~approveRoomAdmission}: {name}",
+            "payload" to "\$requestID",
+        ), listOf(roomApproveAdmissionLabel))
+        val roomDenyAdmissionLabel = DesignNode("roomDenyAdmissionLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~denyRoomAdmission",
+        ), listOf())
+        val roomDenyAdmission = DesignNode("roomDenyAdmission", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "denyRoomAdmission",
+            "automation" to "{namespace}.denyRoomAdmission.{requestID}",
+            "enabled" to "\$can.decide",
+            "label" to "{~denyRoomAdmission}: {name}",
+            "payload" to "\$requestID",
+        ), listOf(roomDenyAdmissionLabel))
+        val roomPendingRow = DesignNode("roomPendingRow", "row", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "gap" to "@control.compactGap",
+            "paddingY" to "@control.compactGap",
+        ), listOf(roomPendingPerson, roomApproveAdmission, roomDenyAdmission))
+        val roomPendingRows = DesignNode("roomPendingRows", "repeat", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "items" to "pendingRequests",
+        ), listOf(roomPendingRow))
+        val roomPendingStatus = DesignNode("roomPendingStatus", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~{pendingStatus}",
+        ), listOf())
+        val roomPendingRequests = DesignNode("roomPendingRequests", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "when" to "\$showPendingRequests",
+            "gap" to "@control.compactGap",
+        ), listOf(roomPendingHeading, roomPendingRows, roomPendingStatus))
         val roomStatus = DesignNode("roomStatus", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5763,7 +6011,7 @@ object SyncWatchLayouts {
             "align" to "leading",
             "padding" to "@layout.settingsCardPadding",
             "gap" to "@layout.settingsCardPadding",
-        ), listOf(roomHint, roomModeSelector, roomFields, roomConnectedFacts, roomStatus))
+        ), listOf(roomHint, roomAccountRequired, roomAccountIdentity, roomModeSelector, roomFields, roomConnectedFacts, roomPendingRequests, roomStatus))
         val roomBody = DesignNode("roomBody", "scroll", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5881,6 +6129,38 @@ object SyncWatchLayouts {
             "label" to "~leaveRoom",
             "when" to "\$can.leaveRoom",
         ), listOf(roomLeaveLabel))
+        val roomCancelAdmissionLabel = DesignNode("roomCancelAdmissionLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~roomCancelRequest",
+        ), listOf())
+        val roomCancelAdmission = DesignNode("roomCancelAdmission", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "leaveRoom",
+            "automation" to "{namespace}.leaveRoom",
+            "enabled" to "\$can.cancelRequest",
+            "label" to "~roomCancelRequest",
+            "when" to "\$can.cancelRequest",
+        ), listOf(roomCancelAdmissionLabel))
         val roomConnectLabel = DesignNode("roomConnectLabel", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5922,7 +6202,7 @@ object SyncWatchLayouts {
             "focusWidth" to "@control.borderWidth",
             "padding" to "@layout.settingsCardPadding",
             "gap" to "@control.compactGap",
-        ), listOf(roomFooterSpace, roomPaste, roomCopy, roomLeave, roomConnect))
+        ), listOf(roomFooterSpace, roomPaste, roomCopy, roomLeave, roomCancelAdmission, roomConnect))
         val roomDialog = DesignNode("roomDialog", "column", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",

@@ -275,7 +275,18 @@
       "accountUseMemory": "Use memory only",
       "accountSignInRequired": "Saved sign-in expired or was revoked. Sign in again.",
       "accountMemoryWithSaved": "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
-      "accountUnavailable": "The account service is unavailable. Retrying…"
+      "accountUnavailable": "The account service is unavailable. Retrying…",
+      "roomAccountRequired": "Sign in with Google to create a room or request admission. Local playback remains available without signing in.",
+      "roomAdmissionPending": "Waiting for the room owner to approve your request.",
+      "roomAdmissionDenied": "The owner declined this request. Ask for a new invitation to try again.",
+      "roomAdmissionExpired": "This request expired or the room closed. Ask for a new invitation.",
+      "roomRequestUnavailable": "The request could not complete. Check your account and connection, or ask the owner for a new invitation.",
+      "roomApprovalRequests": "Admission requests",
+      "approveRoomAdmission": "Approve",
+      "denyRoomAdmission": "Deny",
+      "roomPendingUnavailable": "Requests could not be refreshed. Approval is paused until the connection returns.",
+      "roomAdmissionChanged": "This request changed or expired. The list is being refreshed.",
+      "roomCancelRequest": "Cancel request"
     },
     "ru": {
       "brand": "SyncWatch",
@@ -551,7 +562,18 @@
       "accountUseMemory": "Только в памяти",
       "accountSignInRequired": "Сохранённый вход истёк или отозван. Войдите снова.",
       "accountMemoryWithSaved": "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
-      "accountUnavailable": "Сервис аккаунтов недоступен. Повторяем попытку…"
+      "accountUnavailable": "Сервис аккаунтов недоступен. Повторяем попытку…",
+      "roomAccountRequired": "Войдите через Google, чтобы создать комнату или запросить допуск. Локальный просмотр доступен без входа.",
+      "roomAdmissionPending": "Ожидание одобрения владельца комнаты.",
+      "roomAdmissionDenied": "Владелец отклонил запрос. Для повторной попытки попросите новое приглашение.",
+      "roomAdmissionExpired": "Срок запроса истёк или комната закрыта. Попросите новое приглашение.",
+      "roomRequestUnavailable": "Не удалось завершить запрос. Проверьте аккаунт и соединение или попросите владельца выдать новое приглашение.",
+      "roomApprovalRequests": "Запросы на допуск",
+      "approveRoomAdmission": "Разрешить",
+      "denyRoomAdmission": "Отказать",
+      "roomPendingUnavailable": "Не удалось обновить запросы. Одобрение приостановлено до восстановления связи.",
+      "roomAdmissionChanged": "Запрос изменился или истёк. Список обновляется.",
+      "roomCancelRequest": "Отменить запрос"
     }
   },
   "gallery": {

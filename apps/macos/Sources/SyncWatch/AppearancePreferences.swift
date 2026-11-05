@@ -167,9 +167,10 @@ import SyncWatchLibrary
             stateURL = AppearancePreferences.defaultURL
         }
         let preferences = AppearancePreferences(store: FileLocalStateStore(url: stateURL))
-        _account = StateObject(wrappedValue: AccountController(directory: stateURL.deletingLastPathComponent()))
+        let account = AccountController(directory: stateURL.deletingLastPathComponent())
+        _account = StateObject(wrappedValue: account)
         _preferences = StateObject(wrappedValue: preferences)
-        let room = RoomController()
+        let room = RoomController(accountSource: { [weak account] in account?.roomAuthority })
         let watch = WatchSessionCoordinator(
             preferences: preferences, media: MediaConfiguration.read(CommandLine.arguments))
         let library = LibraryController(
@@ -317,23 +318,16 @@ import SyncWatchLibrary
                     return saved
                 }, onClose: { showSettings = false })
         }
+        .task(id: AccountRoomBinding(authority: account.roomAuthority.map { ObjectIdentifier($0) }, name: account.presentation.name)) {
+            await shared.bindAccount(account.roomAuthority, name: account.presentation.name)
+        }
         .sheet(isPresented: $showRoom, onDismiss: { room.clearSecrets() }) {
-            RoomConnectionSheet(room: room, shared: shared, language: preferences.state.preferences.language) {
+            RoomConnectionSheet(room: room, account: account, shared: shared, language: preferences.state.preferences.language) {
                 showRoom = false
             }
         }
         .sheet(isPresented: $showAccount, onDismiss: { Task { await account.dismiss() } }) {
-            AccountDialog(presentation: account.presentation, language: preferences.state.preferences.language) {
-                action, value in
-                if action == "close" {
-                    Task {
-                        await account.dismiss()
-                        showAccount = false
-                    }
-                } else {
-                    account.action(action, value: value)
-                }
-            }
+            AccountConnectionSheet(account: account, language: preferences.state.preferences.language) { showAccount = false }
         }
         .preferredColorScheme(preferences.colorScheme)
         .environment(\.locale, Locale(identifier: preferences.state.preferences.language))
@@ -353,9 +347,9 @@ import SyncWatchLibrary
         let sessionOwner = watch
         let catalogOwner = library
         await shared.close()
-        await account.close()
         await sessionOwner.close()
         await room.close()
+        await account.close()
         await catalogOwner.closeAndWait()
     }
     private func chooseFolder() {
@@ -376,4 +370,9 @@ import SyncWatchLibrary
         }
     }
 
+}
+
+private struct AccountRoomBinding: Equatable {
+    let authority: ObjectIdentifier?
+    let name: String
 }

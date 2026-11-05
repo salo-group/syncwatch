@@ -8,7 +8,7 @@ import syncwatch.room.*
 
 /** Window-owned account work; no account failure changes movie or synchronization state. */
 internal class AccountController(private val scope: CoroutineScope, private val store: AccountSessionStore? = null) {
-    var roomAuthority: RoomAccountAuthority? = null
+    var roomAuthority by mutableStateOf<RoomAccountAuthority?>(null)
         private set
     var presentation by mutableStateOf(AccountPresentation()); private set
     private var saved: AccountSavedSession? = null

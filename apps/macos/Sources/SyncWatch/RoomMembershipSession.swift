@@ -25,6 +25,11 @@ struct RoomWatchContext: Sendable {
         minimumSequence = admission.bootstrap.snapshot.sequence
     }
 
+    func invitation() async throws -> RoomInvitation { try await client.invite(admission) }
+    func pendingAdmissions() async throws -> [RoomAdmissionRequest] { try await client.pending(admission) }
+    func decideAdmission(_ id: String, approve: Bool) async throws { try await client.decide(admission, approvalID: id, approve: approve) }
+    func syncTicket() async throws -> RoomSyncTicket { try await client.syncTicket(admission) }
+
     func refresh(initial: RoomBootstrap? = nil, sequence: UInt64 = 0) async throws -> RoomCatalogView {
         try await enter()
         defer { leave() }

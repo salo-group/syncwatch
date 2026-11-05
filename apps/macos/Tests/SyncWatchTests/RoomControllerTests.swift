@@ -7,7 +7,7 @@ import Testing
 @testable import SyncWatch
 
 @MainActor @Test func invitationPasteIsAtomicAndKeepsTheServiceExplicit() {
-    let controller = RoomController()
+    let controller = RoomController(legacyValidation: true)
     controller.editor.selectMode("joinRoom")
     controller.editor.edit("serviceAddress", value: "https://rooms.example.com")
     controller.editor.edit("username", value: "Peer")
@@ -27,7 +27,7 @@ import Testing
 }
 
 @MainActor @Test func roomAttemptRequiresExplicitExitBeforeLocalPlayback() async {
-    let controller = RoomController()
+    let controller = RoomController(legacyValidation: true)
     let source = LibraryPresentation.gallery(.selected)
     #expect(source.allows("startWatching"))
     for state in ["connecting", "connected", "failed"] {
@@ -46,7 +46,7 @@ func connectedRoomClosesAndCanConnectAgain() async throws {
     let environment = ProcessInfo.processInfo.environment
     let address = try #require(environment["SYNCWATCH_ROOM_SERVICE"])
     let key = try #require(environment["SYNCWATCH_ROOM_CREATION_KEY"])
-    let controller = RoomController()
+    let controller = RoomController(legacyValidation: true)
     let runtime = VLCPlaybackRuntime()
     if let package = environment["SYNCWATCH_ROOM_MEDIA_PACKAGE"] {
         try await runtime.open(package: URL(filePath: package))
@@ -100,7 +100,7 @@ func connectedRoomClosesAndCanConnectAgain() async throws {
 func roomControllerPublishesOnlyCompleteCatalogs() async throws {
     let environment = ProcessInfo.processInfo.environment
     let address = try #require(environment["SYNCWATCH_ROOM_SERVICE"])
-    let controller = RoomController()
+    let controller = RoomController(legacyValidation: true)
     controller.editor.selectMode("joinRoom")
     for (field, value) in [
         "serviceAddress": address, "username": "macOS workspace catalog",

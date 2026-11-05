@@ -4714,6 +4714,80 @@
                   "children": []
                 },
                 {
+                  "id": "roomAccountRequired",
+                  "kind": "column",
+                  "styles": [],
+                  "props": {
+                    "when": "$needsAccount",
+                    "gap": "@control.compactGap"
+                  },
+                  "children": [
+                    {
+                      "id": "roomAccountRequiredText",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~roomAccountRequired"
+                      },
+                      "children": []
+                    },
+                    {
+                      "id": "roomAccountSignIn",
+                      "kind": "button",
+                      "styles": [
+                        "button",
+                        "compact"
+                      ],
+                      "props": {
+                        "action": "openAccount",
+                        "automation": "{namespace}.openAccount",
+                        "enabled": "$can.openAccount",
+                        "label": "~accountSignIn"
+                      },
+                      "children": [
+                        {
+                          "id": "roomAccountSignInLabel",
+                          "kind": "text",
+                          "styles": [],
+                          "props": {
+                            "text": "~accountSignIn"
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "roomAccountIdentity",
+                  "kind": "column",
+                  "styles": [],
+                  "props": {
+                    "when": "$showAccountIdentity",
+                    "gap": "@control.compactGap"
+                  },
+                  "children": [
+                    {
+                      "id": "roomAccountName",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "{~openAccount}: {accountName}"
+                      },
+                      "children": []
+                    },
+                    {
+                      "id": "roomAccountService",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "{~roomService}: {accountService}"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
                   "id": "roomModeSelector",
                   "kind": "row",
                   "styles": [],
@@ -4868,6 +4942,137 @@
                   ]
                 },
                 {
+                  "id": "roomPendingRequests",
+                  "kind": "column",
+                  "styles": [],
+                  "props": {
+                    "when": "$showPendingRequests",
+                    "gap": "@control.compactGap"
+                  },
+                  "children": [
+                    {
+                      "id": "roomPendingHeading",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~roomApprovalRequests"
+                      },
+                      "children": []
+                    },
+                    {
+                      "id": "roomPendingRows",
+                      "kind": "repeat",
+                      "styles": [],
+                      "props": {
+                        "items": "pendingRequests"
+                      },
+                      "children": [
+                        {
+                          "id": "roomPendingRow",
+                          "kind": "row",
+                          "styles": [],
+                          "props": {
+                            "gap": "@control.compactGap",
+                            "paddingY": "@control.compactGap"
+                          },
+                          "children": [
+                            {
+                              "id": "roomPendingPerson",
+                              "kind": "column",
+                              "styles": [],
+                              "props": {
+                                "width": "fill",
+                                "gap": "@control.compactGap"
+                              },
+                              "children": [
+                                {
+                                  "id": "roomPendingName",
+                                  "kind": "text",
+                                  "styles": [],
+                                  "props": {
+                                    "text": "{name}"
+                                  },
+                                  "children": []
+                                },
+                                {
+                                  "id": "roomPendingEmail",
+                                  "kind": "text",
+                                  "styles": [],
+                                  "props": {
+                                    "text": "{email}"
+                                  },
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "roomApproveAdmission",
+                              "kind": "button",
+                              "styles": [
+                                "button",
+                                "compact"
+                              ],
+                              "props": {
+                                "action": "approveRoomAdmission",
+                                "automation": "{namespace}.approveRoomAdmission.{requestID}",
+                                "enabled": "$can.decide",
+                                "label": "{~approveRoomAdmission}: {name}",
+                                "payload": "$requestID"
+                              },
+                              "children": [
+                                {
+                                  "id": "roomApproveAdmissionLabel",
+                                  "kind": "text",
+                                  "styles": [],
+                                  "props": {
+                                    "text": "~approveRoomAdmission"
+                                  },
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "roomDenyAdmission",
+                              "kind": "button",
+                              "styles": [
+                                "button",
+                                "compact"
+                              ],
+                              "props": {
+                                "action": "denyRoomAdmission",
+                                "automation": "{namespace}.denyRoomAdmission.{requestID}",
+                                "enabled": "$can.decide",
+                                "label": "{~denyRoomAdmission}: {name}",
+                                "payload": "$requestID"
+                              },
+                              "children": [
+                                {
+                                  "id": "roomDenyAdmissionLabel",
+                                  "kind": "text",
+                                  "styles": [],
+                                  "props": {
+                                    "text": "~denyRoomAdmission"
+                                  },
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "roomPendingStatus",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~{pendingStatus}"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
                   "id": "roomStatus",
                   "kind": "text",
                   "styles": [],
@@ -4971,6 +5176,32 @@
                   "styles": [],
                   "props": {
                     "text": "~leaveRoom"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "roomCancelAdmission",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "leaveRoom",
+                "automation": "{namespace}.leaveRoom",
+                "enabled": "$can.cancelRequest",
+                "label": "~roomCancelRequest",
+                "when": "$can.cancelRequest"
+              },
+              "children": [
+                {
+                  "id": "roomCancelAdmissionLabel",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~roomCancelRequest"
                   },
                   "children": []
                 }
