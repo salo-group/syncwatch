@@ -112,6 +112,18 @@ public sealed class AccountRepository : IDisposable
         return device;
     }
 
+    internal bool MatchesGoogleIdentity(AccountPrincipal principal, string subject)
+    {
+        lock (gate) { return IsActive(principal) && OwnsGoogleIdentity(principal.AccountId, subject); }
+    }
+    internal bool OwnsGoogleIdentity(string accountId, string subject)
+    {
+        lock (gate)
+        {
+            return state.Users.Any(user => user.Profile.Id == accountId
+            && user.Issuer == "https://accounts.google.com" && user.Subject == subject);
+        }
+    }
     public DeviceSession Refresh(string refresh, string requestId)
     {
         AccountWire.Need(AccountWire.Token(refresh) && AccountWire.Token(requestId), "unauthorized", 401);

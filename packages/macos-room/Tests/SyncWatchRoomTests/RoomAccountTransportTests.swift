@@ -52,6 +52,11 @@ final class RoomAccountTransportTests: XCTestCase, @unchecked Sendable {
             XCTAssertTrue(page.items.isEmpty)
             let first = try await peer.syncTicket(joined), second = try await peer.syncTicket(joined)
             XCTAssertTrue(first.credential.value != second.credential.value, "Fresh transports need distinct tickets")
+            let meet: RoomMeetAuthorization?
+            if let token = fixture["browserFixtureToken"] as? String {
+                meet = try await RoomMeetTransportChecks.run(host: host, peer: peer, owner: admission, guest: joined,
+                    account: ownerDevice.account, fixtureToken: token)
+            } else { meet = nil }
             let withdrawal = try await peer.requestAdmission(
                 host.invite(admission), runID: "withdraw-" + UUID().uuidString, requestID: "withdraw-" + UUID().uuidString)
             try await peer.cancelAdmission(withdrawal)
@@ -77,6 +82,10 @@ final class RoomAccountTransportTests: XCTestCase, @unchecked Sendable {
             do { _ = try await peer.snapshot(joined); XCTFail("Logged-out device retained access") }
             catch RoomProtocolFailure.rejected("unauthorized") {}
             try await host.leave(admission)
+            if let meet {
+                let cancelled = try await host.cancelMeetAuthorization(meet, admission: admission)
+                XCTAssertEqual(cancelled.state, "cancelled")
+            }
             try await ownerAccount.logout(rotated)
         } catch {
             await ownerRoom?.close(); await guestRoom?.close()

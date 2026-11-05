@@ -32,7 +32,7 @@ class AccountClient(private val address: RoomAddress) : AutoCloseable {
     private var closed = false
     suspend fun start(): AccountSignIn {
         val proof = secret()
-        val result = request("sign-ins", mapOf("challenge" to base64(MessageDigest.getInstance("SHA-256").digest(proof.toByteArray(Charsets.US_ASCII)))))
+        val result = request("sign-ins", mapOf("challenge" to challenge(proof)))
         val id = token(result["transactionId"])
         val uri = address.endpoint("auth/google/start?id=$id")
         need(result["browserUri"] == uri.toASCIIString() && result["expiresIn"] == 300L && result["pollAfterMs"] == 2000L)
@@ -99,10 +99,11 @@ class AccountClient(private val address: RoomAddress) : AutoCloseable {
     }
     companion object {
         internal fun secret(): String = base64(ByteArray(32).also { SecureRandom().nextBytes(it) })
+        internal fun challenge(proof: String): String = base64(MessageDigest.getInstance("SHA-256").digest(proof.toByteArray(Charsets.US_ASCII)))
         private fun base64(bytes: ByteArray) = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
         private fun need(value: Boolean) { if (!value) throw RoomProtocolException("malformed") }
-        private fun token(value: Any?): String = RoomWire.string(value).also { need(it.matches(Regex("[A-Za-z0-9_-]{43}"))) }
-        private fun profile(value: Any?, proposal: Boolean = false): AccountProfile {
+        internal fun token(value: Any?): String = RoomWire.string(value).also { need(it.matches(Regex("[A-Za-z0-9_-]{43}"))) }
+        internal fun profile(value: Any?, proposal: Boolean = false): AccountProfile {
             val obj = RoomWire.obj(value); val id = RoomWire.string(obj["id"])
             val name = RoomWire.string(obj["name"]); val email = RoomWire.string(obj["email"])
             need((if (proposal) id.isEmpty() else id.matches(Regex("[A-Za-z0-9_-]{43}"))) && name.length in 1..128 && email.length in 1..320 && (name + email).none { it.isISOControl() })

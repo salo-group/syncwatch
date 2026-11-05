@@ -131,7 +131,7 @@ internal static class AuthenticatedRoomModule
     private static (AuthenticatedRooms, AccountPrincipal) Identity(HttpContext context) =>
         (context.RequestServices.GetRequiredService<AuthenticatedRooms>(),
          context.RequestServices.GetRequiredService<AccountRepository>().Authorize(AccountModule.Bearer(context)));
-    private static (AuthenticatedRooms, AccountPrincipal, string, string, string) Member(HttpContext context)
+    internal static (AuthenticatedRooms, AccountPrincipal, string, string, string) Member(HttpContext context)
     {
         (AuthenticatedRooms rooms, AccountPrincipal principal) = Identity(context);
         return (rooms, principal, Room(context), Header(context, "X-SyncWatch-Member"), Run(context));
@@ -167,7 +167,7 @@ internal static class AuthenticatedRoomModule
         Query(context);
         Wire.Need(context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpRequestBodyDetectionFeature>()?.CanHaveBody != true, "malformed", 400);
     }
-    private static async Task<JsonElement> Read(HttpContext context, params string[] names)
+    internal static async Task<JsonElement> Read(HttpContext context, params string[] names)
     {
         Query(context);
         try

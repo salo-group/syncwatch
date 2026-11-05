@@ -36,7 +36,7 @@ public sealed class AccountClient(RoomAddress address) : IDisposable
     private readonly HttpClient client = new(new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(10) }) { Timeout = TimeSpan.FromSeconds(20) };
     public async Task<AccountSignIn> StartAsync(CancellationToken cancellation = default)
     {
-        string proof = Secret(), challenge = Base64(SHA256.HashData(Encoding.ASCII.GetBytes(proof)));
+        string proof = Secret(), challenge = Challenge(proof);
         JsonElement result = await Request("sign-ins", new { v = 2, challenge }, cancellation: cancellation);
         string id = Token(result.GetProperty("transactionId"));
         Uri uri = new(address.Origin, "auth/google/start?id=" + id);
@@ -107,16 +107,17 @@ public sealed class AccountClient(RoomAddress address) : IDisposable
         Need(value.GetProperty("expiresIn").GetInt32() == 600);
         return new(Profile(value.GetProperty("account")), Token(value.GetProperty("accessToken")), Token(value.GetProperty("refreshToken")), address.Origin, credentialOwner);
     }
-    private static AccountProfile Profile(JsonElement value, bool proposal = false)
+    internal static AccountProfile Profile(JsonElement value, bool proposal = false)
     {
         string id = value.GetProperty("id").GetString()!, name = value.GetProperty("name").GetString()!, email = value.GetProperty("email").GetString()!;
         Need((proposal ? id == "" : IsToken(id)) && name is { Length: > 0 and <= 128 } && email is { Length: > 0 and <= 320 }
             && !name.Concat(email).Any(char.IsControl));
         return new(id, name, email);
     }
-    private static string Token(JsonElement value) { string text = value.GetString()!; Need(IsToken(text)); return text; }
+    internal static string Token(JsonElement value) { Need(value.ValueKind == JsonValueKind.String); string text = value.GetString()!; Need(IsToken(text)); return text; }
     private static bool IsToken(string? value) => value is { Length: 43 } && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
     private static void Need(bool value) { if (!value) throw new RoomProtocolException("malformed"); }
+    internal static string Challenge(string proof) => Base64(SHA256.HashData(Encoding.ASCII.GetBytes(proof)));
     private static string Base64(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     internal static string Secret() => Base64(RandomNumberGenerator.GetBytes(32));
     public void Dispose() => client.Dispose();

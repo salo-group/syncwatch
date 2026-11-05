@@ -1,6 +1,6 @@
 package syncwatch.room
 
-private fun RoomClient.needAccount(): RoomAccountAuthority = authority ?: throw RoomWire.bad()
+internal fun RoomClient.needAccount(): RoomAccountAuthority = authority ?: throw RoomWire.bad()
 
 suspend fun RoomClient.create(run: String, requestId: String): RoomAdmission {
     val owner = needAccount(); RoomWire.id(run); RoomWire.id(requestId)

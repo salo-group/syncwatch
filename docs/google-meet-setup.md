@@ -20,7 +20,7 @@ Enable **Google Meet REST API**. Configure Google Auth Platform as follows:
 | OAuth client | Web application, named `SyncWatch Development Backend` |
 | Development callback | Exact backend callback; planned local value: `http://127.0.0.1:8788/auth/google/callback` |
 
-This callback is a planned contract, not an endpoint in the current v1 room service. The eventual listener must be the confidential backend; a Web client secret never belongs in a desktop application. Google permits localhost HTTP callbacks for development. Public callbacks require an exact HTTPS URI on an authorized domain. [Web-server OAuth](https://developers.google.com/identity/protocols/oauth2/web-server).
+This callback belongs to the optional confidential [account service](account-service.md). The same registered callback handles additional [Meet authorization](meet-service.md); a Web client secret never belongs in a desktop application. Google permits localhost HTTP callbacks for development. Public callbacks require an exact HTTPS URI on an authorized domain. [Web-server OAuth](https://developers.google.com/identity/protocols/oauth2/web-server).
 
 Create the OAuth client through the Console and retain its secret outside Git in the backend's protected secret store. Do not paste secrets into chat, logs, preferences, screenshots, or metadata. Client ID is public configuration; client secret and Google refresh tokens stay server-side. [OAuth best practices](https://developers.google.com/identity/protocols/oauth2/resources/best-practices).
 

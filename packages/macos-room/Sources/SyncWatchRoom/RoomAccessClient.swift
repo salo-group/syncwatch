@@ -1,7 +1,7 @@
 import Foundation
 
 extension RoomClient {
-    private func accountAuthority() throws -> RoomAccountAuthority {
+    func accountAuthority() throws -> RoomAccountAuthority {
         guard let authority else { throw RoomProtocolFailure.malformed }
         return authority
     }

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using SyncWatch.RoomMetadata.Accounts;
+using SyncWatch.RoomMetadata.Calls;
 using SyncWatch.RoomMetadata.Rooms;
 
 namespace SyncWatch.RoomMetadata;
@@ -35,6 +36,7 @@ public static class RoomApplication
         }
         if (accounts is not null) AccountModule.Configure(builder, accounts);
         if (authority is not null) AuthenticatedRoomModule.Configure(builder, authority, limits);
+        if (accounts is not null && authority is not null) MeetAuthorizationModule.Configure(builder, accounts);
         WebApplication app = builder.Build();
         app.Use(async (context, next) =>
         {
@@ -123,6 +125,7 @@ public static class RoomApplication
         }
         if (accounts is not null) AccountModule.Map(app, accounts);
         if (authority is not null) AuthenticatedRoomModule.Map(app);
+        if (accounts is not null && authority is not null) MeetAuthorizationModule.Map(app);
         return app;
     }
 

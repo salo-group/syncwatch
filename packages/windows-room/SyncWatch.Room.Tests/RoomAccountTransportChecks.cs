@@ -37,6 +37,8 @@ internal static class RoomAccountTransportChecks
         Require((await host.CatalogAsync(admission, current, current.CatalogCursor)).Items.Count == 0);
         var first = await peer.SyncTicketAsync(joined); var second = await peer.SyncTicketAsync(joined);
         Require(first.Credential.Value != second.Credential.Value);
+        RoomMeetAuthorization? meet = fixture.RootElement.TryGetProperty("browserFixtureToken", out var fixtureToken)
+            ? await RoomMeetTransportChecks.Run(host, peer, admission, joined, ownerDevice.Account, fixtureToken.GetString()!) : null;
         var withdrawal = await peer.RequestAdmissionAsync(await host.InviteAsync(admission), "withdraw-" + Guid.NewGuid().ToString("N"), "withdraw-" + Guid.NewGuid().ToString("N"));
         await peer.CancelAdmissionAsync(withdrawal); await peer.CancelAdmissionAsync(withdrawal);
         Require((await peer.AdmissionStatusAsync(withdrawal)).Status == "revoked");
@@ -53,7 +55,9 @@ internal static class RoomAccountTransportChecks
         await guestAccount.LogoutAsync(guestDevice);
         try { _ = await peer.SnapshotAsync(joined); throw new Exception("Logged-out device retained access"); }
         catch (RoomProtocolException error) when (error.Message == "unauthorized") { }
-        await host.LeaveAsync(admission); await ownerAccount.LogoutAsync(rotated);
+        await host.LeaveAsync(admission);
+        if (meet is not null) Require((await host.CancelMeetAuthorizationAsync(meet, admission)).State == "cancelled");
+        await ownerAccount.LogoutAsync(rotated);
         Console.WriteLine("SYNCWATCH_AUTHENTICATED_ROOM_TRANSPORT_OK");
     }
     private static void Require(bool condition) { if (!condition) throw new Exception("Authenticated room transport invariant"); }

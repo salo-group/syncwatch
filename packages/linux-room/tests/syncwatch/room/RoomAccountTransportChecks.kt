@@ -38,6 +38,9 @@ suspend fun roomAccountTransportChecks() {
         check(ownerRoom.catalog(admission, current, current.catalogCursor).items.isEmpty())
         val first = guestRoom.syncTicket(joined); val second = guestRoom.syncTicket(joined)
         check(first.credential.value != second.credential.value)
+        val meet = fixture["browserFixtureToken"]?.let {
+            meetTransportChecks(ownerRoom, guestRoom, admission, joined, ownerDevice.account, RoomWire.string(it))
+        }
         val withdrawal = guestRoom.requestAdmission(ownerRoom.invite(admission), "withdraw-${UUID.randomUUID()}", "withdraw-${UUID.randomUUID()}")
         guestRoom.cancelAdmission(withdrawal); guestRoom.cancelAdmission(withdrawal)
         check(guestRoom.admissionStatus(withdrawal).status == "revoked")
@@ -53,7 +56,9 @@ suspend fun roomAccountTransportChecks() {
         ownerRoom.snapshot(admission)
         guestAccount.logout(guestDevice)
         try { guestRoom.snapshot(joined); error("Logged-out device retained access") } catch (error: RoomProtocolException) { check(error.code == "unauthorized") }
-        ownerRoom.leave(admission); ownerAccount.logout(rotated)
+        ownerRoom.leave(admission)
+        if (meet != null) check(ownerRoom.cancelMeetAuthorization(meet, admission).state == "cancelled")
+        ownerAccount.logout(rotated)
         println("SYNCWATCH_AUTHENTICATED_ROOM_TRANSPORT_OK")
     } finally { host?.close(); peer?.close(); owner?.close(); guest?.close(); ownerAccount.close(); guestAccount.close() }
 }

@@ -66,7 +66,7 @@ public actor AccountClient {
     }
     public func start() async throws -> AccountSignIn {
         let proof = try Self.secret()
-        let challenge = Self.base64(Data(SHA256.hash(data: Data(proof.utf8))))
+        let challenge = Self.challenge(proof)
         let result = try await request("sign-ins", body: ["challenge": challenge])
         let id = try Self.token(result["transactionId"])
         let uri = address.endpoint("auth/google/start").absoluteString + "?id=" + id
@@ -181,7 +181,7 @@ public actor AccountClient {
             account: Self.profile(object["account"]), access: Self.token(object["accessToken"]),
             refresh: Self.token(object["refreshToken"]), issuer: address.origin, credentialOwner: credentialOwner)
     }
-    private static func profile(_ value: Any?, proposal: Bool = false) throws -> AccountProfile {
+    static func profile(_ value: Any?, proposal: Bool = false) throws -> AccountProfile {
         guard let object = value as? [String: Any], let id = object["id"] as? String,
             proposal ? id.isEmpty : isToken(id), let name = object["name"] as? String,
             let email = object["email"] as? String,
@@ -190,18 +190,19 @@ public actor AccountClient {
         else { throw RoomProtocolFailure.malformed }
         return AccountProfile(id: id, name: name, email: email)
     }
-    private static func token(_ value: Any?) throws -> String {
+    static func token(_ value: Any?) throws -> String {
         guard let value = value as? String, isToken(value) else { throw RoomProtocolFailure.malformed }
         return value
     }
     private static func isToken(_ value: String) -> Bool {
         value.range(of: "\\A[A-Za-z0-9_-]{43}\\z", options: .regularExpression) != nil
     }
+    static func challenge(_ proof: String) -> String { base64(Data(SHA256.hash(data: Data(proof.utf8)))) }
     private static func base64(_ data: Data) -> String {
         data.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
     }
-    private static func secret() throws -> String {
+    static func secret() throws -> String {
         var bytes = [UInt8](repeating: 0, count: 32)
         guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
             throw RoomProtocolFailure.transport

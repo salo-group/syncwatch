@@ -25,14 +25,17 @@ internal static class RoomAccountPortChecks
         await using var client = RoomClient.ForAccount(authority);
         try { _ = await client.SnapshotAsync(admitted); throw new Exception("Foreign authority reached transport"); }
         catch (RoomProtocolException error) when (error.Message == "malformed") { }
+        try { _ = await client.BeginMeetAuthorizationAsync(admitted); throw new Exception("Foreign Meet authority reached transport"); }
+        catch (RoomProtocolException error) when (error.Message == "malformed") { }
         var admission = RoomAccessWire.Admission(bytes, "run-room-client", authority.Scope);
         authority.Pause();
         Task<RoomAdmission> request = client.CreateForAccountAsync("run-new", "create-new");
         Task<RoomEventStream> events = client.OpenEventsAsync(admission);
+        Task<RoomMeetAuthorization> permission = client.BeginMeetAuthorizationAsync(admission);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        while (authority.PendingRequests != 2) await Task.Delay(10, deadline.Token);
+        while (authority.PendingRequests != 3) await Task.Delay(10, deadline.Token);
         await client.DisposeAsync();
-        await Cancelled(request); await Cancelled(events);
+        await Cancelled(request); await Cancelled(events); await Cancelled(permission);
         Require(authority.PendingRequests == 0);
         authority.Commit(device);
         Require((await authority.CredentialAsync()).AccountId == device.Account.Id);

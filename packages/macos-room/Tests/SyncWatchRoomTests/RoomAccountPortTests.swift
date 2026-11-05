@@ -45,17 +45,20 @@ final class RoomAccountPortTests: XCTestCase, @unchecked Sendable {
         let foreign = try RoomAdmission.account(payload, runID: "run-room-client", scope: UUID())
         do { _ = try await client.snapshot(foreign); XCTFail("Foreign authority reached transport") }
         catch RoomProtocolFailure.malformed {}
+        do { _ = try await client.beginMeetAuthorization(foreign); XCTFail("Foreign Meet authority reached transport") }
+        catch RoomProtocolFailure.malformed {}
         let admission = try RoomAdmission.account(payload, runID: "run-room-client", scope: authority.scope)
         try await authority.pause()
         let request = Task { try await client.create(runID: "run-new", requestID: "create-new") }
         let events = Task { try await client.openEvents(admission) }
+        let permission = Task { try await client.beginMeetAuthorization(admission) }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: .seconds(3))
-        while await authority.pendingRequests != 2 && clock.now < deadline { await Task.yield() }
+        while await authority.pendingRequests != 3 && clock.now < deadline { await Task.yield() }
         let count = await authority.pendingRequests
-        XCTAssertEqual(count, 2)
+        XCTAssertEqual(count, 3)
         await client.close()
-        for result in [await request.result.map { _ in () }, await events.result.map { _ in () }] {
+        for result in [await request.result.map { _ in () }, await events.result.map { _ in () }, await permission.result.map { _ in () }] {
             if case .success = result { XCTFail("Closed client completed pending authorization") }
         }
         let remaining = await authority.pendingRequests

@@ -191,6 +191,24 @@ public sealed class AuthenticatedRooms
         }
     }
 
+    public RoomMemberAccess Access(AccountPrincipal principal, string roomId, string memberId, string run, bool owner = false)
+    {
+        lock (gate)
+        {
+            (Room room, Member member) = Authorize(principal, roomId, memberId, run);
+            Wire.Need(!owner || member.Owner, "forbidden", 403);
+            return new(room.Id, room.Epoch, room.Members.Values.Single(item => item.Owner).Principal.AccountId,
+                principal, member.Binding.MemberId, member.Binding.ClientRunId, member.Owner);
+        }
+    }
+    public bool IsCurrent(RoomMemberAccess access)
+    {
+        lock (gate)
+        {
+            try { return Access(access.Principal, access.RoomId, access.MemberId, access.ClientRunId, access.Owner) == access; }
+            catch (RoomException error) when (error.Status is 401 or 403 or 404) { return false; }
+        }
+    }
     public Bootstrap Snapshot(AccountPrincipal principal, string roomId, string memberId, string run)
     {
         lock (gate) { (_, Member member) = Authorize(principal, roomId, memberId, run); return metadata.Snapshot(roomId, member.Admission.Token); }

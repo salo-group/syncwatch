@@ -1264,8 +1264,8 @@
         "media": {
           "v": 1,
           "mediaId": "movie-a",
-          "title": "Кино 映画",
-          "titleKey": "Кино 映画",
+          "title": "\u041a\u0438\u043d\u043e \u6620\u753b",
+          "titleKey": "\u041a\u0438\u043d\u043e \u6620\u753b",
           "fileSizeBytes": 1000,
           "durationMs": 10000,
           "fullHashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -1287,8 +1287,8 @@
         "media": {
           "v": 1,
           "mediaId": "movie-a",
-          "title": "Кино 映画",
-          "titleKey": "Кино 映画",
+          "title": "\u041a\u0438\u043d\u043e \u6620\u753b",
+          "titleKey": "\u041a\u0438\u043d\u043e \u6620\u753b",
           "fileSizeBytes": 1000,
           "durationMs": 10000,
           "fullHashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -1749,5 +1749,451 @@
       "clientRunId": "run-7",
       "mediaGeneration": 3
     }
+  },
+  {
+    "name": "meet-authorization.pending",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "pending",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.authorizing",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "authorizing",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.browserConfirmationRequired",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "browserConfirmationRequired",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.complete",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "complete",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.cancelled",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "cancelled",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.expired",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "expired",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.native confirmation",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner",
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.roomChanged",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "roomChanged"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.accountMismatch",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "accountMismatch"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.permissionUnavailable",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "permissionUnavailable"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.invalidConfirmation",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "invalidConfirmation"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.wrong code feedback",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "browserConfirmationRequired",
+        "account": null,
+        "reason": "invalidConfirmation"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.confirm wrong code",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner",
+          "email": "owner@example.invalid"
+        },
+        "reason": "invalidConfirmation"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.unknown status",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "joined",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.profile disclosed early",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "browserConfirmationRequired",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner",
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.missing confirmation profile",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong account",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "name": "Owner",
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.arbitrary failure",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "provider secret"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.missing failure reason",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.unexpected complete reason",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "complete",
+        "account": null,
+        "reason": "invalidConfirmation"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong reason type",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": 7
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong state type",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": 7,
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.token disclosure",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "pending",
+        "account": null,
+        "reason": null,
+        "refreshToken": "synthetic-provider-token"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.bad profile",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "",
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.request.0",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.request.1",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.request.2",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "browserProof": "AAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.request.3",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "browserProof": "AAAAAAAAAAAA",
+      "requestId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.request.reject-provider-token",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "refreshToken": "synthetic-provider-token"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong account type",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": [],
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong name type",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": 7,
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.extra account field",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner",
+          "email": "owner@example.invalid",
+          "refreshToken": "must-not-enter-native-profile"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.missing account field",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
   }
 ]

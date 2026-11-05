@@ -25,18 +25,22 @@ internal static class NativeAccountRoomFixture
         await using var app = RoomApplication.Build(["--urls", origin.AbsoluteUri], accounts: new("owned-native-client", "owned-native-secret", origin,
             Path.Combine(directory, "accounts")), authority: new(runtime, tls, "127.0.0.1", "127.0.0.1", syncPort));
         var accounts = app.Services.GetRequiredService<AccountRepository>();
+        using var browser = new NativeMeetBrowserFixture(app, origin);
         await app.StartAsync();
         try
         {
+            await browser.CheckIdentityOnlyChallenge(app, origin);
             foreach (string platform in new[] { "macos", "windows", "linux" })
             {
+                string browserFixtureToken = Wire.Secret();
                 object Session(string role)
                 {
                     DeviceSession session = accounts.SignIn("native-" + platform + "-" + role, role, role + "@example.invalid");
+                    if (role == "owner") browser.Add(session.Account.Id, "native-" + platform + "-owner", browserFixtureToken);
                     string requestId = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
                     return new { v = 1, service = origin.AbsoluteUri, accountId = session.Account.Id, refreshToken = session.RefreshToken, requestId };
                 }
-                await File.WriteAllTextAsync(Path.Combine(directory, platform + ".json"), JsonSerializer.Serialize(new { owner = Session("owner"), guest = Session("guest") }, Wire.Json));
+                await File.WriteAllTextAsync(Path.Combine(directory, platform + ".json"), JsonSerializer.Serialize(new { owner = Session("owner"), guest = Session("guest"), browserFixtureToken }, Wire.Json));
             }
             await File.WriteAllTextAsync(Path.Combine(directory, "ready.json"), JsonSerializer.Serialize(new { port, syncPort, syntheticAccounts = true }));
             using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(20));
