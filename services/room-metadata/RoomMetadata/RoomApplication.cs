@@ -10,6 +10,13 @@ public static class RoomApplication
 {
     public static WebApplication Build(string[] args, RoomStore? store = null, string? creationKey = null, RoomLimits? limits = null,
         AccountOptions? accounts = null, RoomAuthorityOptions? authority = null)
+        => BuildCore(args, store, creationKey, limits, accounts, authority, null);
+
+    internal static WebApplication BuildForTests(string[] args, AccountOptions accounts, RoomAuthorityOptions authority,
+        Action<IServiceCollection> configure) => BuildCore(args, null, null, null, accounts, authority, configure);
+
+    private static WebApplication BuildCore(string[] args, RoomStore? store, string? creationKey, RoomLimits? limits,
+        AccountOptions? accounts, RoomAuthorityOptions? authority, Action<IServiceCollection>? configure)
     {
         accounts ??= AccountOptions.FromEnvironment();
         authority ??= RoomAuthorityOptions.FromEnvironment();
@@ -37,6 +44,7 @@ public static class RoomApplication
         if (accounts is not null) AccountModule.Configure(builder, accounts);
         if (authority is not null) AuthenticatedRoomModule.Configure(builder, authority, limits);
         if (accounts is not null && authority is not null) MeetAuthorizationModule.Configure(builder, accounts);
+        configure?.Invoke(builder.Services);
         WebApplication app = builder.Build();
         app.Use(async (context, next) =>
         {

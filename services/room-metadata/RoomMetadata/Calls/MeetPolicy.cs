@@ -8,6 +8,8 @@ internal static partial class MeetPolicy
     internal const int MaximumCredentialLength = 4096;
     internal const int MaximumGrants = 10000;
     internal const int MaximumCalls = 4096;
+    internal const int CallWorkers = 4;
+    internal const int MaximumQueuedCalls = 32;
     internal const int MaximumStoreBytes = 16 * 1024 * 1024;
     internal static readonly TimeSpan AuthorizationLifetime = TimeSpan.FromMinutes(5);
     internal static readonly TimeSpan ProviderTimeout = TimeSpan.FromSeconds(10);

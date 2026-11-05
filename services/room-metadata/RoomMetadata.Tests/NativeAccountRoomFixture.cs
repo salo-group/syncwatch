@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using SyncWatch.RoomMetadata;
 using SyncWatch.RoomMetadata.Accounts;
+using SyncWatch.RoomMetadata.Calls;
 
 /// <summary>Owned integration host with synthetic provider subjects, never a production login path.</summary>
 internal static class NativeAccountRoomFixture
@@ -22,8 +23,9 @@ internal static class NativeAccountRoomFixture
         using var synchronization = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
         synchronization.Start(); int syncPort = ((System.Net.IPEndPoint)synchronization.LocalEndpoint).Port; synchronization.Stop();
         var origin = new Uri("http://127.0.0.1:" + port);
-        await using var app = RoomApplication.Build(["--urls", origin.AbsoluteUri], accounts: new("owned-native-client", "owned-native-secret", origin,
-            Path.Combine(directory, "accounts")), authority: new(runtime, tls, "127.0.0.1", "127.0.0.1", syncPort));
+        using var calls = new NativeMeetProviderFixture();
+        await using var app = RoomApplication.BuildForTests(["--urls", origin.AbsoluteUri], new("owned-native-client", "owned-native-secret", origin,
+            Path.Combine(directory, "accounts")), new(runtime, tls, "127.0.0.1", "127.0.0.1", syncPort), services => services.AddSingleton<IMeetProvider>(calls));
         var accounts = app.Services.GetRequiredService<AccountRepository>();
         using var browser = new NativeMeetBrowserFixture(app, origin);
         await app.StartAsync();

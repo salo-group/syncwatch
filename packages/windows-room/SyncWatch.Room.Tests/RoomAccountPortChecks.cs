@@ -27,15 +27,21 @@ internal static class RoomAccountPortChecks
         catch (RoomProtocolException error) when (error.Message == "malformed") { }
         try { _ = await client.BeginMeetAuthorizationAsync(admitted); throw new Exception("Foreign Meet authority reached transport"); }
         catch (RoomProtocolException error) when (error.Message == "malformed") { }
+        Reject(() => client.CallStartOperation(admitted));
         var admission = RoomAccessWire.Admission(bytes, "run-room-client", authority.Scope);
+        var operation = client.CallStartOperation(admission);
+        Require(!operation.ToString().Contains(operation.RequestId, StringComparison.Ordinal));
         authority.Pause();
         Task<RoomAdmission> request = client.CreateForAccountAsync("run-new", "create-new");
         Task<RoomEventStream> events = client.OpenEventsAsync(admission);
         Task<RoomMeetAuthorization> permission = client.BeginMeetAuthorizationAsync(admission);
+        var call = client.RequestCallAsync(operation, admission);
+        var status = client.CallStatusAsync(admission);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        while (authority.PendingRequests != 3) await Task.Delay(10, deadline.Token);
+        while (authority.PendingRequests != 5) await Task.Delay(10, deadline.Token);
         await client.DisposeAsync();
         await Cancelled(request); await Cancelled(events); await Cancelled(permission);
+        await Cancelled(call); await Cancelled(status);
         Require(authority.PendingRequests == 0);
         authority.Commit(device);
         Require((await authority.CredentialAsync()).AccountId == device.Account.Id);

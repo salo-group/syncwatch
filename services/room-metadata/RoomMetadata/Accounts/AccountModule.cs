@@ -34,6 +34,14 @@ public static class AccountModule
         builder.Services.AddRateLimiter(limiter =>
         {
             limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            limiter.OnRejected = async (context, cancellation) =>
+            {
+                var response = context.HttpContext.Response;
+                response.StatusCode = StatusCodes.Status429TooManyRequests;
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retry))
+                    response.Headers.RetryAfter = Math.Clamp(Math.Ceiling(retry.TotalSeconds), 1, 60).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                await response.WriteAsJsonAsync(new { v = 2, error = new { code = "queueFull" } }, AccountWire.Json, cancellation);
+            };
             limiter.AddPolicy("account", context => RateLimitPartition.GetFixedWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
                 { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));

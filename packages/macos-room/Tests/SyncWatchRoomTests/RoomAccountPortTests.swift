@@ -47,18 +47,25 @@ final class RoomAccountPortTests: XCTestCase, @unchecked Sendable {
         catch RoomProtocolFailure.malformed {}
         do { _ = try await client.beginMeetAuthorization(foreign); XCTFail("Foreign Meet authority reached transport") }
         catch RoomProtocolFailure.malformed {}
+        do { _ = try await client.callStartOperation(foreign); XCTFail("Foreign call authority accepted") }
+        catch RoomProtocolFailure.malformed {}
         let admission = try RoomAdmission.account(payload, runID: "run-room-client", scope: authority.scope)
+        let operation = try await client.callStartOperation(admission)
+        XCTAssertFalse(String(describing: operation).contains(operation.requestID))
         try await authority.pause()
         let request = Task { try await client.create(runID: "run-new", requestID: "create-new") }
         let events = Task { try await client.openEvents(admission) }
         let permission = Task { try await client.beginMeetAuthorization(admission) }
+        let call = Task { try await client.requestCall(operation, admission: admission) }
+        let status = Task { try await client.callStatus(admission) }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: .seconds(3))
-        while await authority.pendingRequests != 3 && clock.now < deadline { await Task.yield() }
+        while await authority.pendingRequests != 5 && clock.now < deadline { await Task.yield() }
         let count = await authority.pendingRequests
-        XCTAssertEqual(count, 3)
+        XCTAssertEqual(count, 5)
         await client.close()
-        for result in [await request.result.map { _ in () }, await events.result.map { _ in () }, await permission.result.map { _ in () }] {
+        for result in [await request.result.map { _ in () }, await events.result.map { _ in () }, await permission.result.map { _ in () },
+            await call.result.map { _ in () }, await status.result.map { _ in () }] {
             if case .success = result { XCTFail("Closed client completed pending authorization") }
         }
         let remaining = await authority.pendingRequests

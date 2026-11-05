@@ -14,6 +14,9 @@ enum RoomMeetTransportChecks {
         }
         do { _ = try await peer.beginMeetAuthorization(guest); XCTFail("Guest requested organizer permission") }
         catch RoomProtocolFailure.rejected("forbidden") {}
+        let call = try await host.callStartOperation(owner)
+        let unsignedCall = try await host.requestCall(call, admission: owner)
+        XCTAssertEqual(unsignedCall.state, "idle"); XCTAssertTrue(unsignedCall.authorizationRequired)
         let mismatch = try await host.beginMeetAuthorization(owner)
         let pending = try await host.meetAuthorizationStatus(mismatch, admission: owner)
         XCTAssertEqual(pending.state, "pending")
@@ -46,6 +49,30 @@ enum RoomMeetTransportChecks {
         }
         let retained = try await host.cancelMeetAuthorization(flow, admission: owner)
         XCTAssertEqual(retained.state, "complete")
+        _ = try await host.requestCall(call, admission: owner)
+        let clock = ContinuousClock(), deadline = ContinuousClock().now.advanced(by: .seconds(5))
+        var ready = try await host.callStatus(owner)
+        while ready.state == "creating", clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10)); ready = try await host.callStatus(owner)
+        }
+        XCTAssertEqual(ready.state, "ready"); XCTAssertNotNil(ready.meetURI)
+        let retry = try await host.requestCall(call, admission: owner)
+        XCTAssertEqual(retry.callID, ready.callID); XCTAssertEqual(retry.generation, ready.generation)
+        let guestCall = try await peer.callStatus(guest)
+        XCTAssertEqual(guestCall.meetURI, ready.meetURI); XCTAssertFalse(guestCall.authorizationRequired)
+        let forbiddenEnd = try await peer.callEndOperation(guest, status: guestCall)
+        do { _ = try await peer.requestCall(forbiddenEnd, admission: guest); XCTFail("Guest ended owner call") }
+        catch RoomProtocolFailure.rejected("forbidden") {}
+        let end = try await host.callEndOperation(owner, status: ready)
+        _ = try await host.requestCall(end, admission: owner)
+        var ended = try await host.callStatus(owner)
+        while ended.state == "ending", clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10)); ended = try await host.callStatus(owner)
+        }
+        XCTAssertEqual(ended.state, "ended"); XCTAssertNil(ended.meetURI)
+        let endRetry = try await host.requestCall(end, admission: owner)
+        XCTAssertEqual(endRetry.state, "ended")
+        print("SYNCWATCH_ROOM_CALL_TRANSPORT_OK synthetic provider, current membership, stable create/end, guest denial and URI fencing")
         let reuse = try await host.beginMeetAuthorization(owner)
         let reusedCode = try await browser(reuse, "reuse")
         XCTAssertNotNil(reusedCode)

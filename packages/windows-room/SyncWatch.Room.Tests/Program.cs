@@ -3,6 +3,7 @@ using System.Text.Json;
 using SyncWatch.Room;
 
 AccountCredentialVaultChecks.Run();
+RoomCallChecks.Run(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0]))!, "room-call.json"));
 RoomMeetAuthorizationChecks.Run(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0]))!, "meet-authorization.json"));
 await RoomAccountAuthorityChecks.Run();
 AccountSessionChecks.Run(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0]))!, "account-persistence.json"));

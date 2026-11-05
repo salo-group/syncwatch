@@ -17,6 +17,8 @@
     "room-access-request": "v2/room-access-request.schema.json",
     "room-access-response": "v2/room-access-response.schema.json",
     "meet-authorization-request": "v2/meet-authorization-request.schema.json",
-    "meet-authorization-response": "v2/meet-authorization-response.schema.json"
+    "meet-authorization-response": "v2/meet-authorization-response.schema.json",
+    "room-call-request": "v2/room-call-request.schema.json",
+    "room-call-response": "v2/room-call-response.schema.json"
   }
 }

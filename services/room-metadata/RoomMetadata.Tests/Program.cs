@@ -202,6 +202,8 @@ MeetGrantChecks.Run();
 MeetAuthorizationChecks.Run();
 await MeetProviderChecks.Run();
 MeetCallJournalChecks.Run();
+await MeetCallCoordinatorChecks.Run();
+await AccountRateLimitChecks.Run();
 await AuthenticatedRoomHttpChecks.Run();
 string creationKey = Wire.Secret();
 await using var app = RoomApplication.Build(["--urls", "http://127.0.0.1:0"], creationKey: creationKey);

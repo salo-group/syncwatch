@@ -26,6 +26,7 @@ internal sealed class MeetCallJournal : IDisposable
             {
                 "creating" => call with { State = "createUnknown", Reason = "providerOutcomeUnknown" },
                 "ending" => call with { State = "endUnknown", Reason = "providerOutcomeUnknown" },
+                "checkingEnd" => call with { State = "endFailed", Conference = null, Reason = "providerUnavailable" },
                 _ => call
             }).ToArray();
             if (!recovered.SequenceEqual(store.Current.Calls)) store.Save(new(1, recovered));
@@ -52,8 +53,10 @@ internal sealed class MeetCallJournal : IDisposable
             "created" or "ready" => space && call.EndRequestId is null && call.Reason is null,
             "createRejected" => space && call.EndRequestId is null && call.Reason is not null,
             "ending" => space && call.EndRequestId is not null && call.Conference is not null && call.Reason is null,
+            "checkingEnd" => space && call.EndRequestId is not null && call.Reason is null,
             "ended" => space && call.Reason is null,
-            "endFailed" or "endUnknown" => space && call.EndRequestId is not null && call.Conference is not null && call.Reason is not null,
+            "endFailed" => space && call.EndRequestId is not null && call.Reason is not null,
+            "endUnknown" => space && call.EndRequestId is not null && call.Conference is not null && call.Reason is not null,
             "orphaned" => space && call.Reason == "roomChanged",
             _ => false
         };
@@ -91,7 +94,8 @@ internal sealed class MeetCallJournal : IDisposable
             {
                 "creating" => replacement.State is "created" or "createFailed" or "createUnknown",
                 "created" or "createRejected" => replacement.State is "ready" or "createRejected" or "orphaned",
-                "ready" or "endFailed" => replacement.State is "ending" or "ended" or "orphaned",
+                "ready" or "endFailed" => replacement.State is "checkingEnd" or "ended" or "orphaned",
+                "checkingEnd" => replacement.State is "ending" or "ended" or "endFailed" or "orphaned",
                 "ending" => replacement.State is "ended" or "endFailed" or "endUnknown",
                 "endUnknown" => replacement.State is "ended" or "orphaned",
                 "orphaned" => replacement.State is "ended",

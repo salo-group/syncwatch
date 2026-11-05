@@ -53,8 +53,10 @@ internal static class MeetCallJournalChecks
                 Require(journal.Update(creating, created));
                 Require(File.ReadAllBytes(file).AsSpan().IndexOf(Encoding.UTF8.GetBytes(created.MeetUri!)) < 0);
                 var ready = created with { State = "ready" }; Require(journal.Update(created, ready));
-                var ending = ready with { State = "ending", EndRequestId = AccountWire.Secret(), Conference = "conferenceRecords/owned-conference" };
-                Require(journal.Update(ready, ending));
+                var checking = ready with { State = "checkingEnd", EndRequestId = AccountWire.Secret() };
+                Require(journal.Update(ready, checking));
+                var ending = checking with { State = "ending", Conference = "conferenceRecords/owned-conference" };
+                Require(journal.Update(checking, ending));
                 Require(!journal.Update(ready, ready with { State = "ended" }));
             }
             using (var restored = new MeetCallJournal(root, protection))

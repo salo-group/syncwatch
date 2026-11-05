@@ -24,14 +24,19 @@ suspend fun roomAccountPortChecks(fixture: Map<String, Any?>) = supervisorScope 
     try {
         try { client.snapshot(admitted); error("Foreign authority reached transport") } catch (error: RoomProtocolException) { check(error.code == "malformed") }
         try { client.beginMeetAuthorization(admitted); error("Foreign Meet authority reached transport") } catch (error: RoomProtocolException) { check(error.code == "malformed") }
+        reject { client.callStartOperation(admitted) }
         val admission = RoomAccessWire.admission(bytes, "run-room-client", authority.scope)
+        val operation = client.callStartOperation(admission)
+        check(!operation.toString().contains(operation.requestId))
         authority.pause()
         val request = async { client.create("run-new", "create-new") }
         val events = async { client.openEvents(admission) }
         val permission = async { client.beginMeetAuthorization(admission) }
-        withTimeout(3_000) { while (authority.pendingRequests != 3) yield() }
+        val call = async { client.requestCall(operation, admission) }
+        val status = async { client.callStatus(admission) }
+        withTimeout(3_000) { while (authority.pendingRequests != 5) yield() }
         client.close()
-        for (work in listOf(request, events, permission)) {
+        for (work in listOf(request, events, permission, call, status)) {
             try { work.await(); error("Closed client completed paused authorization") } catch (_: CancellationException) { }
         }
         check(authority.pendingRequests == 0)

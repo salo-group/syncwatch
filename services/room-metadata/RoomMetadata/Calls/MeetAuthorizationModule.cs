@@ -22,6 +22,7 @@ internal static class MeetAuthorizationModule
         builder.Services.AddSingleton(provider => new MeetAuthorizationTransactions(provider.GetRequiredService<AccountRepository>(),
             provider.GetRequiredService<AuthenticatedRooms>(), provider.GetRequiredService<MeetGrantRepository>(), options.PublicOrigin));
         builder.Services.AddHostedService<MeetAuthorizationCleanup>();
+        MeetCallModule.Configure(builder, options);
     }
     internal static bool Requested(AuthenticationProperties? properties) => properties?.Items.TryGetValue(PurposeKey, out string? purpose) == true && purpose == "meet";
     internal static string AuthorizationUri(string uri, AuthenticationProperties properties) => Requested(properties)
@@ -47,6 +48,7 @@ internal static class MeetAuthorizationModule
     }
     internal static void Map(WebApplication app)
     {
+        MeetCallModule.Map(app);
         // Decryption/format/writer failures prevent the service from advertising authorization readiness.
         _ = app.Services.GetRequiredService<MeetGrantRepository>();
         app.MapGet("/auth/google/meet-start", async context =>
