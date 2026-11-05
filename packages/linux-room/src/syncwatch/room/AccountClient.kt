@@ -6,13 +6,14 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import java.time.Duration
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.*
 
 data class AccountProfile(val id: String, val name: String, val email: String)
-class AccountDeviceSession internal constructor(val account: AccountProfile, internal val access: String, internal val refresh: String) {
+class AccountDeviceSession internal constructor(val account: AccountProfile, internal val access: String, internal val refresh: String, internal val issuer: URI? = null, internal val credentialOwner: UUID? = null) {
     override fun toString() = "[account session redacted]"
 }
 class AccountSignIn internal constructor(val browserUri: URI, internal val id: String, internal val proof: String) {
@@ -23,6 +24,8 @@ data class AccountSignInStatus(val state: String, val account: AccountProfile?)
 
 /** Separate account API; Google credentials never enter the desktop. */
 class AccountClient(private val address: RoomAddress) : AutoCloseable {
+    private val credentialOwner = UUID.randomUUID()
+    fun roomAuthority(session: AccountDeviceSession) = RoomAccountAuthority(address, session, credentialOwner)
     private val client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).connectTimeout(Duration.ofSeconds(10)).build()
     private val pending = java.util.concurrent.ConcurrentHashMap.newKeySet<CompletableFuture<*>>()
     private val gate = Any()
@@ -53,7 +56,7 @@ class AccountClient(private val address: RoomAddress) : AutoCloseable {
         need(code.matches(Regex("[0-9A-F]{12}")))
         val result = request("sign-ins/${signIn.id}/confirm", mapOf("proof" to signIn.proof, "requestId" to signIn.confirmation, "browserProof" to code))
         need(result["status"] == "complete")
-        return device(result["session"])
+        return device(result["session"], address.origin, credentialOwner)
     }
     suspend fun cancel(signIn: AccountSignIn) { request("sign-ins/${signIn.id}/cancel", mapOf("proof" to signIn.proof)) }
     fun checkpoint(session: AccountDeviceSession) = AccountSavedSession(address.origin.toASCIIString(), session.account.id, session.refresh, secret())
@@ -61,11 +64,11 @@ class AccountClient(private val address: RoomAddress) : AutoCloseable {
     suspend fun resume(saved: AccountSavedSession): AccountDeviceSession {
         need(RoomAddress(saved.service).origin == address.origin)
         val body = mapOf("refreshToken" to saved.refreshToken, "requestId" to saved.requestId)
-        val result = try { device(request("refresh", body)["session"]) }
+        val result = try { device(request("refresh", body)["session"], address.origin, credentialOwner) }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (error: java.io.IOException) {
             if (error is RoomProtocolException) throw error
-            device(request("refresh", body)["session"])
+            device(request("refresh", body)["session"], address.origin, credentialOwner)
         }
         if (result.account.id != saved.accountId) { try { logout(result) } catch (_: Exception) { }; throw RoomProtocolException("malformed") }
         return result
@@ -105,9 +108,9 @@ class AccountClient(private val address: RoomAddress) : AutoCloseable {
             need((if (proposal) id.isEmpty() else id.matches(Regex("[A-Za-z0-9_-]{43}"))) && name.length in 1..128 && email.length in 1..320 && (name + email).none { it.isISOControl() })
             return AccountProfile(id, name, email)
         }
-        private fun device(value: Any?): AccountDeviceSession {
+        private fun device(value: Any?, issuer: URI, owner: UUID): AccountDeviceSession {
             val obj = RoomWire.obj(value); need(obj["expiresIn"] == 600L)
-            return AccountDeviceSession(profile(obj["account"]), token(obj["accessToken"]), token(obj["refreshToken"]))
+            return AccountDeviceSession(profile(obj["account"]), token(obj["accessToken"]), token(obj["refreshToken"]), issuer, owner)
         }
     }
 }

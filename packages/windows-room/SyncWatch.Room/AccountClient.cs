@@ -11,7 +11,10 @@ public sealed class AccountDeviceSession
     public AccountProfile Account { get; }
     internal string Access { get; }
     internal string Refresh { get; }
-    internal AccountDeviceSession(AccountProfile account, string access, string refresh) { Account = account; Access = access; Refresh = refresh; }
+    internal Uri? Issuer { get; }
+    internal Guid? CredentialOwner { get; }
+    internal AccountDeviceSession(AccountProfile account, string access, string refresh, Uri? issuer = null, Guid? credentialOwner = null)
+    { Account = account; Access = access; Refresh = refresh; Issuer = issuer; CredentialOwner = credentialOwner; }
     public override string ToString() => "[account session redacted]";
 }
 public sealed class AccountSignIn
@@ -28,6 +31,8 @@ public sealed record AccountSignInStatus(string State, AccountProfile? Account);
 /// <summary>Independent account API; no Google token is sent to a desktop.</summary>
 public sealed class AccountClient(RoomAddress address) : IDisposable
 {
+    private readonly Guid credentialOwner = Guid.NewGuid();
+    public RoomAccountAuthority RoomAuthority(AccountDeviceSession session) => new(address, session, credentialOwner);
     private readonly HttpClient client = new(new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(10) }) { Timeout = TimeSpan.FromSeconds(20) };
     public async Task<AccountSignIn> StartAsync(CancellationToken cancellation = default)
     {
@@ -97,10 +102,10 @@ public sealed class AccountClient(RoomAddress address) : IDisposable
         if (!response.IsSuccessStatusCode) throw new RoomProtocolException(response.StatusCode == System.Net.HttpStatusCode.Unauthorized ? "accountSignInRequired" : "accountUnavailable");
         return json.RootElement.GetProperty("result").Clone();
     }
-    private static AccountDeviceSession Device(JsonElement value)
+    private AccountDeviceSession Device(JsonElement value)
     {
         Need(value.GetProperty("expiresIn").GetInt32() == 600);
-        return new(Profile(value.GetProperty("account")), Token(value.GetProperty("accessToken")), Token(value.GetProperty("refreshToken")));
+        return new(Profile(value.GetProperty("account")), Token(value.GetProperty("accessToken")), Token(value.GetProperty("refreshToken")), address.Origin, credentialOwner);
     }
     private static AccountProfile Profile(JsonElement value, bool proposal = false)
     {

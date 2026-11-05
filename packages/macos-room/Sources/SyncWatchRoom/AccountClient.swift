@@ -13,6 +13,19 @@ public struct AccountDeviceSession: Sendable, CustomStringConvertible, CustomDeb
     public let account: AccountProfile
     fileprivate let access: String
     fileprivate let refresh: String
+    fileprivate let issuer: URL?
+    fileprivate let credentialOwner: UUID?
+    init(account: AccountProfile, access: String, refresh: String, issuer: URL? = nil, credentialOwner: UUID? = nil) {
+        self.account = account
+        self.access = access
+        self.refresh = refresh
+        self.issuer = issuer
+        self.credentialOwner = credentialOwner
+    }
+    func roomCredential() throws -> AccountRoomCredential {
+        guard let issuer, let credentialOwner else { throw RoomProtocolFailure.malformed }
+        return AccountRoomCredential(origin: issuer, owner: credentialOwner, accountID: account.id, access: access)
+    }
     public var description: String { "[account session redacted]" }
     public var debugDescription: String { description }
 }
@@ -33,7 +46,8 @@ public struct AccountSignInStatus: Sendable {
 
 /// Account API is independent of room admission. No Google token reaches this client.
 public actor AccountClient {
-    private let address: RoomAddress
+    private nonisolated let address: RoomAddress
+    private nonisolated let credentialOwner = UUID()
     private let session: URLSession
     private let delegate = RoomSessionDelegate()
     public init(address: RoomAddress) {
@@ -46,6 +60,9 @@ public actor AccountClient {
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 20
         session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+    }
+    public nonisolated func roomAuthority(_ device: AccountDeviceSession) throws -> RoomAccountAuthority {
+        try RoomAccountAuthority(address: address, device: device, owner: credentialOwner)
     }
     public func start() async throws -> AccountSignIn {
         let proof = try Self.secret()
@@ -91,7 +108,7 @@ public actor AccountClient {
             "sign-ins/" + signIn.id + "/confirm",
             body: ["proof": signIn.proof, "requestId": signIn.confirmation, "browserProof": code])
         guard result["status"] as? String == "complete" else { throw RoomProtocolFailure.malformed }
-        return try Self.device(result["session"])
+        return try device(result["session"])
     }
     public func cancel(_ signIn: AccountSignIn) async throws {
         _ = try await request("sign-ins/" + signIn.id + "/cancel", body: ["proof": signIn.proof])
@@ -109,9 +126,9 @@ public actor AccountClient {
         // Retry only identical request bytes so a lost reply cannot look like refresh-token theft.
         let body = ["refreshToken": saved.refreshToken, "requestId": saved.requestID]
         let result: AccountDeviceSession
-        do { result = try Self.device(await request("refresh", body: body)["session"]) } catch is URLError {
+        do { result = try device(await request("refresh", body: body)["session"]) } catch is URLError {
             try Task.checkCancellation()
-            result = try Self.device(await request("refresh", body: body)["session"])
+            result = try device(await request("refresh", body: body)["session"])
         }
         guard result.account.id == saved.accountID else {
             try? await logout(result)
@@ -157,12 +174,12 @@ public actor AccountClient {
         guard let result = envelope["result"] as? [String: Any] else { throw RoomProtocolFailure.malformed }
         return result
     }
-    private static func device(_ value: Any?) throws -> AccountDeviceSession {
+    private func device(_ value: Any?) throws -> AccountDeviceSession {
         guard let object = value as? [String: Any], try RoomWire.integer(object["expiresIn"], maximum: 600) == 600
         else { throw RoomProtocolFailure.malformed }
         return try AccountDeviceSession(
-            account: profile(object["account"]), access: token(object["accessToken"]),
-            refresh: token(object["refreshToken"]))
+            account: Self.profile(object["account"]), access: Self.token(object["accessToken"]),
+            refresh: Self.token(object["refreshToken"]), issuer: address.origin, credentialOwner: credentialOwner)
     }
     private static func profile(_ value: Any?, proposal: Bool = false) throws -> AccountProfile {
         guard let object = value as? [String: Any], let id = object["id"] as? String,
