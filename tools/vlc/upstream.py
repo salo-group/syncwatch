@@ -28,6 +28,7 @@ def build(context, sources, profile):
     (context.work / "configuration-derivatives.json").write_text(json.dumps({
         "vlc": {name: {"originalSha256": digest(original[name]) if name in original else None,
                        "configuredSha256": digest(data)} for name, data in derivatives.items()},
+        "ffmpeg": json.loads((context.work / "ffmpeg-configuration-derivatives.json").read_text()),
         "macosAvailability": "Upstream pipe/dup fallbacks selected for macOS13 compatibility",
         "gnuConfig": {name: str(path) for name, path in auxiliaries.items()}}, indent=2) + "\n", encoding="utf-8", newline="\n")
     context.run("vlc-bootstrap", ["./bootstrap"], cwd=source, shell=True)

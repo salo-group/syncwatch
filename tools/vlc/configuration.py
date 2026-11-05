@@ -2,6 +2,7 @@
 
 import datetime
 import re
+from pathlib import Path
 
 
 def pulse_version(original, profile):
@@ -82,3 +83,27 @@ def vlc_files(original, profile):
             "modules/demux/avformat/demux.c": avformat_clock(original["modules/demux/avformat/demux.c"]),
             "src/input/decoder.c": decoder_flush(original["src/input/decoder.c"]),
             "src/revision.txt": (profile["sources"]["vlc"]["revision"] + "\n").encode()}
+
+
+def ffmpeg_files(original):
+    """Source-checked, disclosed Matroska subtitle preroll for a normal A/V seek."""
+    source = original["libavformat/matroskadec.c"]
+    replacements = [
+        (b"    uint64_t pos;\n} MatroskaIndexPos;",
+         b"    uint64_t pos;\n    uint64_t relative;\n    uint64_t duration;\n} MatroskaIndexPos;"),
+        (b"    { MATROSKA_ID_CUERELATIVEPOSITION,EBML_NONE },",
+         b"    { MATROSKA_ID_CUERELATIVEPOSITION, EBML_UINT, 0, 0, offsetof(MatroskaIndexPos, relative) },"),
+        (b"    { MATROSKA_ID_CUEDURATION,        EBML_NONE },",
+         b"    { MATROSKA_ID_CUEDURATION, EBML_UINT, 0, 0, offsetof(MatroskaIndexPos, duration) },"),
+        (b"static int matroska_read_seek(AVFormatContext *s, int stream_index,",
+         Path(__file__).with_name("matroska_preroll.c").read_bytes() +
+         b"\nstatic int matroska_read_seek(AVFormatContext *s, int stream_index,"),
+        (b"    avpriv_update_cur_dts(s, st, sti->index_entries[index].timestamp);\n    return 0;",
+         b"    avpriv_update_cur_dts(s, st, sti->index_entries[index].timestamp);\n"
+         b"    return sw_restore_indexed_subtitles(matroska, st, timestamp, sti->index_entries[index].pos);"),
+    ]
+    for before, after in replacements:
+        if source.count(before) != 1:
+            raise ValueError("Review the pinned FFmpeg Matroska seek before configuring subtitle preroll")
+        source = source.replace(before, after)
+    return {"libavformat/matroskadec.c": source}
