@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace SyncWatch.RoomMetadata.Accounts;
@@ -9,7 +10,12 @@ public sealed class AccountRepository : IDisposable
     private sealed record User(string Issuer, string Subject, AccountProfile Profile);
     private sealed record Device(string UserId, string AccessHash, string RefreshHash, DateTimeOffset AccessUntil,
         DateTimeOffset RefreshUntil, string? PreviousHash = null, string? RetryId = null,
-        DateTimeOffset? RetryUntil = null, DeviceSession? RetryReply = null, string[]? RetiredHashes = null);
+        DateTimeOffset? RetryUntil = null, DeviceSession? RetryReply = null, string[]? RetiredHashes = null)
+    {
+        // Rooms never survive a service restart. Rotation and pruning retain this identity;
+        // deserialization creates a fresh one without migrating the encrypted account format.
+        [JsonIgnore] public string RuntimeId { get; init; } = AccountWire.Secret();
+    }
     private sealed record State(int Version, User[] Users, Device[] Devices);
     private readonly object gate = new();
     private readonly string path;
@@ -61,13 +67,40 @@ public sealed class AccountRepository : IDisposable
 
     public AccountProfile Authenticate(string access)
     {
-        AccountWire.Need(AccountWire.Token(access), "unauthorized", 401);
         lock (gate)
         {
-            Device? device = state.Devices.FirstOrDefault(d => AccountWire.Matches(access, d.AccessHash) && d.AccessUntil > clock.GetUtcNow());
-            AccountWire.Need(device is not null, "unauthorized", 401);
-            return state.Users.Single(u => u.Profile.Id == device!.UserId).Profile;
+            Device device = AuthenticatedDevice(access);
+            return state.Users.Single(u => u.Profile.Id == device.UserId).Profile;
         }
+    }
+
+    public AccountPrincipal Authorize(string access)
+    {
+        lock (gate)
+        {
+            Device device = AuthenticatedDevice(access);
+            return new(device.UserId, device.RuntimeId);
+        }
+    }
+
+    public bool IsActive(AccountPrincipal principal)
+    {
+        lock (gate)
+        {
+            DateTimeOffset now = clock.GetUtcNow();
+            return state.Devices.Any(d => d.RuntimeId == principal.SessionId && d.UserId == principal.AccountId
+                && d.AccessUntil > now && d.RefreshUntil > now);
+        }
+    }
+
+    private Device AuthenticatedDevice(string access)
+    {
+        AccountWire.Need(AccountWire.Token(access), "unauthorized", 401);
+        DateTimeOffset now = clock.GetUtcNow();
+        Device? device = state.Devices.FirstOrDefault(d => AccountWire.Matches(access, d.AccessHash)
+            && d.AccessUntil > now && d.RefreshUntil > now);
+        AccountWire.Need(device is not null, "unauthorized", 401);
+        return device;
     }
 
     public DeviceSession Refresh(string refresh, string requestId)
@@ -93,8 +126,12 @@ public sealed class AccountRepository : IDisposable
                 throw new AccountException("sessionRevoked", 401);
             }
             DeviceSession reply = new(current.Users.Single(u => u.Profile.Id == device.UserId).Profile, AccountWire.Secret(), AccountWire.Secret());
-            Device replacement = new(device.UserId, AccountWire.Hash(reply.AccessToken), AccountWire.Hash(reply.RefreshToken), now.AddMinutes(10),
-                device.RefreshUntil, device.RefreshHash, requestId, now.AddSeconds(30), reply, [.. device.RetiredHashes ?? [], device.RefreshHash]);
+            Device replacement = device with
+            {
+                AccessHash = AccountWire.Hash(reply.AccessToken), RefreshHash = AccountWire.Hash(reply.RefreshToken), AccessUntil = now.AddMinutes(10),
+                PreviousHash = device.RefreshHash, RetryId = requestId, RetryUntil = now.AddSeconds(30), RetryReply = reply,
+                RetiredHashes = [.. device.RetiredHashes ?? [], device.RefreshHash]
+            };
             Save(current with { Devices = current.Devices.Select(d => d == device ? replacement : d).ToArray() });
             return reply;
         }
