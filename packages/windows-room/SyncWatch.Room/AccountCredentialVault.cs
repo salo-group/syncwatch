@@ -6,7 +6,8 @@ public sealed class AccountVaultException : Exception
 {
     public int? NativeErrorCode { get; }
     public AccountVaultException(int? nativeErrorCode = null) : base("Account credential storage unavailable" +
-        (nativeErrorCode is int code ? " (OS code " + code + ")" : "")) { NativeErrorCode = nativeErrorCode; }
+        (nativeErrorCode is int code ? " (OS code " + code + ")" : ""))
+    { NativeErrorCode = nativeErrorCode; }
 }
 
 /// <summary>Local-machine Windows Credential Manager storage. No token enters a preference file or diagnostic.</summary>
@@ -47,8 +48,15 @@ public sealed class AccountCredentialVault
         try
         {
             Marshal.Copy(data, 0, pointer, data.Length);
-            Credential credential = new() { Type = 1, Target = target, BlobSize = (uint)data.Length,
-                Blob = pointer, Persist = 2, UserName = "SyncWatch" };
+            Credential credential = new()
+            {
+                Type = 1,
+                Target = target,
+                BlobSize = (uint)data.Length,
+                Blob = pointer,
+                Persist = 2,
+                UserName = "SyncWatch"
+            };
             if (!CredWrite(ref credential, 0)) throw new AccountVaultException(Marshal.GetLastPInvokeError());
         }
         finally { Marshal.Copy(new byte[data.Length], 0, pointer, data.Length); Marshal.FreeHGlobal(pointer); }
