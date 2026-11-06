@@ -2,6 +2,8 @@
 
 SyncWatch needs one developer-managed Google integration for accounts and meeting creation. Participants sign in through Google; they do not create Cloud projects or enter API credentials. All three desktop clients provide account sign-in, authenticated rooms and a room-owned Meet flow. Real calling acceptance remains incomplete; configuration alone does not qualify a deployment.
 
+The [cost policy](architecture/cost-policy.md) requires ordinary free Google accounts and no additional paid services. Verify meeting creation for those accounts; an organizer's paid Workspace subscription or trial is not an acceptance substitute.
+
 ## Development registration
 
 Use an owner-controlled Google account to create a dedicated **SyncWatch Development** project in [Google Cloud Console](https://console.cloud.google.com/projectcreate). Keep production in a separate project. The owner handles account terms and organizational requirements. Do not enable billing or purchase services merely to complete setup; any billing prompt needs an explicit deployment decision.
