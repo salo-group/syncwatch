@@ -158,6 +158,7 @@ import SyncWatchRoom
     }
     private func apply(_ value: RoomMeetAuthorizationStatus) {
         permissionStatus = value
+        if value.state == "expired" { notice = "meetPermissionExpired" }
         if let reason = value.reason {
             notice = reason == "accountMismatch" ? "meetAccountMismatch" : reason == "invalidConfirmation" ? "meetInvalidConfirmation" : "meetPermissionUnavailable"
         }

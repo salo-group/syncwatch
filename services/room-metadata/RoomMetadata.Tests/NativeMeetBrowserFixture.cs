@@ -18,7 +18,7 @@ internal sealed class NativeMeetBrowserFixture : IDisposable
     private readonly HttpClient browser = new(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false })
     { Timeout = TimeSpan.FromSeconds(10) };
 
-    internal NativeMeetBrowserFixture(Microsoft.AspNetCore.Builder.WebApplication app, Uri origin)
+    internal NativeMeetBrowserFixture(Microsoft.AspNetCore.Builder.WebApplication app, Uri origin, Action? expirePermission = null)
     {
         app.MapPost("/__test/meet-browser", async context =>
         {
@@ -41,7 +41,8 @@ internal sealed class NativeMeetBrowserFixture : IDisposable
             // identifies only this test server's fixed synthetic provider subject, never a production identity.
             lock (gate) identity = identities.SingleOrDefault(value => (principal is null || value.AccountId == principal.AccountId)
                 && Wire.SecretMatches(Wire.String(body, "fixtureToken"), value.TokenHash));
-            Wire.Need(identity is not null && scenario is "accept" or "wrongAccount" or "missingScope" or "reuse", "forbidden", 403);
+            Wire.Need(identity is not null && scenario is "accept" or "wrongAccount" or "missingScope" or "reuse" or "expire", "forbidden", 403);
+            Wire.Need(scenario != "expire" || expirePermission is not null, "forbidden", 403);
 
             // Exercise the real per-challenge OAuth adapter without following the redirect to Google.
             using var redirect = await browser.GetAsync(new Uri(origin, "/auth/google/meet-start?id=" + Uri.EscapeDataString(id)), context.RequestAborted);
@@ -56,6 +57,7 @@ internal sealed class NativeMeetBrowserFixture : IDisposable
             string? code = app.Services.GetRequiredService<MeetAuthorizationTransactions>().CompleteBrowser(id,
                 scenario == "wrongAccount" ? identity!.Subject + "-other" : identity!.Subject,
                 scenario == "reuse" ? null : "synthetic-meet-refresh-" + Guid.NewGuid().ToString("N"), scenario != "missingScope");
+            if (scenario == "expire") expirePermission!();
             context.Response.ContentType = "application/json";
             await JsonSerializer.SerializeAsync(context.Response.Body, new { v = 2, result = new { browserProof = code } }, Wire.Json, context.RequestAborted);
         });

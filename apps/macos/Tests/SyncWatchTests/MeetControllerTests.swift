@@ -15,6 +15,15 @@ import Testing
         #expect(guest.presentation.enabledActions.isDisjoint(with: ["meetAuthorize", "meetStart", "meetEnd"]))
         owner.action("meetAuthorize")
         try await meetSettles { owner.presentation.enabledActions.contains("meetOpenAuthorization") }
+        owner.action("meetOpenAuthorization"); try await meetSettles { gate.authorization != nil }
+        let expiredCode = try await completeMeetBrowser(service: service, authorization: #require(gate.authorization), fixtureToken: fixtureToken, scenario: "expire")
+        try await meetSettles { owner.presentation.status == "meetPermissionExpired" && owner.presentation.enabledActions.contains("meetAuthorize") }
+        #expect(host.connected && peer.connected && gate.opens == 0 && owner.presentation.name.isEmpty && owner.presentation.email.isEmpty)
+        owner.action("editMeetBrowserProof", value: expiredCode); owner.action("meetConfirm")
+        #expect(owner.presentation.status == "meetPermissionExpired" && owner.presentation.browserProof.isEmpty)
+        gate.authorization = nil
+        owner.action("meetAuthorize")
+        try await meetSettles { owner.presentation.enabledActions.contains("meetOpenAuthorization") }
         #expect(owner.presentation.name.isEmpty && owner.presentation.email.isEmpty)
         owner.action("meetOpenAuthorization")
         try await meetSettles { gate.authorization != nil }
@@ -93,13 +102,13 @@ private final class MeetFixtureRedirects: NSObject, URLSessionTaskDelegate, @unc
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
         newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
 }
-private func completeMeetBrowser(service: URL, authorization: URL, fixtureToken: String) async throws -> String {
+private func completeMeetBrowser(service: URL, authorization: URL, fixtureToken: String, scenario: String = "accept") async throws -> String {
     let parts = try #require(URLComponents(url: authorization, resolvingAgainstBaseURL: false))
     let id = try #require(parts.queryItems?.first(where: { $0.name == "id" })?.value)
     let url = service.appendingPathComponent("__test/meet-browser")
     var request = URLRequest(url: url); request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = try JSONSerialization.data(withJSONObject: ["v": 2, "transactionId": id, "scenario": "accept", "fixtureToken": fixtureToken])
+    request.httpBody = try JSONSerialization.data(withJSONObject: ["v": 2, "transactionId": id, "scenario": scenario, "fixtureToken": fixtureToken])
     let config = URLSessionConfiguration.ephemeral
     config.httpCookieStorage = nil; config.urlCredentialStorage = nil; config.timeoutIntervalForRequest = 5; config.timeoutIntervalForResource = 5
     let session = URLSession(configuration: config, delegate: MeetFixtureRedirects(), delegateQueue: nil)

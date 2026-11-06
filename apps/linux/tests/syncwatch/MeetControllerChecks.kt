@@ -30,6 +30,14 @@ internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomCont
         owner.present(); guest.present()
         settles("initial") { "meetAuthorize" in owner.presentation.enabledActions && guest.presentation.status == "meetIdle" }
         check(guest.presentation.enabledActions.intersect(setOf("meetAuthorize", "meetStart", "meetEnd")).isEmpty())
+        owner.action("meetAuthorize"); settles("expiring-authorization-created") { "meetOpenAuthorization" in owner.presentation.enabledActions }
+        owner.action("meetOpenAuthorization"); settles("expiring-browser-opened") { authorization != null }
+        val expiredCode = completeMeetBrowser(service, checkNotNull(authorization), fixtureToken, "expire")
+        settles("permission-expired") { owner.presentation.status == "meetPermissionExpired" && "meetAuthorize" in owner.presentation.enabledActions }
+        check(host.connected && peer.connected && opens == 0 && owner.presentation.name.isEmpty() && owner.presentation.email.isEmpty())
+        owner.action("editMeetBrowserProof", expiredCode); owner.action("meetConfirm")
+        check(owner.presentation.status == "meetPermissionExpired" && owner.presentation.browserProof.isEmpty())
+        authorization = null
         owner.action("meetAuthorize"); settles("authorization-created") { "meetOpenAuthorization" in owner.presentation.enabledActions }
         check(owner.presentation.name.isEmpty() && owner.presentation.email.isEmpty())
         owner.action("meetOpenAuthorization"); settles("browser-opened") { authorization != null }
@@ -77,9 +85,9 @@ internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomCont
         withContext(NonCancellable) { owner.close(); guest.close() }
     }
 }
-private suspend fun completeMeetBrowser(service: URI, authorization: URI, fixtureToken: String): String {
+private suspend fun completeMeetBrowser(service: URI, authorization: URI, fixtureToken: String, scenario: String = "accept"): String {
     check(authorization.rawQuery.startsWith("id="))
-    val bytes = RoomWire.encode(mapOf("v" to 2L, "transactionId" to authorization.rawQuery.removePrefix("id="), "scenario" to "accept", "fixtureToken" to fixtureToken))
+    val bytes = RoomWire.encode(mapOf("v" to 2L, "transactionId" to authorization.rawQuery.removePrefix("id="), "scenario" to scenario, "fixtureToken" to fixtureToken))
     val request = HttpRequest.newBuilder(service.resolve("/__test/meet-browser")).timeout(Duration.ofSeconds(5))
         .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofByteArray(bytes)).build()
     val body = withContext(Dispatchers.IO) {

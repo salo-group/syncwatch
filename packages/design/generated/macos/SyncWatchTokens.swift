@@ -690,6 +690,8 @@ public enum SyncWatchCopy {
             "meetInvalidConfirmation": "The code could not be verified. Check it or cancel the permission request.",
             "meetAccountMismatch": "Use the Google account already signed in to SyncWatch.",
             "meetPermissionUnavailable": "Google did not grant permission to create calls. You can keep watching.",
+            "meetPermissionExpired":
+                "The permission request expired. Allow calls again to start a new request. You can keep watching.",
             "meetBrowserUnavailable": "Could not open your browser. Check the default browser setting and try again.",
             "meetEndConfirmation": "End this room’s call for everyone?",
             "meetKeepCall": "Keep call",
@@ -1019,6 +1021,8 @@ public enum SyncWatchCopy {
             "meetAccountMismatch": "Используйте аккаунт Google, с которым вы вошли в SyncWatch.",
             "meetPermissionUnavailable":
                 "Google не предоставил разрешение создавать звонки. Просмотр можно продолжить.",
+            "meetPermissionExpired":
+                "Запрос разрешения истёк. Снова разрешите звонки, чтобы начать новый запрос. Просмотр можно продолжить.",
             "meetBrowserUnavailable": "Не удалось открыть браузер. Проверьте браузер по умолчанию и повторите попытку.",
             "meetEndConfirmation": "Завершить звонок этой комнаты для всех?",
             "meetKeepCall": "Оставить звонок",

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncWatch.RoomMetadata;
 using SyncWatch.RoomMetadata.Accounts;
 using SyncWatch.RoomMetadata.Calls;
+using SyncWatch.RoomMetadata.Rooms;
 
 /// <summary>Owned integration host with synthetic provider subjects, never a production login path.</summary>
 internal static class NativeAccountRoomFixture
@@ -24,10 +25,16 @@ internal static class NativeAccountRoomFixture
         synchronization.Start(); int syncPort = ((System.Net.IPEndPoint)synchronization.LocalEndpoint).Port; synchronization.Stop();
         var origin = new Uri("http://127.0.0.1:" + port);
         using var calls = new NativeMeetProviderFixture();
+        var permissionTime = new PermissionTime();
         await using var app = RoomApplication.BuildForTests(["--urls", origin.AbsoluteUri], new("owned-native-client", "owned-native-secret", origin,
-            Path.Combine(directory, "accounts")), new(runtime, tls, "127.0.0.1", "127.0.0.1", syncPort), services => services.AddSingleton<IMeetProvider>(calls));
+            Path.Combine(directory, "accounts")), new(runtime, tls, "127.0.0.1", "127.0.0.1", syncPort), services =>
+            {
+                services.AddSingleton<IMeetProvider>(calls);
+                services.AddSingleton(provider => new MeetAuthorizationTransactions(provider.GetRequiredService<AccountRepository>(),
+                    provider.GetRequiredService<AuthenticatedRooms>(), provider.GetRequiredService<MeetGrantRepository>(), origin, permissionTime));
+            });
         var accounts = app.Services.GetRequiredService<AccountRepository>();
-        using var browser = new NativeMeetBrowserFixture(app, origin);
+        using var browser = new NativeMeetBrowserFixture(app, origin, permissionTime.Expire);
         await app.StartAsync();
         try
         {
@@ -53,5 +60,12 @@ internal static class NativeAccountRoomFixture
             await app.StopAsync();
             foreach (string platform in new[] { "macos", "windows", "linux" }) File.Delete(Path.Combine(directory, platform + ".json"));
         }
+    }
+    // Only permission proposals advance; room/account lifetimes and production composition keep real time.
+    private sealed class PermissionTime : TimeProvider
+    {
+        private long offset;
+        public override DateTimeOffset GetUtcNow() => DateTimeOffset.UtcNow + TimeSpan.FromTicks(Interlocked.Read(ref offset));
+        internal void Expire() => Interlocked.Add(ref offset, (MeetPolicy.AuthorizationLifetime + TimeSpan.FromSeconds(1)).Ticks);
     }
 }

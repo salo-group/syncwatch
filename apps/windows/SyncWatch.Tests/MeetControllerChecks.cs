@@ -24,6 +24,14 @@ internal static class MeetControllerChecks
             await Settles(() => owner.Presentation.EnabledActions.Contains("meetAuthorize") && guest.Presentation.Status == "meetIdle");
             Require(!guest.Presentation.EnabledActions.Overlaps(["meetAuthorize", "meetStart", "meetEnd"]));
             owner.Action("meetAuthorize"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetOpenAuthorization"));
+            owner.Action("meetOpenAuthorization"); await Settles(() => authorization is not null);
+            string expiredCode = await CompleteBrowser(service, authorization!, fixtureToken, "expire");
+            await Settles(() => owner.Presentation.Status == "meetPermissionExpired" && owner.Presentation.EnabledActions.Contains("meetAuthorize"));
+            Require(host.Connected && peer.Connected && opens == 0 && owner.Presentation.Name.Length == 0 && owner.Presentation.Email.Length == 0);
+            owner.Action("editMeetBrowserProof", expiredCode); owner.Action("meetConfirm");
+            Require(owner.Presentation.Status == "meetPermissionExpired" && owner.Presentation.BrowserProof.Length == 0);
+            authorization = null;
+            owner.Action("meetAuthorize"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetOpenAuthorization"));
             Require(owner.Presentation.Name.Length == 0 && owner.Presentation.Email.Length == 0);
             owner.Action("meetOpenAuthorization"); await Settles(() => authorization is not null);
             string code = await CompleteBrowser(service, authorization!, fixtureToken);
@@ -67,11 +75,11 @@ internal static class MeetControllerChecks
         }
         finally { release.TrySetResult(true); await owner.CloseAsync(); await guest.CloseAsync(); }
     }
-    private static async Task<string> CompleteBrowser(Uri service, Uri authorization, string fixtureToken)
+    private static async Task<string> CompleteBrowser(Uri service, Uri authorization, string fixtureToken, string scenario = "accept")
     {
         Require(authorization.Query.StartsWith("?id=", StringComparison.Ordinal));
         using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false }) { Timeout = TimeSpan.FromSeconds(5) };
-        using var response = await client.PostAsJsonAsync(new Uri(service, "/__test/meet-browser"), new { v = 2, transactionId = authorization.Query[4..], scenario = "accept", fixtureToken });
+        using var response = await client.PostAsJsonAsync(new Uri(service, "/__test/meet-browser"), new { v = 2, transactionId = authorization.Query[4..], scenario, fixtureToken });
         response.EnsureSuccessStatusCode(); using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         return document.RootElement.GetProperty("result").GetProperty("browserProof").GetString() ?? throw new Exception("Synthetic browser proof missing");
     }

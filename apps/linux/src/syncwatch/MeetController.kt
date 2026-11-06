@@ -150,6 +150,7 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
     private suspend fun valid(token: Long, member: RoomCallMembership): Boolean = currentCoroutineContext().isActive && !closing && visible && generation == token && room.isCurrent(member)
     private fun apply(value: RoomMeetAuthorizationStatus) {
         permissionStatus = value
+        if (value.state == "expired") notice = "meetPermissionExpired"
         value.reason?.let { notice = when (it) { "accountMismatch" -> "meetAccountMismatch"; "invalidConfirmation" -> "meetInvalidConfirmation"; else -> "meetPermissionUnavailable" } }
         if (value.state in setOf("complete", "cancelled", "failed", "expired")) {
             permission = null; permissionStatus = null; model = model.copy(browserProof = ""); browserOpened = false

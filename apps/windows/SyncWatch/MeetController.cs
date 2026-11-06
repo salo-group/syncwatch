@@ -142,6 +142,7 @@ internal sealed class MeetController(RoomController room, Func<Uri, Cancellation
     private void Apply(RoomMeetAuthorizationStatus value)
     {
         permissionStatus = value;
+        if (value.State == "expired") notice = "meetPermissionExpired";
         if (value.Reason is not null) notice = value.Reason == "accountMismatch" ? "meetAccountMismatch" : value.Reason == "invalidConfirmation" ? "meetInvalidConfirmation" : "meetPermissionUnavailable";
         if (value.State is "complete" or "cancelled" or "failed" or "expired")
         { permission = null; permissionStatus = null; model.BrowserProof = ""; browserOpened = false; if (value.State == "complete") call = null; }
