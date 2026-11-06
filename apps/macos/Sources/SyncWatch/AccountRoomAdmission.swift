@@ -54,7 +54,7 @@ enum RoomAdmissionFailure: Error {
     func cancel() async throws {
         if let attempt { try await client.cancelAdmission(attempt) }
     }
-    private func retry<T>(_ operation: () async throws -> T) async throws -> T {
+    private func retry<T: Sendable>(_ operation: @MainActor () async throws -> T) async throws -> T {
         for index in 0..<2 {
             do { return try await operation() } catch {
                 try Task.checkCancellation()
