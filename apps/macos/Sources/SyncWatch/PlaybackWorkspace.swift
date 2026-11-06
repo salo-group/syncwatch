@@ -147,7 +147,8 @@ struct LocalPlaybackLaunch {
             let session = try HelperSession(
                 transport: transport, player: player, nativeScope: scope,
                 endpoint: endpoint, media: media, revision: revision,
-                requireDeclaredIdentity: requiresSharedAdmission || requireDeclaredIdentity, admissionProvider: admissionProvider
+                requireDeclaredIdentity: requiresSharedAdmission || requireDeclaredIdentity,
+                admissionProvider: admissionProvider
             ) { [weak self] state in
                 if state.connection == .reconnecting { self?.checkpoint?.interrupt() }
                 self?.sharedState = state
@@ -458,7 +459,8 @@ private struct PlaybackTrackPane: View {
                     controller.dismissMenu()
                     onOpenSettings()
                 } else if action == "openCall", let onOpenCall {
-                    controller.dismissMenu(); onOpenCall()
+                    controller.dismissMenu()
+                    onOpenCall()
                 } else {
                     controller.action(action, value: value)
                 }

@@ -19,7 +19,8 @@ import Testing
         do {
             let reply = try HelperReply.decode(
                 Data((fixture["frame"] as! String).utf8), wireScope: scope, commandID: 9, expected: expected,
-                expectedRevision: fixture["expectedRevision"] as? String, requireAdmission: fixture["requireAdmission"] as? Bool == true)
+                expectedRevision: fixture["expectedRevision"] as? String,
+                requireAdmission: fixture["requireAdmission"] as? Bool == true)
             if fixture["name"] as? String == "rejected" {
                 #expect(reply == .rejected(code: "unavailable", retryable: true))
             }

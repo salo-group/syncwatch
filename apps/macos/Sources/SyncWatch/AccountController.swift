@@ -372,7 +372,10 @@ import SyncWatchRoom
                     blockStorage()
                 } else {
                     if generation == scope {
-                        do { try await activate(device, owner: client) } catch { blockStorage(); return }
+                        do { try await activate(device, owner: client) } catch {
+                            blockStorage()
+                            return
+                        }
                         presentation.status = "accountSignOutFailed"
                     }
                 }
@@ -431,7 +434,10 @@ import SyncWatchRoom
         guard let previous = roomAuthority else { return }
         roomAuthority = nil
         let cleanup = authorityCleanup
-        authorityCleanup = Task { await cleanup?.value; await previous.close() }
+        authorityCleanup = Task {
+            await cleanup?.value
+            await previous.close()
+        }
     }
     private func blockStorage() {
         dropRoomAuthority()

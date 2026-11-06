@@ -55,13 +55,15 @@ import Testing
     editor.state = "awaitingApproval"
     #expect(editor.busy && editor.context.values["can.cancelRequest"] == "true")
     #expect(editor.context.values["status"] == "roomAdmissionPending" && editor.context.values["showForm"] == "false")
-    editor.state = "connected"; editor.owner = true
+    editor.state = "connected"
+    editor.owner = true
     editor.pendingRequests = [RoomAdmissionRow(id: "approval-handle", name: "Guest", email: "guest@example.invalid")]
     #expect(editor.context.collections["pendingRequests"]?.first?.values["requestID"] == "approval-handle")
     #expect(editor.context.collections["pendingRequests"]?.first?.values["can.decide"] == "true")
     editor.pendingAvailable = false
     #expect(editor.context.collections["pendingRequests"]?.first?.values["can.decide"] == "false")
-    editor.pendingAvailable = true; editor.deciding = true
+    editor.pendingAvailable = true
+    editor.deciding = true
     #expect(editor.context.collections["pendingRequests"]?.first?.values["can.decide"] == "false")
     #expect(!RoomEditor(flow: "unknown").isValid)
 }

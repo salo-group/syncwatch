@@ -117,7 +117,10 @@ public actor RoomClient {
     }
     public func leave(_ admission: RoomAdmission) async throws {
         let bytes = try await request("POST", "\(version)/rooms/\(admission.roomID)/leave", admission: admission)
-        if authority != nil { try RoomAccessWire.status(bytes, "left"); return }
+        if authority != nil {
+            try RoomAccessWire.status(bytes, "left")
+            return
+        }
         let value = try RoomWire.object(bytes)
         try RoomWire.keys(value, ["v", "status"])
         guard try RoomWire.integer(value["v"], maximum: 2) == 1, value["status"] as? String == "left" else {
@@ -128,7 +131,8 @@ public actor RoomClient {
         try command.verify(admission)
         return try RoomCommandResult.decode(
             await request(
-                "POST", "\(version)/rooms/\(admission.roomID)/commands", admission: admission, body: command.encodedBytes
+                "POST", "\(version)/rooms/\(admission.roomID)/commands", admission: admission,
+                body: command.encodedBytes
             ),
             command: command)
     }
@@ -141,10 +145,12 @@ public actor RoomClient {
         let pending = Task { try await self.connectEvents(admission) }
         eventOpening = pending
         defer { eventOpening = nil }
-        return try await withTaskCancellationHandler(operation: { try await pending.value }, onCancel: { pending.cancel() })
+        return try await withTaskCancellationHandler(
+            operation: { try await pending.value }, onCancel: { pending.cancel() })
     }
     private func connectEvents(_ admission: RoomAdmission) async throws -> RoomEventStream {
-        var parts = URLComponents(url: address.endpoint("\(version)/rooms/\(admission.roomID)/events"), resolvingAgainstBaseURL: false)!
+        var parts = URLComponents(
+            url: address.endpoint("\(version)/rooms/\(admission.roomID)/events"), resolvingAgainstBaseURL: false)!
         parts.scheme = address.origin.scheme == "https" ? "wss" : "ws"
         var request = URLRequest(url: parts.url!)
         if let authority {
@@ -182,18 +188,21 @@ public actor RoomClient {
     private func validate(_ admission: RoomAdmission) throws {
         try RoomWire.id(admission.roomID)
         try RoomWire.id(admission.memberID)
-        guard let _ = admission.bootstrap.snapshot.members.first(where: { $0.memberID == admission.memberID }),
+        guard admission.bootstrap.snapshot.members.first(where: { $0.memberID == admission.memberID }) != nil,
             authority.map({ admission.accountScope == $0.scope && admission.token == nil })
-                ?? (admission.accountScope == nil && admission.token != nil) else { throw RoomProtocolFailure.malformed }
+                ?? (admission.accountScope == nil && admission.token != nil)
+        else { throw RoomProtocolFailure.malformed }
     }
     private func memberHeaders(_ admission: RoomAdmission, request: inout URLRequest) throws {
         try validate(admission)
-        let identity = admission.bootstrap.snapshot.members.first(where: { $0.memberID == admission.memberID })!.identity
+        let identity = admission.bootstrap.snapshot.members.first(where: { $0.memberID == admission.memberID })!
+            .identity
         request.setValue(admission.memberID, forHTTPHeaderField: "X-SyncWatch-Member")
         request.setValue(identity.clientRunID, forHTTPHeaderField: "X-SyncWatch-Run")
     }
     func request(
-        _ method: String, _ path: String, credential: RoomSecret? = nil, admission: RoomAdmission? = nil, body: Data? = nil, cursor: String? = nil,
+        _ method: String, _ path: String, credential: RoomSecret? = nil, admission: RoomAdmission? = nil,
+        body: Data? = nil, cursor: String? = nil,
         generation: UInt64? = nil, runID: String? = nil
     )
         async throws -> Data
@@ -208,8 +217,13 @@ public actor RoomClient {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let admission, authority != nil { try memberHeaders(admission, request: &request) }
-        if let runID { try RoomWire.id(runID); request.setValue(runID, forHTTPHeaderField: "X-SyncWatch-Run") }
-        if let credential = credential ?? admission?.token { request.setValue("Bearer \(credential.value)", forHTTPHeaderField: "Authorization") }
+        if let runID {
+            try RoomWire.id(runID)
+            request.setValue(runID, forHTTPHeaderField: "X-SyncWatch-Run")
+        }
+        if let credential = credential ?? admission?.token {
+            request.setValue("Bearer \(credential.value)", forHTTPHeaderField: "Authorization")
+        }
         if let body {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -238,7 +252,10 @@ public actor RoomClient {
         guard !closed else { throw RoomProtocolFailure.closed }
         return data
     }
-    private struct Response: Sendable { let status: Int; let bytes: Data }
+    private struct Response: Sendable {
+        let status: Int
+        let bytes: Data
+    }
     private static func transfer(_ session: URLSession, request: URLRequest) async throws -> Response {
         let (stream, response) = try await session.bytes(for: request)
         defer { stream.task.cancel() }

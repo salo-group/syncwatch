@@ -12,8 +12,10 @@ public struct MeetPresentation: Sendable, CustomStringConvertible, CustomDebugSt
     public var enabledActions: Set<String> = ["close", "openRoom"]
     public init() {}
     public var context: DesignContext {
-        var values = ["namespace": "meet", "authorizationState": authorizationState, "browserProof": browserProof,
-            "name": name, "email": email, "status": status]
+        var values = [
+            "namespace": "meet", "authorizationState": authorizationState, "browserProof": browserProof,
+            "name": name, "email": email, "status": status,
+        ]
         for action in enabledActions { values["can." + action] = "true" }
         return DesignContext(values)
     }
@@ -22,8 +24,11 @@ public struct MeetDialog: View {
     public var presentation: MeetPresentation
     public var language: String
     public var onAction: (String, String?) -> Void
-    public init(presentation: MeetPresentation, language: String = "en", onAction: @escaping (String, String?) -> Void) {
-        self.presentation = presentation; self.language = language; self.onAction = onAction
+    public init(presentation: MeetPresentation, language: String = "en", onAction: @escaping (String, String?) -> Void)
+    {
+        self.presentation = presentation
+        self.language = language
+        self.onAction = onAction
     }
     public var body: some View {
         DesignSurface("Meet", context: presentation.context, language: language) { onAction($0.action, $0.value) }

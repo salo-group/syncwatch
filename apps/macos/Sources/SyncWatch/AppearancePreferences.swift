@@ -205,8 +205,9 @@ import SyncWatchLibrary
             playerPresented: watch.playerPresented,
             library: AnyView(
                 LibraryWorkspace(
-                    presentation: meet.libraryPresentation(account.libraryPresentation(
-                        shared.libraryPresentation(watch.libraryPresentation(library.presentation)))),
+                    presentation: meet.libraryPresentation(
+                        account.libraryPresentation(
+                            shared.libraryPresentation(watch.libraryPresentation(library.presentation)))),
                     language: preferences.state.preferences.language
                 ) { action, value in
                     if action != "openLibraryAudio" && action != "openLibrarySubtitles" { library.dismissTracks() }
@@ -227,7 +228,8 @@ import SyncWatchLibrary
                     } else if action == "endWatching" {
                         Task { await shared.end() }
                     } else if action == "openCall" {
-                        meet.present(); showMeet = true
+                        meet.present()
+                        showMeet = true
                     } else if action == "openRoom" {
                         showRoom = true
                     } else if action == "openAccount" {
@@ -248,8 +250,15 @@ import SyncWatchLibrary
             room.updateLibrary(revision: revision, files: library.roomFiles)
         }
         .onChange(of: watch.playerPresented) { if $0 { library.dismissTracks() } }
-        .onChange(of: room.connected) { _ in shared.membershipChanged(); meet.membershipChanged() }
-        .task(id: room.callMembership().map { CallRoomBinding(owner: ObjectIdentifier($0.owner), member: $0.memberID, epoch: $0.epoch) }) {
+        .onChange(of: room.connected) { _ in
+            shared.membershipChanged()
+            meet.membershipChanged()
+        }
+        .task(
+            id: room.callMembership().map {
+                CallRoomBinding(owner: ObjectIdentifier($0.owner), member: $0.memberID, epoch: $0.epoch)
+            }
+        ) {
             meet.membershipChanged()
         }
         .task {
@@ -329,21 +338,32 @@ import SyncWatchLibrary
                     return saved
                 }, onClose: { showSettings = false })
         }
-        .task(id: AccountRoomBinding(authority: account.roomAuthority.map { ObjectIdentifier($0) }, name: account.presentation.name)) {
+        .task(
+            id: AccountRoomBinding(
+                authority: account.roomAuthority.map { ObjectIdentifier($0) }, name: account.presentation.name)
+        ) {
             await shared.bindAccount(account.roomAuthority, name: account.presentation.name)
             meet.membershipChanged()
         }
         .sheet(isPresented: $showRoom, onDismiss: { room.clearSecrets() }) {
-            RoomConnectionSheet(room: room, account: account, shared: shared, language: preferences.state.preferences.language) {
+            RoomConnectionSheet(
+                room: room, account: account, shared: shared, language: preferences.state.preferences.language
+            ) {
                 showRoom = false
             }
         }
         .sheet(isPresented: $showAccount, onDismiss: { Task { await account.dismiss() } }) {
-            AccountConnectionSheet(account: account, language: preferences.state.preferences.language) { showAccount = false }
+            AccountConnectionSheet(account: account, language: preferences.state.preferences.language) {
+                showAccount = false
+            }
         }
         .sheet(isPresented: $showMeet, onDismiss: { Task { await meet.dismiss() } }) {
-            MeetConnectionSheet(meet: meet, language: preferences.state.preferences.language, onClose: { showMeet = false },
-                onOpenRoom: { showMeet = false; showRoom = true })
+            MeetConnectionSheet(
+                meet: meet, language: preferences.state.preferences.language, onClose: { showMeet = false },
+                onOpenRoom: {
+                    showMeet = false
+                    showRoom = true
+                })
         }
         .preferredColorScheme(preferences.colorScheme)
         .environment(\.locale, Locale(identifier: preferences.state.preferences.language))
@@ -354,7 +374,10 @@ import SyncWatchLibrary
                 ConfiguredPlaybackPane(
                     controller: controller, preferences: preferences,
                     roomNotice: shared.playerNotice, onSaved: watch.preferencesChanged,
-                    onOpenCall: { meet.present(); showMeet = true }
+                    onOpenCall: {
+                        meet.present()
+                        showMeet = true
+                    }
                 )
                 .id(controller.scope.mediaGeneration))
         }

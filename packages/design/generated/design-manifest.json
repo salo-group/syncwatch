@@ -17,7 +17,7 @@
     "layouts.json": "05f35113a86b1339704192b14d03d16ee0c1463370a0287f103f9440728a003d",
     "package.json": "49e278398b736b490a57f3ec73bfdcdcc863d63be73788115f41b6db6bee5165"
   },
-  "generatorRevision": "e682398c24e9daffaa4b29e2f7ddc16f6b5d81464975776e45ceedb4bc4a0b0a",
+  "generatorRevision": "2aa8291c4d4b2d2f839b186049d34d3e8f7236421e156fd508043361f472d0aa",
   "generator": {
     "styleDictionary": "5.7.0",
     "files": {
@@ -28,7 +28,7 @@
       "tools/design/sd-utils.mjs": "c8ce6096a0428d0e76c5980b6ceb542344a679de03e3f38229d0e5274300c8a8",
       "tools/design/sources.json": "61ee09429a49bf5ba132278fa43982326d0741e47974ed0ba5d5c431d9befcb3",
       "tools/design/presentation-formats.mjs": "47a8570026c429720ac121c0ad1c4067cd1e1f29395d6e390512ea39d2e8bb7a",
-      "tools/design/settings-formats.mjs": "b36086833a20f2642fe0f0cda77492f1f94e700d5679abcbe8793f96b822d0cc",
+      "tools/design/settings-formats.mjs": "f2abdd6499748e92a9473e6e0407eee03292824af0ef9d34c673fc0e26bbcc0d",
       "tools/design/player-formats.mjs": "d18bab019efb9a72f6be1eea5a400dc8098cca0d47cad760ac4a1b62227cd6b9",
       "tools/design/player-settings-formats.mjs": "1f1a623d7ff3de8f7f4c3af6536e8baf83c56e89b5bb2364f60f5267e5b43927",
       "tools/design/layout-formats.mjs": "28ff7a4da70b4364fc28ba1069f8bc497642150f7d7154c7f03189cee7566c6b",

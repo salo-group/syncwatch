@@ -12,11 +12,13 @@ import SyncWatchDesign
     @State private var showAccount = false
 
     var body: some View {
-        RoomDialog(editor: $room.editor, language: language, onAdmissionDecision: room.decideAdmission, onAction: action)
-            .interactiveDismissDisabled(room.editor.busy)
-            .sheet(isPresented: $showAccount, onDismiss: { Task { await account.dismiss() } }) {
-                AccountConnectionSheet(account: account, language: language) { showAccount = false }
-            }
+        RoomDialog(
+            editor: $room.editor, language: language, onAdmissionDecision: room.decideAdmission, onAction: action
+        )
+        .interactiveDismissDisabled(room.editor.busy)
+        .sheet(
+            isPresented: $showAccount, onDismiss: { Task { await account.dismiss() } },
+            content: { AccountConnectionSheet(account: account, language: language) { showAccount = false } })
     }
     private func action(_ action: String) {
         switch action {
@@ -29,7 +31,8 @@ import SyncWatchDesign
                 if let transfer = await room.invitationForCopy(), room.canCopy(transfer) {
                     NSPasteboard.general.clearContents()
                     room.invitationCopyCompleted(
-                        NSPasteboard.general.setString(transfer.invitation.copyText(), forType: .string), transfer: transfer)
+                        NSPasteboard.general.setString(transfer.invitation.copyText(), forType: .string),
+                        transfer: transfer)
                 }
             }
         case "close":

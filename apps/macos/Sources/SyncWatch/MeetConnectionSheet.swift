@@ -13,7 +13,9 @@ struct MeetConnectionSheet: View {
                     await meet.dismiss()
                     if action == "openRoom" { onOpenRoom() } else { onClose() }
                 }
-            } else { meet.action(action, value: value) }
+            } else {
+                meet.action(action, value: value)
+            }
         }
     }
 }

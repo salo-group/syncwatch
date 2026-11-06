@@ -22,21 +22,27 @@ final class RoomAccountTransportTests: XCTestCase, @unchecked Sendable {
             let guestDevice = try await guestAccount.resume(guestRecord)
             let owner = try ownerAccount.roomAuthority(ownerDevice)
             let guest = try guestAccount.roomAuthority(guestDevice)
-            ownerAuthority = owner; guestAuthority = guest
-            let host = RoomClient(authority: owner), peer = RoomClient(authority: guest)
-            ownerRoom = host; guestRoom = peer
+            ownerAuthority = owner
+            guestAuthority = guest
+            let host = RoomClient(authority: owner)
+            let peer = RoomClient(authority: guest)
+            ownerRoom = host
+            guestRoom = peer
             let run = "macos-" + UUID().uuidString
             let admission = try await host.create(runID: run, requestID: "create-" + UUID().uuidString)
             XCTAssertTrue(admission.isAccountBacked)
             let hostEvents = try await host.openEvents(admission)
             _ = try RoomBootstrap.initialEvent(await hostEvents.receive(), admission: admission)
             let invitation = try await host.invite(admission)
-            let attempt = try await peer.requestAdmission(invitation, runID: "guest-" + UUID().uuidString, requestID: "join-" + UUID().uuidString)
+            let attempt = try await peer.requestAdmission(
+                invitation, runID: "guest-" + UUID().uuidString, requestID: "join-" + UUID().uuidString)
             XCTAssertEqual(attempt.request.account, guestDevice.account)
             let pending = try await host.pending(admission)
             XCTAssertEqual(pending.map(\.id), [attempt.request.id])
-            do { _ = try await peer.accept(attempt); XCTFail("Unapproved device admitted") }
-            catch RoomProtocolFailure.rejected("admissionRequired") {}
+            do {
+                _ = try await peer.accept(attempt)
+                XCTFail("Unapproved device admitted")
+            } catch RoomProtocolFailure.rejected("admissionRequired") {}
             try await host.decide(admission, approvalID: attempt.request.id, approve: true)
             let approved = try await peer.admissionStatus(attempt)
             XCTAssertEqual(approved.status, "approved")
@@ -50,15 +56,20 @@ final class RoomAccountTransportTests: XCTestCase, @unchecked Sendable {
             XCTAssertEqual(current.snapshot.members.count, 2)
             let page = try await host.catalog(admission, bootstrap: current, cursor: current.catalogCursor)
             XCTAssertTrue(page.items.isEmpty)
-            let first = try await peer.syncTicket(joined), second = try await peer.syncTicket(joined)
+            let first = try await peer.syncTicket(joined)
+            let second = try await peer.syncTicket(joined)
             XCTAssertTrue(first.credential.value != second.credential.value, "Fresh transports need distinct tickets")
             let meet: RoomMeetAuthorization?
             if let token = fixture["browserFixtureToken"] as? String {
-                meet = try await RoomMeetTransportChecks.run(host: host, peer: peer, owner: admission, guest: joined,
+                meet = try await RoomMeetTransportChecks.run(
+                    host: host, peer: peer, owner: admission, guest: joined,
                     account: ownerDevice.account, fixtureToken: token)
-            } else { meet = nil }
+            } else {
+                meet = nil
+            }
             let withdrawal = try await peer.requestAdmission(
-                host.invite(admission), runID: "withdraw-" + UUID().uuidString, requestID: "withdraw-" + UUID().uuidString)
+                host.invite(admission), runID: "withdraw-" + UUID().uuidString,
+                requestID: "withdraw-" + UUID().uuidString)
             try await peer.cancelAdmission(withdrawal)
             try await peer.cancelAdmission(withdrawal)
             let withdrawn = try await peer.admissionStatus(withdrawal)
@@ -79,8 +90,10 @@ final class RoomAccountTransportTests: XCTestCase, @unchecked Sendable {
             try await owner.commit(rotated)
             _ = try await host.snapshot(admission)
             try await guestAccount.logout(guestDevice)
-            do { _ = try await peer.snapshot(joined); XCTFail("Logged-out device retained access") }
-            catch RoomProtocolFailure.rejected("unauthorized") {}
+            do {
+                _ = try await peer.snapshot(joined)
+                XCTFail("Logged-out device retained access")
+            } catch RoomProtocolFailure.rejected("unauthorized") {}
             try await host.leave(admission)
             if let meet {
                 let cancelled = try await host.cancelMeetAuthorization(meet, admission: admission)
@@ -88,13 +101,19 @@ final class RoomAccountTransportTests: XCTestCase, @unchecked Sendable {
             }
             try await ownerAccount.logout(rotated)
         } catch {
-            await ownerRoom?.close(); await guestRoom?.close()
-            await ownerAuthority?.close(); await guestAuthority?.close()
-            await ownerAccount.close(); await guestAccount.close()
+            await ownerRoom?.close()
+            await guestRoom?.close()
+            await ownerAuthority?.close()
+            await guestAuthority?.close()
+            await ownerAccount.close()
+            await guestAccount.close()
             throw error
         }
-        await ownerRoom?.close(); await guestRoom?.close()
-        await ownerAuthority?.close(); await guestAuthority?.close()
-        await ownerAccount.close(); await guestAccount.close()
+        await ownerRoom?.close()
+        await guestRoom?.close()
+        await ownerAuthority?.close()
+        await guestAuthority?.close()
+        await ownerAccount.close()
+        await guestAccount.close()
     }
 }

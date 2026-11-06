@@ -10,7 +10,8 @@ public struct SyncplayAdmission: Sendable, CustomStringConvertible, CustomDebugS
             throw HelperSessionFailure.malformed
         }
         _ = try PlaybackScope(clientRunID: clientRunID, mediaGeneration: 0)
-        self.credential = credential; self.clientRunID = clientRunID
+        self.credential = credential
+        self.clientRunID = clientRunID
     }
     public var description: String { "[redacted]" }
     public var debugDescription: String { description }

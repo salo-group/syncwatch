@@ -60,7 +60,8 @@ extension RoomAdmission {
         guard time.utf8.count <= 64, let expires = fractional ?? formatter.date(from: time) else {
             throw RoomProtocolFailure.malformed
         }
-        var result = Self(roomID: room, memberID: member, token: nil, invitation: nil, expiresAt: expires, bootstrap: bootstrap)
+        var result = Self(
+            roomID: room, memberID: member, token: nil, invitation: nil, expiresAt: expires, bootstrap: bootstrap)
         result.accountScope = scope
         return result
     }
@@ -70,7 +71,9 @@ enum RoomAccessWire {
     static func result(_ bytes: Data) throws -> Data {
         let value = try RoomWire.object(bytes)
         try RoomWire.keys(value, ["v", "result"])
-        guard try RoomWire.integer(value["v"], maximum: 2) == 2, let result = value["result"], result is [String: Any] || result is [Any] else {
+        guard try RoomWire.integer(value["v"], maximum: 2) == 2, let result = value["result"],
+            result is [String: Any] || result is [Any]
+        else {
             throw RoomProtocolFailure.malformed
         }
         return try RoomWire.encode(result)

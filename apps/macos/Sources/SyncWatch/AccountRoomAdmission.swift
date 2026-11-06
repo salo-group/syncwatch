@@ -15,9 +15,13 @@ enum RoomAdmissionFailure: Error {
     private let requestID = "request-" + UUID().uuidString
     private var attempt: RoomAdmissionAttempt?
     init(client: RoomClient, owner: Bool, values: [String: String]) throws {
-        self.client = client; self.owner = owner
-        invitation = owner ? nil : try RoomInvitation(
-            roomID: values["roomID"] ?? "", credential: RoomSecret(values["invitation"] ?? ""))
+        self.client = client
+        self.owner = owner
+        invitation =
+            owner
+            ? nil
+            : try RoomInvitation(
+                roomID: values["roomID"] ?? "", credential: RoomSecret(values["invitation"] ?? ""))
     }
     func perform(waiting: @escaping @MainActor @Sendable () -> Void) async throws -> RoomAdmission {
         try await withThrowingTaskGroup(of: RoomAdmission.self) { group in
@@ -31,7 +35,9 @@ enum RoomAdmissionFailure: Error {
         }
     }
     private func admit(waiting: @MainActor () -> Void) async throws -> RoomAdmission {
-        if owner { return try await retry { try await self.client.create(runID: self.runID, requestID: self.requestID) } }
+        if owner {
+            return try await retry { try await self.client.create(runID: self.runID, requestID: self.requestID) }
+        }
         guard let invitation else { throw RoomProtocolFailure.malformed }
         let request = try await retry {
             try await self.client.requestAdmission(invitation, runID: self.runID, requestID: self.requestID)
@@ -59,11 +65,16 @@ enum RoomAdmissionFailure: Error {
             do { return try await operation() } catch {
                 try Task.checkCancellation()
                 let transient: Bool
-                if case RoomProtocolFailure.transport = error { transient = true }
-                else if let error = error as? URLError {
-                    transient = [.timedOut, .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet,
-                        .cannotFindHost, .dnsLookupFailed].contains(error.code)
-                } else { transient = false }
+                if case RoomProtocolFailure.transport = error {
+                    transient = true
+                } else if let error = error as? URLError {
+                    transient = [
+                        .timedOut, .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet,
+                        .cannotFindHost, .dnsLookupFailed,
+                    ].contains(error.code)
+                } else {
+                    transient = false
+                }
                 guard index == 0, transient else { throw error }
                 try await Task.sleep(for: .seconds(1))
             }

@@ -4,7 +4,11 @@ public struct RoomAdmissionRow: Sendable, Equatable {
     public let id: String
     public let name: String
     public let email: String
-    public init(id: String, name: String, email: String) { self.id = id; self.name = name; self.email = email }
+    public init(id: String, name: String, email: String) {
+        self.id = id
+        self.name = name
+        self.email = email
+    }
 }
 
 /// Memory-only connection draft. This model never persists credentials.
@@ -36,7 +40,9 @@ public struct RoomEditor: Sendable {
     public var connected: Bool { state == "connected" }
     public var fields: [SyncWatchRoomFormField] {
         let enabled = Set(SyncWatchRoomForm.flows[flow] ?? [])
-        return SyncWatchRoomForm.fields.filter { enabled.contains($0.id) && ($0.section == "connection" || $0.section == mode) }
+        return SyncWatchRoomForm.fields.filter {
+            enabled.contains($0.id) && ($0.section == "connection" || $0.section == mode)
+        }
     }
     public var isValid: Bool {
         guard SyncWatchRoomForm.flows[flow] != nil, !needsAccount else { return false }
@@ -48,13 +54,16 @@ public struct RoomEditor: Sendable {
         }
     }
     public mutating func edit(_ id: String, value: String) {
-        guard !busy, !connected, !needsAccount, let field = fields.first(where: { $0.id == id }), value.utf16.count <= field.maxLength
+        guard !busy, !connected, !needsAccount, let field = fields.first(where: { $0.id == id }),
+            value.utf16.count <= field.maxLength
         else { return }
         values[id] = value
         status = ""
     }
     public mutating func selectMode(_ mode: String) {
-        guard !busy, !connected, !needsAccount, self.mode != mode, ["createRoom", "joinRoom"].contains(mode) else { return }
+        guard !busy, !connected, !needsAccount, self.mode != mode, ["createRoom", "joinRoom"].contains(mode) else {
+            return
+        }
         clearSecrets()
         self.mode = mode
         status = ""
@@ -71,7 +80,9 @@ public struct RoomEditor: Sendable {
         }
         return DesignContext(
             [
-                "namespace": "room", "showForm": String(!connected && state != "reconnecting" && state != "awaitingApproval" && !needsAccount),
+                "namespace": "room",
+                "showForm": String(
+                    !connected && state != "reconnecting" && state != "awaitingApproval" && !needsAccount),
                 "needsAccount": String(needsAccount), "showAccountIdentity": String(requiresAccount && accountReady),
                 "accountName": accountName, "accountService": accountService,
                 "showPendingRequests": String(connected && owner && requiresAccount),
@@ -88,10 +99,16 @@ public struct RoomEditor: Sendable {
                 "can.leaveRoom": String(connected || state == "failed" || state == "reconnecting"),
                 "can.copyInvitation": String(connected && owner),
                 "can.pasteInvitation": String(!busy && !connected && mode == "joinRoom" && !needsAccount),
-            ], collections: ["fields": rows, "pendingRequests": pendingRequests.map {
-                DesignContext(["requestID": $0.id, "name": $0.name, "email": $0.email,
-                    "can.decide": String(connected && owner && pendingAvailable && !deciding)])
-            }])
+            ],
+            collections: [
+                "fields": rows,
+                "pendingRequests": pendingRequests.map {
+                    DesignContext([
+                        "requestID": $0.id, "name": $0.name, "email": $0.email,
+                        "can.decide": String(connected && owner && pendingAvailable && !deciding),
+                    ])
+                },
+            ])
     }
 }
 public struct RoomDialog: View {
@@ -99,7 +116,11 @@ public struct RoomDialog: View {
     public var language: String
     public var onAction: (String) -> Void
     public var onAdmissionDecision: (String, Bool) -> Void
-    public init(editor: Binding<RoomEditor>, language: String = "en", onAdmissionDecision: @escaping (String, Bool) -> Void = { _, _ in }, onAction: @escaping (String) -> Void = { _ in }) {
+    public init(
+        editor: Binding<RoomEditor>, language: String = "en",
+        onAdmissionDecision: @escaping (String, Bool) -> Void = { _, _ in },
+        onAction: @escaping (String) -> Void = { _ in }
+    ) {
         _editor = editor
         self.language = language
         self.onAction = onAction

@@ -165,11 +165,13 @@ struct RoomPreparedPublication {
         guard !invitationCopyBusy, !stopping, connected, editor.owner, let session, let admission else { return nil }
         invitationCopyBusy = true
         defer { invitationCopyBusy = false }
-        let revision = UUID(); invitationCopyRevision = revision
+        let revision = UUID()
+        invitationCopyRevision = revision
         do {
             let invitation: RoomInvitation
-            if accountAuthority != nil { invitation = try await session.invitation() }
-            else {
+            if accountAuthority != nil {
+                invitation = try await session.invitation()
+            } else {
                 guard let credential = admission.invitation else { throw RoomProtocolFailure.malformed }
                 invitation = try RoomInvitation(roomID: admission.roomID, credential: credential)
             }
@@ -181,7 +183,8 @@ struct RoomPreparedPublication {
         }
     }
     func canCopy(_ transfer: RoomInvitationTransfer) -> Bool {
-        !stopping && connected && editor.owner && session === transfer.owner && invitationCopyRevision == transfer.revision
+        !stopping && connected && editor.owner && session === transfer.owner
+            && invitationCopyRevision == transfer.revision
     }
     func invitationCopyCompleted(_ copied: Bool, transfer: RoomInvitationTransfer) {
         guard canCopy(transfer) else { return }
@@ -191,10 +194,13 @@ struct RoomPreparedPublication {
         guard approvals == nil, connected, editor.owner, accountAuthority != nil else { return }
         let controller = RoomApprovalController(membership: owner) { [weak self] value in
             guard let self, !stopping, connected, session === owner else { return }
-            editor.pendingRequests = value.rows; editor.pendingAvailable = value.available
-            editor.deciding = value.deciding; editor.pendingStatus = value.notice
+            editor.pendingRequests = value.rows
+            editor.pendingAvailable = value.available
+            editor.deciding = value.deciding
+            editor.pendingStatus = value.notice
         }
-        approvals = controller; controller.start()
+        approvals = controller
+        controller.start()
     }
     func invitationToCopy() -> String? {
         guard connected, let admission, let invitation = admission.invitation else { return nil }
@@ -245,7 +251,9 @@ struct RoomPreparedPublication {
     }
     func callMembership() -> RoomCallMembership? {
         guard accountAuthority != nil, !stopping, connected, let session, let admission else { return nil }
-        return RoomCallMembership(owner: session, memberID: admission.memberID, epoch: admission.bootstrap.snapshot.epoch, isOwner: editor.owner)
+        return RoomCallMembership(
+            owner: session, memberID: admission.memberID, epoch: admission.bootstrap.snapshot.epoch,
+            isOwner: editor.owner)
     }
     func isCurrent(_ membership: RoomCallMembership) -> Bool {
         accountAuthority != nil && !stopping && connected && session === membership.owner
@@ -383,7 +391,9 @@ struct RoomPreparedPublication {
         var pending: AccountRoomAdmission?
         var failureNotice = authority == nil ? "roomConnectionFailed" : "roomRequestUnavailable"
         do {
-            let next = try authority.map { RoomClient(authority: $0) } ?? RoomClient(address: RoomAddress(values["serviceAddress"] ?? ""))
+            let next =
+                try authority.map { RoomClient(authority: $0) }
+                ?? RoomClient(address: RoomAddress(values["serviceAddress"] ?? ""))
             current = next
             let value: RoomAdmission
             let identity: RoomIdentity
@@ -391,19 +401,25 @@ struct RoomPreparedPublication {
                 let attempt = try AccountRoomAdmission(client: next, owner: owner, values: values)
                 pending = attempt
                 value = try await attempt.perform { self.editor.state = "awaitingApproval" }
-                guard let member = value.bootstrap.snapshot.members.first(where: { $0.memberID == value.memberID }) else {
+                guard let member = value.bootstrap.snapshot.members.first(where: { $0.memberID == value.memberID })
+                else {
                     throw RoomProtocolFailure.malformed
                 }
                 identity = member.identity
             } else {
-                identity = try RoomIdentity(clientRunID: "run-" + UUID().uuidString, syncplayUsername: values["username"] ?? "")
+                identity = try RoomIdentity(
+                    clientRunID: "run-" + UUID().uuidString, syncplayUsername: values["username"] ?? "")
                 if owner {
                     guard let port = Int(values["syncplayPort"] ?? "") else { throw RoomProtocolFailure.malformed }
-                    value = try await next.create(identity: identity,
-                        connection: RoomConnection(host: values["syncplayHost"] ?? "", port: port, room: values["roomName"] ?? ""),
+                    value = try await next.create(
+                        identity: identity,
+                        connection: RoomConnection(
+                            host: values["syncplayHost"] ?? "", port: port, room: values["roomName"] ?? ""),
                         creationKey: RoomSecret(values["creationKey"] ?? ""))
                 } else {
-                    value = try await next.join(roomID: values["roomID"] ?? "", invitation: RoomSecret(values["invitation"] ?? ""), identity: identity)
+                    value = try await next.join(
+                        roomID: values["roomID"] ?? "", invitation: RoomSecret(values["invitation"] ?? ""),
+                        identity: identity)
                 }
             }
             admitted = value
@@ -443,7 +459,10 @@ struct RoomPreparedPublication {
         }
         await approvals?.close()
         approvals = nil
-        editor.pendingRequests = []; editor.pendingStatus = ""; editor.deciding = false; editor.pendingAvailable = false
+        editor.pendingRequests = []
+        editor.pendingStatus = ""
+        editor.deciding = false
+        editor.pendingAvailable = false
         missingReport?.cancel()
         await missingReport?.value
         missingReport = nil
@@ -459,10 +478,14 @@ struct RoomPreparedPublication {
         if let current {
             // Cleanup work is owned and bounded even when the attempt's caller was cancelled.
             if !interrupted {
-                let cleanupAdmission = admitted, cleanupPending = pending
+                let cleanupAdmission = admitted
+                let cleanupPending = pending
                 let leaving = Task {
-                    if let cleanupAdmission { try? await current.leave(cleanupAdmission) }
-                    else { try? await cleanupPending?.cancel() }
+                    if let cleanupAdmission {
+                        try? await current.leave(cleanupAdmission)
+                    } else {
+                        try? await cleanupPending?.cancel()
+                    }
                 }
                 let deadline = Task {
                     try? await Task.sleep(for: .seconds(3))

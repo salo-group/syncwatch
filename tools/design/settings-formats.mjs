@@ -2,6 +2,24 @@
 const q = value => JSON.stringify(value);
 const kq = value => q(value).replace(/\$/g, '\\$');
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+function swiftArray(prefix, values, suffix = '') {
+    const items = values.map(q);
+    const single = `${prefix}[${items.join(', ')}]${suffix}`;
+    if (single.length < 120) return single + '\n';
+    const padding = prefix.match(/^ */)[0];
+    const indent = padding + '    ';
+    const lines = [];
+    let line = indent;
+    for (const item of items) {
+        const next = (line === indent ? '' : ' ') + item + ',';
+        if (line !== indent && line.length + next.length >= 120) {
+            lines.push(line);
+            line = indent + item + ',';
+        } else line += next;
+    }
+    if (line !== indent) lines.push(line);
+    return `${prefix}[\n${lines.join('\n')}\n${padding}]${suffix}\n`;
+}
 export function validateSettings(spec, components, copy) {
     const contract = components.components.SettingsDialog;
     if (spec.schemaVersion !== 1 || !same(spec.sections, contract.sections) || !same(spec.states, contract.states)
@@ -42,10 +60,10 @@ export function validateSettings(spec, components, copy) {
 }
 export function swiftSettings(s) {
     return '\npublic struct SyncWatchSettingsField: Sendable {\n    public let id: String\n    public let section: String\n    public let kind: String\n    public let label: String\n    public let options: [String]\n    public let maxLength: Int\n}\n\npublic enum SyncWatchSettings {\n' +
-        `    public static let sections = [${s.sections.map(q).join(', ')}]\n` +
-        `    public static let states = [${s.states.map(q).join(', ')}]\n` +
+        swiftArray('    public static let sections = ', s.sections) +
+        swiftArray('    public static let states = ', s.states) +
         (s.flows ? `    public static let defaultFlow = ${q(s.defaultFlow)}\n    public static let flows: [String: [String]] = [\n` +
-            Object.entries(s.flows).map(([name, ids]) => `        ${q(name)}: [${ids.map(q).join(', ')}],\n`).join('') + `    ]\n    public static let signInFlows = [${s.signInFlows.map(q).join(', ')}]\n` : '') +
+            Object.entries(s.flows).map(([name, ids]) => swiftArray(`        ${q(name)}: `, ids, ',')).join('') + '    ]\n' + swiftArray('    public static let signInFlows = ', s.signInFlows) : '') +
         (s.statusCopy ? '    public static let statusCopy: [String: String] = [\n' + Object.entries(s.statusCopy).map(([state, label]) => `        ${q(state)}: ${q(label)},\n`).join('') + '    ]\n' : '') +
         '    public static let defaults: [String: String] = [\n' + Object.entries(s.defaults).map(([k,v]) => `        ${q(k)}: ${q(v)},\n`).join('') + '    ]\n' +
         '    public static let fields: [SyncWatchSettingsField] = [\n' + s.fields.map(f => `        SyncWatchSettingsField(\n            id: ${q(f.id)}, section: ${q(f.section)}, kind: ${q(f.kind)}, label: ${q(f.label)},\n            options: [${f.options.map(q).join(', ')}], maxLength: ${f.maxLength}),\n`).join('') + '    ]\n}\n';

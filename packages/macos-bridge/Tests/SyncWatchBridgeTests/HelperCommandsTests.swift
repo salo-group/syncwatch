@@ -31,10 +31,14 @@ import Testing
             case "connect":
                 frame = try encoder.connect(
                     id, host: args["host"] as? String ?? "127.0.0.1", port: args["port"] as? Int ?? 8999,
-                    room: args["room"] as? String ?? "room", username: args["username"] as? String ?? "Viewer", accountAdmission: args["accountAdmission"] as? Bool == true)
+                    room: args["room"] as? String ?? "room", username: args["username"] as? String ?? "Viewer",
+                    accountAdmission: args["accountAdmission"] as? Bool == true)
             case "admit":
-                frame = try encoder.admit(id, nonce: args["nonce"] as? String ?? String(repeating: "a", count: 32),
-                    authority: SyncplayAdmission(credential: args["ticket"] as? String ?? String(repeating: "A", count: 64), clientRunID: args["clientRunId"] as? String ?? "room-run"))
+                frame = try encoder.admit(
+                    id, nonce: args["nonce"] as? String ?? String(repeating: "a", count: 32),
+                    authority: SyncplayAdmission(
+                        credential: args["ticket"] as? String ?? String(repeating: "A", count: 64),
+                        clientRunID: args["clientRunId"] as? String ?? "room-run"))
             case "observation", "user":
                 let owner =
                     args["foreignNative"] as? Bool == true

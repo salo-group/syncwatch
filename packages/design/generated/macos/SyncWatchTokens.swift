@@ -1132,10 +1132,15 @@ public struct SyncWatchRoomFormField: Sendable {
 
 public enum SyncWatchRoomForm {
     public static let sections = ["connection", "createRoom", "joinRoom"]
-    public static let states = ["disconnected", "connecting", "connected", "failed", "reconnecting", "awaitingApproval"]
+    public static let states = [
+        "disconnected", "connecting", "connected", "failed", "reconnecting", "awaitingApproval",
+    ]
     public static let defaultFlow = "account"
     public static let flows: [String: [String]] = [
-        "legacy": ["serviceAddress", "username", "creationKey", "syncplayHost", "syncplayPort", "roomName", "roomID", "invitation"],
+        "legacy": [
+            "serviceAddress", "username", "creationKey", "syncplayHost", "syncplayPort", "roomName", "roomID",
+            "invitation",
+        ],
         "account": ["roomID", "invitation"],
     ]
     public static let signInFlows = ["account"]

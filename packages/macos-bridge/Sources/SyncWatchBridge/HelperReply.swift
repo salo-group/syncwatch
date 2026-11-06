@@ -41,8 +41,12 @@ public enum HelperReply: Sendable, Equatable {
         case .ready:
             try HelperJSON.keys(payload, required: ["syncplayRevision"], optional: ["admissionVersion"])
             if let capability = payload["admissionVersion"] {
-                guard try HelperJSON.integer(capability, maximum: 1) == 1 else { throw PlayerCorrectionFailure.malformed }
-            } else if requireAdmission { throw PlayerCorrectionFailure.malformed }
+                guard try HelperJSON.integer(capability, maximum: 1) == 1 else {
+                    throw PlayerCorrectionFailure.malformed
+                }
+            } else if requireAdmission {
+                throw PlayerCorrectionFailure.malformed
+            }
             guard kind == "bridge.ready", let revision = expectedRevision,
                 revision.range(of: "\\A[0-9a-f]{40}\\z", options: .regularExpression) != nil,
                 payload["syncplayRevision"] as? String == revision

@@ -166,8 +166,9 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                 let connection = current.bootstrap.connection
                 let remote = current.definition.selection!.media
                 let admissionProvider: (@MainActor () async throws -> SyncplayAdmission)?
-                if room.accountAuthority == nil { admissionProvider = nil }
-                else {
+                if room.accountAuthority == nil {
+                    admissionProvider = nil
+                } else {
                     admissionProvider = { [weak self] in
                         guard let self, self.canAdmitTransport() else { throw HelperSessionFailure.unavailable }
                         let fresh = try await self.room.watchContext(intent.membership)
@@ -175,7 +176,9 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                         try Self.requireMatch(local, fresh)
                         let ticket = try await self.room.syncTicket(intent.membership)
                         guard self.canAdmitTransport() else { throw HelperSessionFailure.unavailable }
-                        return try SyncplayAdmission(credential: ticket.admissionCredential(), clientRunID: intent.membership.identity.clientRunID)
+                        return try SyncplayAdmission(
+                            credential: ticket.admissionCredential(),
+                            clientRunID: intent.membership.identity.clientRunID)
                     }
                 }
                 try await player.connectShared(
@@ -342,7 +345,9 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
             && current.snapshot.watchStatus == "active"
     }
     private func canAdmitTransport() -> Bool {
-        guard authorized(), let active, room.isCurrent(active.membership), let latest = room.watchBootstrap else { return false }
+        guard authorized(), let active, room.isCurrent(active.membership), let latest = room.watchBootstrap else {
+            return false
+        }
         return latest.snapshot.epoch == active.context.bootstrap.snapshot.epoch
             && latest.snapshot.watchGeneration == active.context.bootstrap.snapshot.watchGeneration
             && latest.snapshot.watchStatus == "active"
