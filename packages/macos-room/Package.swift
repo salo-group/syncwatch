@@ -6,6 +6,9 @@ let package = Package(
     products: [.library(name: "SyncWatchRoom", targets: ["SyncWatchRoom"])],
     dependencies: [.package(path: "../macos-domain")],
     targets: [
-        .target(name: "SyncWatchRoom", dependencies: [.product(name: "SyncWatchDomain", package: "macos-domain")]),
+        .target(name: "SyncWatchKeychainPolicy"),
+        .target(
+            name: "SyncWatchRoom",
+            dependencies: ["SyncWatchKeychainPolicy", .product(name: "SyncWatchDomain", package: "macos-domain")]),
         .testTarget(name: "SyncWatchRoomTests", dependencies: ["SyncWatchRoom"]),
     ])
