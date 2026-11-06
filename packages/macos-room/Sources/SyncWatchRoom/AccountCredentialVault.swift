@@ -1,6 +1,7 @@
 import Foundation
 import LocalAuthentication
 import Security
+import SyncWatchKeychainPolicy
 
 public enum AccountVaultFailure: Error { case unavailable, invalidRecord }
 
@@ -13,6 +14,7 @@ public struct AccountCredentialVault: Sendable {
         else {
             throw AccountVaultFailure.invalidRecord
         }
+        guard SWKeychainDisallowInteraction() == errSecSuccess else { throw AccountVaultFailure.unavailable }
         self.scope = scope
     }
     private var query: [String: Any] {
