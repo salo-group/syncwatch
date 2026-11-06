@@ -24,13 +24,16 @@ internal sealed class MeetGoogleProvider : IMeetProvider, IDisposable
     private readonly AccountOptions options;
     private readonly HttpClient http;
     private readonly TimeProvider clock;
+    private readonly Action<string, int, string> reportFailure;
     // Stripes bound synchronization memory independently of the number of provider requests.
     private readonly SemaphoreSlim[] gates = Enumerable.Range(0, 32).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
     private readonly object cacheGate = new();
     private readonly Dictionary<string, Access> cache = new(StringComparer.Ordinal);
-    internal MeetGoogleProvider(MeetGrantRepository grants, AccountOptions options, HttpClient? http = null, TimeProvider? time = null)
+    internal MeetGoogleProvider(MeetGrantRepository grants, AccountOptions options, HttpClient? http = null, TimeProvider? time = null,
+        Action<string, int, string>? reportFailure = null)
     {
         this.grants = grants; this.options = options; clock = time ?? TimeProvider.System;
+        this.reportFailure = reportFailure ?? ((operation, status, reason) => Console.Error.WriteLine($"Meet provider {operation} rejected (HTTP {status}, {reason})."));
         this.http = http ?? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
         this.http.Timeout = MeetPolicy.ProviderTimeout;
     }
@@ -73,6 +76,11 @@ internal sealed class MeetGoogleProvider : IMeetProvider, IDisposable
             if (!response.IsSuccessStatusCode)
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized) Invalidate(account, access);
+                string operation = request.Method == HttpMethod.Get ? "read"
+                    : request.RequestUri!.AbsolutePath.EndsWith(":endActiveConference", StringComparison.Ordinal) ? "end" : "create";
+                string reason = await FailureReason(response, cancel);
+                try { reportFailure(operation, (int)response.StatusCode, reason); }
+                catch (Exception) { } // Diagnostics cannot change a known provider rejection into an unknown mutation.
                 throw new MeetProviderException(response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
                     ? "permissionRequired" : response.StatusCode == HttpStatusCode.TooManyRequests ? "providerBusy" : "providerUnavailable",
                     mutation && ((int)response.StatusCode >= 500 || (int)response.StatusCode is >= 300 and < 400));
@@ -169,6 +177,26 @@ internal sealed class MeetGoogleProvider : IMeetProvider, IDisposable
         && value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String
             ? property.GetString()! : throw new MeetProviderException("providerResponseInvalid");
     private static void NeedSpace(string name) { if (!MeetPolicy.SpaceName(name)) throw new MeetProviderException("providerResponseInvalid"); }
+    private static async Task<string> FailureReason(HttpResponseMessage response, CancellationToken cancel)
+    {
+        // Only fixed Google ErrorInfo reason values leave the transport. Never emit bodies, messages,
+        // resource names, project/account identifiers, HTTP headers or provider credentials.
+        string[] allowed = ["SERVICE_DISABLED", "SERVICE_NOT_ACTIVATED", "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
+            "USER_PROJECT_DENIED", "CONSUMER_INVALID", "IAM_PERMISSION_DENIED", "ACCOUNT_RESTRICTED", "ORG_RESTRICTION_VIOLATION"];
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+        deadline.CancelAfter(MeetPolicy.ProviderTimeout);
+        try
+        {
+            using var body = await ReadJson(response, deadline.Token);
+            if (body.RootElement.ValueKind == JsonValueKind.Object && body.RootElement.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object && error.TryGetProperty("details", out var details) && details.ValueKind == JsonValueKind.Array)
+                foreach (var detail in details.EnumerateArray())
+                    if (detail.ValueKind == JsonValueKind.Object && detail.TryGetProperty("reason", out var reason)
+                        && reason.ValueKind == JsonValueKind.String && allowed.Contains(reason.GetString(), StringComparer.Ordinal)) return reason.GetString()!;
+        }
+        catch (Exception error) when (error is MeetProviderException or HttpRequestException or IOException or OperationCanceledException or JsonException) { }
+        return "unspecified";
+    }
     private static async Task<JsonDocument> ReadJson(HttpResponseMessage response, CancellationToken cancel)
     {
         const int maximum = 32768;

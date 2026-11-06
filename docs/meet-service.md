@@ -22,6 +22,8 @@ Google credentials remain on the server. Refresh grants use a separate Data Prot
 
 The confidential provider adapter keeps short-lived access tokens in memory, bound to the exact grant version. A delayed refresh cannot restore a forgotten grant or attach a token to a newer authorization. Provider responses are bounded; redirects and noncanonical meeting resources are rejected. Meeting creation requests restricted access and supported browser entry; readback must confirm both before publication. The durable operation journal records dispatch before a mutation. Interrupted creation or conference termination becomes an unknown outcome and is never replayed automatically. These components serve the room call API below; actual joined media remains under the external user agent.
 
+Provider HTTP rejections report only the operation, numeric status and an allowlisted Google ErrorInfo reason, or `unspecified`. Response bodies, messages, resource/account/project identifiers, headers and credentials are excluded. Invalid or oversized diagnostic bodies and unavailable diagnostic sinks preserve the original rejection outcome. These operator diagnostics do not trigger a retry or change the native wire contract.
+
 ## Room call API
 
 Call requests use the same current-member/run headers. Only the owner may start or end a call. Pending applicants, former members and other rooms cannot obtain the URI. The server returns it only for `ready`; a guest never receives the organizer's provider credentials or permission proposal.

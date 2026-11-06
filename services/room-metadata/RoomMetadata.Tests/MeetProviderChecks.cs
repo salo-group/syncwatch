@@ -123,6 +123,25 @@ internal static class MeetProviderChecks
                 using var provider = new MeetGoogleProvider(grants, options, new HttpClient(invalid), clock);
                 await Reject(() => provider.Create(principal.AccountId, default), "providerResponseInvalid"); Require(invalid.Creates == 0);
             }
+            Remember();
+            var reports = new List<(string Operation, int Status, string Reason)>();
+            var denied = new Transport();
+            using (var provider = new MeetGoogleProvider(grants, options, new HttpClient(denied), clock,
+                (operation, status, reason) => reports.Add((operation, status, reason))))
+            {
+                foreach (string reason in new[] { "SERVICE_DISABLED", "ACCESS_TOKEN_SCOPE_INSUFFICIENT", "synthetic-access" })
+                {
+                    denied.Meet = (_, _) => Task.FromResult(Json(JsonSerializer.Serialize(new
+                    { error = new { message = "synthetic-secret synthetic-refresh owner@example.invalid", details = new[] { new { reason } } } }), HttpStatusCode.Forbidden));
+                    await Reject(() => provider.Read(principal.AccountId, "spaces/owned-space", default), "permissionRequired");
+                }
+                Require(reports.SequenceEqual(new[] { ("read", 403, "SERVICE_DISABLED"), ("read", 403, "ACCESS_TOKEN_SCOPE_INSUFFICIENT"), ("read", 403, "unspecified") }));
+                Require(denied.Creates == 0 && denied.Reads == 3 && grants.HasAuthorization(principal));
+            }
+            using (var provider = new MeetGoogleProvider(grants, options, new HttpClient(new Transport
+            { Meet = (_, _) => Task.FromResult(Json("{}", HttpStatusCode.Forbidden)) }), clock,
+                (_, _, _) => throw new IOException("Unavailable diagnostic sink")))
+                await Reject(() => provider.Create(principal.AccountId, default), "permissionRequired");
         }
         finally { Directory.Delete(root, recursive: true); }
         Console.WriteLine("SYNCWATCH_MEET_PROVIDER_OK encrypted-grant/version binding, single-flight tokens, bounded responses, restricted policy, canonical URI and no ambiguous mutation retries");
