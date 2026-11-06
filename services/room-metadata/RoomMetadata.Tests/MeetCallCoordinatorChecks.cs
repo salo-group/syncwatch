@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.DataProtection;
+using SyncWatch.RoomMetadata;
 using SyncWatch.RoomMetadata.Accounts;
 using SyncWatch.RoomMetadata.Calls;
 using SyncWatch.RoomMetadata.Rooms;
@@ -54,7 +55,7 @@ internal static class MeetCallCoordinatorChecks
             var rooms = new AuthenticatedRooms(accounts, "127.0.0.1", 8999);
             RoomMemberAccess Room(string run)
             {
-                var admission = rooms.Create(principal, "Owner", run, AccountWire.Secret());
+                var admission = rooms.Create(principal, "Owner", run, Wire.NewId("create-"));
                 return rooms.Access(principal, admission.RoomId, admission.MemberId, run, true);
             }
             var first = Room("first-call-run");
@@ -86,7 +87,7 @@ internal static class MeetCallCoordinatorChecks
                 { _ = coordinator.Start(second, AccountWire.Secret()); await Task.Delay(10); }
                 var ready = coordinator.Get(second); Require(ready.Status == "ready" && ready.MeetUri == "https://meet.google.com/abc-defg-hij" && provider.Creates == 2);
                 var invitation = rooms.Invite(principal, second.RoomId, second.MemberId, second.ClientRunId);
-                string joinRequest = AccountWire.Secret();
+                string joinRequest = Wire.NewId("join-");
                 var pending = rooms.RequestAdmission(other, "Guest", second.RoomId, "call-guest-run", joinRequest, invitation.Invitation);
                 rooms.Decide(principal, second.RoomId, second.MemberId, second.ClientRunId, pending.Id, true);
                 var joined = rooms.Accept(other, joinRequest, "call-guest-run");

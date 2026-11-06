@@ -53,7 +53,8 @@ internal static class MeetCallJournalChecks
                 Require(journal.Update(creating, created));
                 Require(File.ReadAllBytes(file).AsSpan().IndexOf(Encoding.UTF8.GetBytes(created.MeetUri!)) < 0);
                 var ready = created with { State = "ready" }; Require(journal.Update(created, ready));
-                var checking = ready with { State = "checkingEnd", EndRequestId = AccountWire.Secret() };
+                Require(journal.ClosureCandidates().Any(candidate => candidate.Id == ready.Id));
+                var checking = ready with { State = "checkingEnd", EndRequestId = AccountWire.Secret(), ClosureAttempted = true };
                 Require(journal.Update(ready, checking));
                 var ending = checking with { State = "ending", Conference = "conferenceRecords/owned-conference" };
                 Require(journal.Update(checking, ending));
@@ -62,6 +63,8 @@ internal static class MeetCallJournalChecks
             using (var restored = new MeetCallJournal(root, protection))
             {
                 var call = restored.Latest(nextScope)!; Require(call.State == "endUnknown" && call.Conference == "conferenceRecords/owned-conference");
+                Require(call.ClosureAttempted && !restored.ClosureCandidates().Any(candidate => candidate.Id == call.Id));
+                Reject(() => restored.Update(call, call with { ClosureAttempted = false }), "malformed");
                 Reject(() => restored.Update(call, call with { State = "ending", Reason = null }), "conflict");
                 Require(restored.Update(call, call with { State = "ended", Reason = null }));
                 var (next, dispatch) = restored.Begin(nextScope, AccountWire.Secret()); Require(dispatch && next.Generation == 2);

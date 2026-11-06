@@ -203,6 +203,7 @@ MeetAuthorizationChecks.Run();
 await MeetProviderChecks.Run();
 MeetCallJournalChecks.Run();
 await MeetCallCoordinatorChecks.Run();
+await MeetCallClosureChecks.Run();
 await AccountRateLimitChecks.Run();
 await AuthenticatedRoomHttpChecks.Run();
 string creationKey = Wire.Secret();

@@ -6,7 +6,7 @@ Google Meet remains the call provider. SyncWatch owns Google sign-in, room membe
 
 Google documents the Meet PWA for macOS, Windows, and Linux. It requires Chrome and has the same Meet features as the web client. Opening a meeting in the PWA may require the browser's **Open app** action. Do not assume an undocumented launch flag or a universal PWA deep-link API. [Meet PWA](https://support.google.com/meet/answer/10708569?hl=en).
 
-This is the selected target, not a delivered call implementation. Authenticated permission/provisioning APIs, their three native ports and a common-Design Library/Player entry are implemented. Complete room-lifecycle cleanup and real calling acceptance remain incomplete. See the [Meet service](../meet-service.md), [account and room architecture](accounts-and-rooms.md) and [Google setup](../google-meet-setup.md).
+This is the selected target, not a delivered call implementation. Authenticated permission/provisioning APIs, their three native ports, common-Design Library/Player entry and server-owned room closure cleanup are implemented. Real calling and complete user lifecycle acceptance remain incomplete. See the [Meet service](../meet-service.md), [account and room architecture](accounts-and-rooms.md) and [Google setup](../google-meet-setup.md).
 
 ## User experience
 

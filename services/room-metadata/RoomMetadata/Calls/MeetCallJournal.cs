@@ -6,7 +6,7 @@ namespace SyncWatch.RoomMetadata.Calls;
 
 internal sealed record MeetCallEntry(string Id, string RoomId, string Epoch, string OwnerAccountId, long Generation,
     string RequestId, string State, string? Space = null, string? MeetUri = null, string? Conference = null,
-    string? EndRequestId = null, string? Reason = null)
+    string? EndRequestId = null, string? Reason = null, bool ClosureAttempted = false)
 {
     public override string ToString() => "[Meet operation redacted]";
 }
@@ -38,6 +38,8 @@ internal sealed class MeetCallJournal : IDisposable
             && AccountWire.Token(call.OwnerAccountId) && AccountWire.Token(call.RequestId) && call.Generation is > 0 and <= Wire.MaximumCounter
             && (call.EndRequestId is null || AccountWire.Token(call.EndRequestId))
             && (call.Conference is null || MeetPolicy.ConferenceName(call.Conference))
+            && (!call.ClosureAttempted || call.EndRequestId is not null
+                && call.State is "checkingEnd" or "ending" or "ended" or "endFailed" or "endUnknown")
             && (call.Reason is null || Reasons.Contains(call.Reason)) && ValidPhase(call))
         && state.Calls.Select(call => call.Id).Distinct(StringComparer.Ordinal).Count() == state.Calls.Length
         && state.Calls.Select(call => (call.RoomId, call.Epoch, call.Generation)).Distinct().Count() == state.Calls.Length
@@ -65,6 +67,16 @@ internal sealed class MeetCallJournal : IDisposable
     {
         lock (gate) return store.Current.Calls.Where(call => Belongs(call, scope)).MaxBy(call => call.Generation);
     }
+    internal MeetCallEntry? Find(string id)
+    {
+        lock (gate) return store.Current.Calls.SingleOrDefault(call => call.Id == id);
+    }
+    internal MeetCallEntry[] ClosureCandidates()
+    {
+        lock (gate) return store.Current.Calls.Where(CanClose).ToArray();
+    }
+    internal static bool CanClose(MeetCallEntry call) => !call.ClosureAttempted
+        && call.State is "created" or "createRejected" or "ready" or "orphaned" or "endFailed";
     internal (MeetCallEntry Call, bool Dispatch) Begin(RoomMemberAccess scope, string requestId)
     {
         AccountWire.Need(scope.Owner, "forbidden", 403); AccountWire.Need(AccountWire.Token(requestId));
@@ -85,7 +97,9 @@ internal sealed class MeetCallJournal : IDisposable
     internal bool Update(MeetCallEntry expected, MeetCallEntry replacement)
     {
         AccountWire.Need(expected.Id == replacement.Id && expected.RoomId == replacement.RoomId && expected.Epoch == replacement.Epoch
-            && expected.OwnerAccountId == replacement.OwnerAccountId && expected.Generation == replacement.Generation && expected.RequestId == replacement.RequestId);
+            && expected.OwnerAccountId == replacement.OwnerAccountId && expected.Generation == replacement.Generation && expected.RequestId == replacement.RequestId
+            && (!expected.ClosureAttempted || replacement.ClosureAttempted)
+            && (expected.ClosureAttempted == replacement.ClosureAttempted || replacement.State == "checkingEnd"));
         lock (gate)
         {
             var current = store.Current.Calls.SingleOrDefault(call => call.Id == expected.Id);
@@ -93,12 +107,13 @@ internal sealed class MeetCallJournal : IDisposable
             AccountWire.Need(expected.State switch
             {
                 "creating" => replacement.State is "created" or "createFailed" or "createUnknown",
-                "created" or "createRejected" => replacement.State is "ready" or "createRejected" or "orphaned",
+                "created" or "createRejected" => replacement.State is "ready" or "createRejected" or "orphaned"
+                    || replacement.State == "checkingEnd" && replacement.ClosureAttempted,
                 "ready" or "endFailed" => replacement.State is "checkingEnd" or "ended" or "orphaned",
                 "checkingEnd" => replacement.State is "ending" or "ended" or "endFailed" or "orphaned",
                 "ending" => replacement.State is "ended" or "endFailed" or "endUnknown",
                 "endUnknown" => replacement.State is "ended" or "orphaned",
-                "orphaned" => replacement.State is "ended",
+                "orphaned" => replacement.State == "ended" || replacement.State == "checkingEnd" && replacement.ClosureAttempted,
                 _ => false
             }, "conflict", 409);
             store.Save(new(1, store.Current.Calls.Select(call => call.Id == expected.Id ? replacement : call).ToArray()));

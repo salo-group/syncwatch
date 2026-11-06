@@ -280,6 +280,17 @@ public sealed class AuthenticatedRooms
 
     public void Sweep() { lock (gate) SweepCore(); }
 
+    // Server-owned call cleanup uses room identity, never a departed device's credentials.
+    internal bool HasCurrentOwner(string roomId, string epoch, string accountId)
+    {
+        lock (gate)
+        {
+            SweepCore();
+            return rooms.TryGetValue(roomId, out Room? room) && room.Epoch == epoch
+                && room.Members.Values.Any(member => member.Owner && member.Principal.AccountId == accountId);
+        }
+    }
+
     private (Room, Member) Authorize(AccountPrincipal principal, string roomId, string memberId, string run)
     {
         SweepCore(); NeedActive(principal); Room room = Find(roomId);
