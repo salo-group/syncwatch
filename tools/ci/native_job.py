@@ -18,6 +18,7 @@ import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
+WINDOWS_SERVICE_STAGE = "Authenticated room HTTP, Syncplay admission and owned host lifecycle"
 NATIVE_ARCHIVE_BOUND = json.loads((ROOT / "tools/ci/artifact-policy.json").read_text())["nativeApplicationMaximumBytes"]
 
 
@@ -154,6 +155,8 @@ def retain_design_images(root: Path, payload: Path, target: str) -> None:
 
 
 def prepare_archive(root: Path, directory: Path, target: str, architecture: str, versions: dict, report: Report, success: bool) -> Path:
+    if target == "windows" and success and not any(case["name"] == WINDOWS_SERVICE_STAGE and case["success"] for case in report.cases):
+        raise ValueError("Successful Windows qualification requires the admitted room service stage")
     payload = directory / "payload"
     payload.mkdir(parents=True, exist_ok=True)
     report.write(payload / "validation.xml")
@@ -299,7 +302,7 @@ def main() -> int:
                 [sys.executable, "tools/dependencies/build.py", "prepare", "--component", "fastjsonschema", "--platform", "windows-x64"],
                 cwd=ROOT, env=environment, check=True))
             runtime = ROOT / "artifacts/application-ci/windows-x64/candidate/contents/SyncWatch/Syncplay"
-            report.execute("Authenticated room HTTP, Syncplay admission and owned host lifecycle", lambda: subprocess.run(
+            report.execute(WINDOWS_SERVICE_STAGE, lambda: subprocess.run(
                 [sys.executable, "tools/server/check.py", "--dotnet", str(dotnet), "--admission-runtime", str(runtime)],
                 cwd=ROOT, env=environment, check=True))
         report.execute("Verify unchanged tracked source", lambda: subprocess.run(["git", "diff", "--exit-code"], cwd=ROOT, check=True))

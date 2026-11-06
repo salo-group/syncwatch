@@ -13,6 +13,8 @@ python tools/server/check.py --provision --admission-runtime <owned-admission-he
 
 With an existing SDK, omit `--provision` or pass `--dotnet <path-to-dotnet>`. This checks the exact version, restores SDK/local references with the empty registry configuration, checks formatting, builds, runs real HTTP/WebSocket and TLS Syncplay admission/lifecycle tests, and validates emitted v1 metadata and v2 account/room responses with the pinned contract validator. Supply the matching source-built helper package; required Windows CI uses the helper from its assembled application. `--provision` obtains a missing SDK from the official archive pinned by SHA-512 in [the manifest](../tools/server/toolchains.json).
 
+The required native Windows job runs these service checks after assembling its verified application and helper. A successful Windows artifact requires a successful service stage. The room-metadata gate evaluates that complete job result, including failures and skips; it does not launch duplicate server builds or a C# toolchain on macOS/Linux. All three native client jobs and shared contract checks remain required.
+
 Equivalent build commands are:
 
 ```powershell

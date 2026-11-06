@@ -381,9 +381,13 @@
       "if": "${{ needs.dependency-plan.result == 'success' }}"
     },
     "metadata": {
-      "name": "Room metadata / ${{ matrix.target }}",
-      "runs-on": "${{ matrix.runner }}",
-      "timeout-minutes": 15,
+      "name": "Room metadata / win-x64",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 5,
+      "needs": [
+        "windows"
+      ],
+      "if": "${{ always() }}",
       "steps": [
         {
           "name": "Check out the exact workflow revision",
@@ -391,39 +395,16 @@
             "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
             "CI_COMMIT": "${{ github.sha }}"
           },
-          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\n${{ matrix.python }} -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
         },
         {
-          "name": "Initialize the pinned validator source",
-          "run": "git submodule update --init --checkout --depth=1 -- 3rdparty/fastjsonschema"
-        },
-        {
-          "name": "Build and test the metadata server and actual wire output",
-          "run": "${{ matrix.python }} tools/server/check.py --provision"
+          "name": "Require Windows-native server and admitted Syncplay qualification",
+          "env": {
+            "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
+          },
+          "run": "python3 tools/ci/required_status.py windows"
         }
-      ],
-      "strategy": {
-        "fail-fast": false,
-        "matrix": {
-          "include": [
-            {
-              "runner": "ubuntu-24.04",
-              "target": "linux-x64",
-              "python": "python3"
-            },
-            {
-              "runner": "macos-15",
-              "target": "osx-arm64",
-              "python": "python3"
-            },
-            {
-              "runner": "windows-2025",
-              "target": "win-x64",
-              "python": "python"
-            }
-          ]
-        }
-      }
+      ]
     },
     "linux": {
       "name": "Native Linux x64",
