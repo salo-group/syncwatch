@@ -166,7 +166,8 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
         val account = if (authorization == "confirmAuthorization") permissionStatus?.account else null
         var status = if (busy) "meetWorking" else notice ?: if (permission != null) when (authorization) {
             "browserConfirmationRequired" -> "meetBrowserCode"; "confirmAuthorization" -> "meetPermissionConfirmation"; else -> "meetAuthorizing"
-        } else when (call?.state) { "idle" -> "meetIdle"; "ready" -> "meetReady"; "creating", "ending" -> "meetWorking"; "creationUnknown", "endUnknown" -> "meetUnknown"; "ended" -> "meetEnded"; "unavailable" -> "meetUnavailable"; null -> "meetWorking"; else -> "meetFailed" }
+        } else if (call?.authorizationRequired == true && call?.reason == "permissionRequired") "meetPermissionUnavailable"
+        else when (call?.state) { "idle" -> "meetIdle"; "ready" -> "meetReady"; "creating", "ending" -> "meetWorking"; "creationUnknown", "endUnknown" -> "meetUnknown"; "ended" -> "meetEnded"; "unavailable" -> "meetUnavailable"; null -> "meetWorking"; else -> "meetFailed" }
         var actions = mutableSetOf("close")
         if (!busy) {
             if (permission != null) {

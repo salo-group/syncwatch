@@ -18,8 +18,9 @@ public sealed class MeetAuthorizationTransactions(AccountRepository accounts, Au
         internal string Status = "pending";
         internal string? Reason, Subject, RefreshToken, BrowserProofHash, ConfirmationId;
         internal AccountProfile? Profile;
+        internal bool? ManagedDomain;
         internal int ProofFailures;
-        internal void ClearProposal() { Subject = null; RefreshToken = null; Profile = null; }
+        internal void ClearProposal() { Subject = null; RefreshToken = null; Profile = null; ManagedDomain = null; }
     }
     private readonly object gate = new();
     private readonly Dictionary<string, Transaction> transactions = [];
@@ -49,7 +50,7 @@ public sealed class MeetAuthorizationTransactions(AccountRepository accounts, Au
         }
     }
     // Called only with the SDK handler's verified UserInfo identity and token response, never from a native request.
-    public string? CompleteBrowser(string id, string subject, string? refreshToken, bool scopeGranted)
+    public string? CompleteBrowser(string id, string subject, string? refreshToken, bool scopeGranted, bool? managedDomain = null)
     {
         lock (gate)
         {
@@ -61,6 +62,7 @@ public sealed class MeetAuthorizationTransactions(AccountRepository accounts, Au
                 || refreshToken is null && !grants.HasAuthorization(transaction.Scope.Principal))
             { Fail(transaction, "permissionUnavailable"); return null; }
             transaction.Subject = subject; transaction.RefreshToken = refreshToken;
+            transaction.ManagedDomain = managedDomain;
             transaction.Profile = accounts.Profile(transaction.Scope.Principal);
             string proof = AccountWire.BrowserProof(); transaction.BrowserProofHash = AccountWire.Hash(proof);
             transaction.Status = "browserConfirmationRequired";
@@ -105,7 +107,7 @@ public sealed class MeetAuthorizationTransactions(AccountRepository accounts, Au
             AccountWire.Need(transaction.Status == "confirmAuthorization" && transaction.Subject is not null, "conflict", 409);
             if (!CheckBrowserProof(transaction, browserProof)) return View(transaction);
             // Confirmation is the consent boundary. Concurrent room leave cannot authorize a meeting for that closed epoch.
-            grants.Remember(principal, transaction.Subject!, transaction.RefreshToken);
+            grants.Remember(principal, transaction.Subject!, transaction.RefreshToken, transaction.ManagedDomain);
             transaction.ClearProposal(); transaction.ConfirmationId = requestId; transaction.Status = "complete"; transaction.Reason = null;
             transaction.Until = clock.GetUtcNow().AddSeconds(30);
             return View(transaction);

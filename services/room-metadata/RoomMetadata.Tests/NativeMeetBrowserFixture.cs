@@ -41,7 +41,7 @@ internal sealed class NativeMeetBrowserFixture : IDisposable
             // identifies only this test server's fixed synthetic provider subject, never a production identity.
             lock (gate) identity = identities.SingleOrDefault(value => (principal is null || value.AccountId == principal.AccountId)
                 && Wire.SecretMatches(Wire.String(body, "fixtureToken"), value.TokenHash));
-            Wire.Need(identity is not null && scenario is "accept" or "wrongAccount" or "missingScope" or "reuse" or "expire", "forbidden", 403);
+            Wire.Need(identity is not null && scenario is "accept" or "wrongAccount" or "missingScope" or "reuse" or "expire" or "denyNextCreate", "forbidden", 403);
             Wire.Need(scenario != "expire" || expirePermission is not null, "forbidden", 403);
 
             // Exercise the real per-challenge OAuth adapter without following the redirect to Google.
@@ -56,8 +56,9 @@ internal sealed class NativeMeetBrowserFixture : IDisposable
                 && query["include_granted_scopes"] == "true" && query["code_challenge_method"] == "S256");
             string? code = app.Services.GetRequiredService<MeetAuthorizationTransactions>().CompleteBrowser(id,
                 scenario == "wrongAccount" ? identity!.Subject + "-other" : identity!.Subject,
-                scenario == "reuse" ? null : "synthetic-meet-refresh-" + Guid.NewGuid().ToString("N"), scenario != "missingScope");
+                scenario == "reuse" ? null : "synthetic-meet-refresh-" + Guid.NewGuid().ToString("N"), scenario != "missingScope", managedDomain: false);
             if (scenario == "expire") expirePermission!();
+            if (scenario == "denyNextCreate") ((NativeMeetProviderFixture)app.Services.GetRequiredService<IMeetProvider>()).RejectNextCreate(identity!.AccountId);
             context.Response.ContentType = "application/json";
             await JsonSerializer.SerializeAsync(context.Response.Body, new { v = 2, result = new { browserProof = code } }, Wire.Json, context.RequestAborted);
         });

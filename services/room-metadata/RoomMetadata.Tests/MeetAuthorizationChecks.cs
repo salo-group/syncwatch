@@ -56,7 +56,7 @@ internal static class MeetAuthorizationChecks
                 Require(transactions.Poll(principal, unavailable.TransactionId, proof).Reason == "permissionUnavailable");
             }
             var accepted = Start(); transactions.BeginBrowser(accepted.TransactionId);
-            string code = transactions.CompleteBrowser(accepted.TransactionId, "authorization-owner", "owned-synthetic-meet-refresh", true)!;
+            string code = transactions.CompleteBrowser(accepted.TransactionId, "authorization-owner", "owned-synthetic-meet-refresh", true, managedDomain: false)!;
             Require(code.Length == 12 && transactions.Poll(principal, accepted.TransactionId, proof).Account is null);
             var incorrect = transactions.Verify(principal, accepted.TransactionId, proof, "invalid");
             Require(incorrect.Status == "browserConfirmationRequired" && incorrect.Reason == "invalidConfirmation" && incorrect.Account is null);
@@ -65,6 +65,7 @@ internal static class MeetAuthorizationChecks
             string confirmation = Secret();
             Require(transactions.Confirm(principal, accepted.TransactionId, proof, confirmation, code).Status == "complete");
             Require(grants.HasAuthorization(principal));
+            Require(grants.ReadForProvider(principal.AccountId)?.ManagedDomain == false);
             Require(transactions.Confirm(principal, accepted.TransactionId, proof, confirmation, code).Status == "complete");
             Reject(() => transactions.Confirm(principal, accepted.TransactionId, proof, Secret(), code), "conflict");
             Require(transactions.Cancel(principal, accepted.TransactionId, proof).Status == "complete" && grants.HasAuthorization(principal));

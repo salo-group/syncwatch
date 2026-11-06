@@ -78,6 +78,14 @@ internal static class MeetCallJournalChecks
                 finally { Directory.Delete(file); File.Move(file + ".backup", file); }
             }
             Require(!Directory.EnumerateFiles(Path.GetDirectoryName(file)!, "*.tmp").Any());
+            var deniedScope = scope with { RoomEpoch = "permission-epoch" };
+            string rejectedVersion = AccountWire.Secret();
+            using (var journal = new MeetCallJournal(root, protection))
+            {
+                var (call, dispatch) = journal.Begin(deniedScope, AccountWire.Secret()); Require(dispatch);
+                Require(journal.Update(call, call with { State = "createFailed", Reason = "permissionRequired", RejectedGrantVersion = rejectedVersion }));
+            }
+            using (var restored = new MeetCallJournal(root, protection)) Require(restored.Latest(deniedScope)?.RejectedGrantVersion == rejectedVersion);
             try { protection.CreateProtector("SyncWatch.Meet", "grants", "v1").Unprotect(File.ReadAllBytes(file)); throw new InvalidOperationException("Journal purpose was shared"); }
             catch (System.Security.Cryptography.CryptographicException) { }
         }

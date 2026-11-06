@@ -12,11 +12,19 @@ internal static class MeetCallCoordinatorChecks
         internal string? Conference;
         internal TaskCompletionSource<bool>? Entered, Release;
         internal bool FailRead, UnknownEnd;
+        internal bool DenyCreate;
+        internal string? DeniedVersion;
+        internal Action? BeforeCreateFailure;
         internal int Active;
         public async Task<MeetSpace> Create(string account, CancellationToken cancel)
         {
             Interlocked.Increment(ref Creates); Interlocked.Increment(ref Active);
-            try { Entered?.TrySetResult(true); if (Release is not null) await Release.Task.WaitAsync(cancel); return Space(); }
+            try
+            {
+                Entered?.TrySetResult(true); if (Release is not null) await Release.Task.WaitAsync(cancel);
+                if (DenyCreate) { BeforeCreateFailure?.Invoke(); throw new MeetProviderException("permissionRequired", grantVersion: DeniedVersion); }
+                return Space();
+            }
             finally { Interlocked.Decrement(ref Active); }
         }
         public Task<MeetSpace> Read(string account, string name, CancellationToken cancel)
@@ -67,6 +75,8 @@ internal static class MeetCallCoordinatorChecks
                 string request = AccountWire.Secret();
                 Require(coordinator.Start(first, request) is { Status: "idle", AuthorizationRequired: true } && provider.Creates == 0);
                 grants.Remember(principal, "coordinator-owner", "synthetic-refresh");
+                Require(coordinator.Start(first, request) is { Status: "idle", AuthorizationRequired: true } && provider.Creates == 0);
+                grants.Remember(principal, "coordinator-owner", "synthetic-refresh", managedDomain: true);
                 var creating = coordinator.Start(first, request); Require(creating.Status == "creating" && creating.MeetUri is null);
                 await provider.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
                 Require(coordinator.Start(first, request).CallId == creating.CallId && provider.Creates == 1);
@@ -98,7 +108,26 @@ internal static class MeetCallCoordinatorChecks
                 var foreign = Room("foreign-call-run");
                 Require(coordinator.Get(foreign).MeetUri is null);
                 Reject(() => coordinator.End(foreign, ready.CallId!, ready.Generation, AccountWire.Secret()), "conflict");
+                rooms.Leave(principal, foreign.RoomId, foreign.MemberId, foreign.ClientRunId);
                 Reject(() => coordinator.End(second, ready.CallId!, ready.Generation + 1, AccountWire.Secret()), "conflict");
+                var denied = Room("denied-call-run"); provider.DenyCreate = true;
+                string deniedVersion = grants.ReadForProvider(principal.AccountId)!.Version;
+                _ = coordinator.Start(denied, AccountWire.Secret()); await Until(() => coordinator.Get(denied).Status == "creationFailed");
+                Require(coordinator.Get(denied).AuthorizationRequired && !coordinator.Get(second).AuthorizationRequired
+                    && journal.Latest(denied)?.RejectedGrantVersion == deniedVersion);
+                int beforeRetry = provider.Creates;
+                _ = coordinator.Start(denied, AccountWire.Secret()); Require(provider.Creates == beforeRetry);
+                grants.Remember(principal, "coordinator-owner", "synthetic-refresh", managedDomain: true);
+                Require(!coordinator.Get(denied).AuthorizationRequired);
+                provider.DenyCreate = false; _ = coordinator.Start(denied, AccountWire.Secret());
+                await Until(() => coordinator.Get(denied).Status == "ready");
+                Require(journal.Latest(denied)?.RejectedGrantVersion is null);
+                var late = Room("late-denial-call-run"); provider.DenyCreate = true;
+                provider.DeniedVersion = grants.ReadForProvider(principal.AccountId)!.Version;
+                provider.BeforeCreateFailure = () => grants.Remember(principal, "coordinator-owner", "synthetic-refresh", managedDomain: true);
+                _ = coordinator.Start(late, AccountWire.Secret()); await Until(() => coordinator.Get(late).Status == "creationFailed");
+                Require(!coordinator.Get(late).AuthorizationRequired && journal.Latest(late)?.RejectedGrantVersion == provider.DeniedVersion);
+                provider.DenyCreate = false; provider.DeniedVersion = null; provider.BeforeCreateFailure = null;
                 provider.Conference = "conferenceRecords/first-conference"; provider.UnknownEnd = true;
                 string endingRequest = AccountWire.Secret();
                 _ = coordinator.End(second, ready.CallId!, ready.Generation, endingRequest);

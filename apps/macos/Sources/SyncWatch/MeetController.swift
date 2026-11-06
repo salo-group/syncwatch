@@ -183,7 +183,7 @@ import SyncWatchRoom
             next.status = next.authorizationState == "browserConfirmationRequired" ? "meetBrowserCode"
                 : next.authorizationState == "confirmAuthorization" ? "meetPermissionConfirmation" : "meetAuthorizing"
         } else if let call {
-            next.status = ["idle": "meetIdle", "ready": "meetReady", "creating": "meetWorking", "ending": "meetWorking",
+            next.status = call.authorizationRequired && call.reason == "permissionRequired" ? "meetPermissionUnavailable" : ["idle": "meetIdle", "ready": "meetReady", "creating": "meetWorking", "ending": "meetWorking",
                 "creationUnknown": "meetUnknown", "endUnknown": "meetUnknown", "ended": "meetEnded", "unavailable": "meetUnavailable"][call.state] ?? "meetFailed"
         } else { next.status = "meetWorking" }
         if !busy {

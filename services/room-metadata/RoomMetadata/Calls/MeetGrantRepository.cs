@@ -6,7 +6,7 @@ namespace SyncWatch.RoomMetadata.Calls;
 /// <summary>Provider credentials stay server-side, encrypted separately from device sessions.</summary>
 public sealed class MeetGrantRepository : IDisposable
 {
-    internal sealed record Grant(string AccountId, string Subject, string RefreshToken, string Version, string Scope)
+    internal sealed record Grant(string AccountId, string Subject, string RefreshToken, string Version, string Scope, bool? ManagedDomain = null)
     {
         public override string ToString() => "[Google Meet grant redacted]";
     }
@@ -26,7 +26,7 @@ public sealed class MeetGrantRepository : IDisposable
         && state.Grants.Select(grant => grant.AccountId).Distinct(StringComparer.Ordinal).Count() == state.Grants.Length;
 
     // Invoke only after browser counterproof and explicit native confirmation of the matching Google account.
-    public void Remember(AccountPrincipal principal, string subject, string? refreshToken)
+    public void Remember(AccountPrincipal principal, string subject, string? refreshToken, bool? managedDomain = null)
     {
         _ = accounts.Profile(principal);
         AccountWire.Need(accounts.MatchesGoogleIdentity(principal, subject), "providerIdentityInvalid", 403);
@@ -35,7 +35,7 @@ public sealed class MeetGrantRepository : IDisposable
             Grant? previous = store.Current.Grants.SingleOrDefault(grant => grant.AccountId == principal.AccountId && grant.Subject == subject);
             string? credential = refreshToken ?? previous?.RefreshToken;
             AccountWire.Need(MeetPolicy.Credential(credential), "providerIdentityInvalid", 502);
-            Grant replacement = new(principal.AccountId, subject, credential!, AccountWire.Secret(), MeetPolicy.CreatedScope);
+            Grant replacement = new(principal.AccountId, subject, credential!, AccountWire.Secret(), MeetPolicy.CreatedScope, managedDomain ?? previous?.ManagedDomain);
             Grant[] next = [.. store.Current.Grants.Where(grant => grant.AccountId != principal.AccountId), replacement];
             AccountWire.Need(next.Length <= MeetPolicy.MaximumGrants, "accountCapacity", 503);
             store.Save(new(1, next));

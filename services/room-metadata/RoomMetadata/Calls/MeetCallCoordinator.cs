@@ -29,7 +29,7 @@ internal sealed class MeetCallCoordinator(AuthenticatedRooms rooms, MeetGrantRep
         lock (gate)
         {
             AccountWire.Need(shutdown is null, "unavailable", 503);
-            if (!grants.HasAuthorization(scope.Principal)) return View(scope, journal.Latest(scope));
+            if (View(scope, journal.Latest(scope)).AuthorizationRequired) return View(scope, journal.Latest(scope));
             var known = journal.Latest(scope);
             if (known?.State is "created" or "createRejected")
             {
@@ -51,7 +51,7 @@ internal sealed class MeetCallCoordinator(AuthenticatedRooms rooms, MeetGrantRep
             AccountWire.Need(call is not null && call.Id == id && call.Generation == generation, "conflict", 409);
             if (call.EndRequestId == requestId) return View(scope, call);
             AccountWire.Need(call.State is "ready" or "endFailed", "conflict", 409);
-            if (!grants.HasAuthorization(scope.Principal)) return View(scope, call);
+            if (View(scope, call).AuthorizationRequired) return View(scope, call);
             var checking = call with { State = "checkingEnd", EndRequestId = requestId, Conference = null, Reason = null };
             AccountWire.Need(journal.Update(call, checking), "conflict", 409);
             Queue(scope, checking, "end"); return View(scope, journal.Latest(scope));
@@ -138,6 +138,7 @@ internal sealed class MeetCallCoordinator(AuthenticatedRooms rooms, MeetGrantRep
     private async Task CreateWork(Work work, CancellationToken stop)
     {
         var call = work.Call;
+        string? grantVersion = grants.ReadForProvider(call.OwnerAccountId)?.Version;
         if (work.Kind == "create")
         {
             if (!rooms.IsCurrent(work.Scope!)) { journal.Update(call, call with { State = "createFailed", Reason = "roomChanged" }); return; }
@@ -150,7 +151,12 @@ internal sealed class MeetCallCoordinator(AuthenticatedRooms rooms, MeetGrantRep
             }
             catch (MeetProviderException error)
             {
-                journal.Update(call, call with { State = error.Ambiguous ? "createUnknown" : "createFailed", Reason = error.Ambiguous ? "providerOutcomeUnknown" : error.Code }); return;
+                journal.Update(call, call with
+                {
+                    State = error.Ambiguous ? "createUnknown" : "createFailed",
+                    Reason = error.Ambiguous ? "providerOutcomeUnknown" : error.Code,
+                    RejectedGrantVersion = !error.Ambiguous && error.Code == "permissionRequired" ? error.GrantVersion ?? grantVersion : null
+                }); return;
             }
         }
         if (!rooms.IsCurrent(work.Scope!)) { journal.Update(call, call with { State = "orphaned", Reason = "roomChanged" }); return; }
@@ -159,32 +165,56 @@ internal sealed class MeetCallCoordinator(AuthenticatedRooms rooms, MeetGrantRep
             MeetSpace verified = await provider.Read(call.OwnerAccountId, call.Space!, stop);
             if (verified.Name != call.Space || verified.MeetUri != call.MeetUri) throw new MeetProviderException("providerResponseInvalid");
             if (!rooms.IsCurrent(work.Scope!)) { journal.Update(call, call with { State = "orphaned", Reason = "roomChanged" }); return; }
-            journal.Update(call, call with { State = "ready", Conference = verified.Conference, Reason = null });
+            journal.Update(call, call with { State = "ready", Conference = verified.Conference, Reason = null, RejectedGrantVersion = null });
         }
-        catch (MeetProviderException error) { journal.Update(call, call with { State = "createRejected", Reason = error.Code }); }
+        catch (MeetProviderException error)
+        {
+            journal.Update(call, call with
+            {
+                State = "createRejected",
+                Reason = error.Code,
+                RejectedGrantVersion = error.Code == "permissionRequired" ? error.GrantVersion ?? grantVersion : null
+            });
+        }
     }
     private async Task EndWork(Work work, CancellationToken stop)
     {
         var call = work.Call;
+        string? grantVersion = grants.ReadForProvider(call.OwnerAccountId)?.Version;
         if (work.Kind != "cleanup" && !rooms.IsCurrent(work.Scope!)) { journal.Update(call, call with { State = "orphaned", Reason = "roomChanged" }); return; }
         MeetSpace current;
         try { current = await provider.Read(call.OwnerAccountId, call.Space!, stop); }
-        catch (MeetProviderException error) { journal.Update(call, call with { State = "endFailed", Reason = error.Code }); return; }
+        catch (MeetProviderException error)
+        {
+            journal.Update(call, call with
+            {
+                State = "endFailed",
+                Reason = error.Code,
+                RejectedGrantVersion = error.Code == "permissionRequired" ? error.GrantVersion ?? grantVersion : null
+            }); return;
+        }
         if (current.Name != call.Space || current.MeetUri != call.MeetUri)
         { journal.Update(call, call with { State = "endFailed", Reason = "providerResponseInvalid" }); return; }
         if (work.Kind == "cleanup" && call.Conference is not null && current.Conference is not null && current.Conference != call.Conference)
         { journal.Update(call, call with { State = "endFailed", Reason = "roomChanged" }); return; }
         if (work.Kind != "cleanup" && !rooms.IsCurrent(work.Scope!)) { journal.Update(call, call with { State = "orphaned", Reason = "roomChanged" }); return; }
-        if (current.Conference is null) { journal.Update(call, call with { State = "ended", Reason = null }); return; }
+        if (current.Conference is null) { journal.Update(call, call with { State = "ended", Reason = null, RejectedGrantVersion = null }); return; }
         var ending = call with { State = "ending", Conference = current.Conference };
         if (!journal.Update(call, ending)) return;
         try
         {
             await provider.End(call.OwnerAccountId, call.Space!, stop);
-            journal.Update(ending, ending with { State = "ended", Reason = null });
+            journal.Update(ending, ending with { State = "ended", Reason = null, RejectedGrantVersion = null });
         }
         catch (MeetProviderException error)
-        { journal.Update(ending, ending with { State = error.Ambiguous ? "endUnknown" : "endFailed", Reason = error.Ambiguous ? "providerOutcomeUnknown" : error.Code }); }
+        {
+            journal.Update(ending, ending with
+            {
+                State = error.Ambiguous ? "endUnknown" : "endFailed",
+                Reason = error.Ambiguous ? "providerOutcomeUnknown" : error.Code,
+                RejectedGrantVersion = !error.Ambiguous && error.Code == "permissionRequired" ? error.GrantVersion ?? grantVersion : null
+            });
+        }
     }
     private void RecoverInterrupted(Work work)
     {
@@ -197,7 +227,13 @@ internal sealed class MeetCallCoordinator(AuthenticatedRooms rooms, MeetGrantRep
     private void Need(RoomMemberAccess scope, bool owner = false) => AccountWire.Need((!owner || scope.Owner) && rooms.IsCurrent(scope), "forbidden", 403);
     private RoomCallStatus View(RoomMemberAccess scope, MeetCallEntry? call)
     {
-        bool permission = scope.Owner && !grants.HasAuthorization(scope.Principal);
+        bool permission = false;
+        if (scope.Owner)
+        {
+            var grant = grants.ReadForProvider(scope.OwnerAccountId);
+            permission = grant is null || grant.ManagedDomain is null
+                || call?.Reason == "permissionRequired" && call.RejectedGrantVersion == grant.Version;
+        }
         if (call is null) return new("idle", null, 0, null, null, permission, MeetPolicy.CallPollMilliseconds);
         string state = call.State switch
         {

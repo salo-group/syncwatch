@@ -85,7 +85,7 @@ public static class AccountModule
                     && AccountWire.Text(subject, 255) && AccountWire.Text(name, 128) && AccountWire.Text(email, 320), "providerIdentityInvalid", 502);
                 context.Identity!.AddClaim(new(ClaimTypes.NameIdentifier, subject));
                 context.Identity.AddClaim(new(ClaimTypes.Name, name)); context.Identity.AddClaim(new(ClaimTypes.Email, email));
-                MeetAuthorizationModule.Propose(context, subject);
+                MeetAuthorizationModule.Propose(context, subject, user);
             };
             oauth.Events.OnTicketReceived = async context =>
             {

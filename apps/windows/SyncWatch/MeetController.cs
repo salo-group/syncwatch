@@ -156,6 +156,7 @@ internal sealed class MeetController(RoomController room, Func<Uri, Cancellation
         if (browserOpened && next.AuthorizationState == "pending") next.AuthorizationState = "authorizing";
         if (next.AuthorizationState == "confirmAuthorization" && permissionStatus?.Account is { } account) { next.Name = account.Name; next.Email = account.Email; }
         next.Status = busy ? "meetWorking" : notice ?? (permission is not null ? next.AuthorizationState switch { "browserConfirmationRequired" => "meetBrowserCode", "confirmAuthorization" => "meetPermissionConfirmation", _ => "meetAuthorizing" }
+            : call is { AuthorizationRequired: true, Reason: "permissionRequired" } ? "meetPermissionUnavailable"
             : call?.State switch { "idle" => "meetIdle", "ready" => "meetReady", "creating" or "ending" => "meetWorking", "creationUnknown" or "endUnknown" => "meetUnknown", "ended" => "meetEnded", "unavailable" => "meetUnavailable", null => "meetWorking", _ => "meetFailed" });
         if (!busy)
         {

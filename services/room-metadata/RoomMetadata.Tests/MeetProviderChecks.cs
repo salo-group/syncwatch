@@ -15,6 +15,7 @@ internal static class MeetProviderChecks
     private sealed class Transport : HttpMessageHandler
     {
         internal int Tokens, Reads, Creates, Ends;
+        internal bool ConsumerDefaults;
         internal Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>? Token, Meet;
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellation)
         {
@@ -34,7 +35,8 @@ internal static class MeetProviderChecks
             {
                 Require(request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath == "/v2/spaces");
                 using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellation));
-                Require(body.RootElement.GetProperty("config").GetProperty("accessType").GetString() == "RESTRICTED"
+                if (ConsumerDefaults) Require(body.RootElement.ValueKind == JsonValueKind.Object && !body.RootElement.EnumerateObject().Any());
+                else Require(body.RootElement.GetProperty("config").GetProperty("accessType").GetString() == "RESTRICTED"
                     && body.RootElement.GetProperty("config").GetProperty("entryPointAccess").GetString() == "ALL");
                 Interlocked.Increment(ref Creates);
             }
@@ -89,6 +91,8 @@ internal static class MeetProviderChecks
                 await Reject(() => provider.Create(principal.AccountId, default), "providerResponseInvalid", ambiguous: true);
                 transport.Meet = (_, _) => Task.FromResult(Json(Space.Replace("RESTRICTED", "OPEN", StringComparison.Ordinal)));
                 await Reject(() => provider.Read(principal.AccountId, "spaces/owned-space", default), "providerPolicyInvalid");
+                transport.Meet = (_, _) => Task.FromResult(Json(Space.Replace("RESTRICTED", "TRUSTED", StringComparison.Ordinal)));
+                await Reject(() => provider.Read(principal.AccountId, "spaces/owned-space", default), "providerPolicyInvalid");
                 transport.Meet = (_, _) => Task.FromResult(Json(Space.Replace("https://meet.google.com/", "https://evil.example/", StringComparison.Ordinal)));
                 await Reject(() => provider.Create(principal.AccountId, default), "providerResponseInvalid", ambiguous: true);
                 transport.Meet = (_, _) => Task.FromResult(Json("{\"name\":\"spaces/owned-space\",\"name\":\"spaces/other\"}"));
@@ -142,6 +146,45 @@ internal static class MeetProviderChecks
             { Meet = (_, _) => Task.FromResult(Json("{}", HttpStatusCode.Forbidden)) }), clock,
                 (_, _, _) => throw new IOException("Unavailable diagnostic sink")))
                 await Reject(() => provider.Create(principal.AccountId, default), "permissionRequired");
+            grants.Remember(principal, "provider-owner", "synthetic-refresh", managedDomain: false);
+            var personal = new Transport { ConsumerDefaults = true };
+            using (var provider = new MeetGoogleProvider(grants, options, new HttpClient(personal), clock))
+            {
+                _ = await provider.Create(principal.AccountId, default);
+                _ = await provider.Read(principal.AccountId, "spaces/owned-space", default);
+                string trusted = Space.Replace("RESTRICTED", "TRUSTED", StringComparison.Ordinal);
+                personal.Meet = (_, _) => Task.FromResult(Json(trusted));
+                _ = await provider.Read(principal.AccountId, "spaces/owned-space", default);
+                personal.Meet = (_, _) => Task.FromResult(Json(trusted[..^1] + ",\"phoneAccess\":[],\"gatewaySipAccess\":[]}"));
+                _ = await provider.Read(principal.AccountId, "spaces/owned-space", default);
+                foreach (string field in new[] { "phoneAccess", "gatewaySipAccess" })
+                    foreach (string entries in new[] { "[{}]", "null", "{}", "true" })
+                    {
+                        personal.Meet = (_, _) => Task.FromResult(Json(trusted[..^1] + ",\"" + field + "\":" + entries + "}"));
+                        await Reject(() => provider.Read(principal.AccountId, "spaces/owned-space", default), "providerPolicyInvalid");
+                    }
+                personal.Meet = (_, _) => Task.FromResult(Json(Space.Replace("RESTRICTED", "OPEN", StringComparison.Ordinal)));
+                await Reject(() => provider.Read(principal.AccountId, "spaces/owned-space", default), "providerPolicyInvalid");
+                personal.Meet = (_, _) => Task.FromResult(Json(Space.Replace("ALL", "CREATOR_APP_ONLY", StringComparison.Ordinal)));
+                await Reject(() => provider.Read(principal.AccountId, "spaces/owned-space", default), "providerPolicyInvalid");
+                personal.Meet = null;
+                grants.Remember(principal, "provider-owner", "synthetic-refresh", managedDomain: true);
+                personal.ConsumerDefaults = false;
+                _ = await provider.Create(principal.AccountId, default);
+                Require(personal.Creates == 2 && personal.Tokens == 2);
+                personal.Meet = (_, _) => Task.FromResult(Json(trusted));
+                await Reject(() => provider.Read(principal.AccountId, "spaces/owned-space", default), "providerPolicyInvalid");
+            }
+            foreach (string user in new[] { "{}", "{\"email\":\"person@company.example\"}" })
+            { using var json = JsonDocument.Parse(user); Require(!MeetAuthorizationModule.HasManagedDomain(json.RootElement)); }
+            using (var hosted = JsonDocument.Parse("{\"email\":\"person@gmail.com\",\"hd\":\"company.example\"}"))
+                Require(MeetAuthorizationModule.HasManagedDomain(hosted.RootElement));
+            foreach (string invalid in new[] { "null", "{\"hd\":null}", "{\"hd\":false}", "{\"hd\":\"\"}" })
+            {
+                using var json = JsonDocument.Parse(invalid);
+                try { _ = MeetAuthorizationModule.HasManagedDomain(json.RootElement); throw new InvalidOperationException("Malformed hosted-domain claim accepted"); }
+                catch (AccountException error) when (error.Code == "providerIdentityInvalid") { }
+            }
         }
         finally { Directory.Delete(root, recursive: true); }
         Console.WriteLine("SYNCWATCH_MEET_PROVIDER_OK encrypted-grant/version binding, single-flight tokens, bounded responses, restricted policy, canonical URI and no ambiguous mutation retries");

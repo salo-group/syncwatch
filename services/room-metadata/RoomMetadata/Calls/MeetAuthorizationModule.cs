@@ -12,7 +12,7 @@ internal static class MeetAuthorizationModule
 {
     internal const string PurposeKey = "syncwatch.purpose";
     private static readonly object ProposalKey = new();
-    private sealed record Proposal(string Subject, string? RefreshToken, bool ScopeGranted)
+    private sealed record Proposal(string Subject, string? RefreshToken, bool ScopeGranted, bool ManagedDomain)
     { public override string ToString() => "[provider permission proposal redacted]"; }
 
     internal static void Configure(WebApplicationBuilder builder, AccountOptions options)
@@ -30,21 +30,29 @@ internal static class MeetAuthorizationModule
         { ["access_type"] = "offline", ["prompt"] = "consent select_account", ["include_granted_scopes"] = "true" }) : uri;
 
     // HTTP-context items are request-local; tokens never enter claims, authentication properties or browser cookies.
-    internal static void Propose(OAuthCreatingTicketContext context, string subject)
+    internal static void Propose(OAuthCreatingTicketContext context, string subject, JsonElement user)
     {
         if (!Requested(context.Properties)) return;
         JsonDocument? response = context.TokenResponse.Response;
         bool granted = response is not null && response.RootElement.TryGetProperty("scope", out var scope)
             && scope.ValueKind == JsonValueKind.String && (scope.GetString() ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries)
                 .Contains(MeetPolicy.CreatedScope, StringComparer.Ordinal);
-        context.HttpContext.Items[ProposalKey] = new Proposal(subject, context.RefreshToken, granted);
+        context.HttpContext.Items[ProposalKey] = new Proposal(subject, context.RefreshToken, granted, HasManagedDomain(user));
+    }
+    // This is Google's authenticated UserInfo, not an email-domain heuristic or a native claim.
+    internal static bool HasManagedDomain(JsonElement user)
+    {
+        AccountWire.Need(user.ValueKind == JsonValueKind.Object, "providerIdentityInvalid", 502);
+        if (!user.TryGetProperty("hd", out var domain)) return false;
+        AccountWire.Need(domain.ValueKind == JsonValueKind.String && AccountWire.Text(domain.GetString(), 255), "providerIdentityInvalid", 502);
+        return true;
     }
     internal static string? Complete(HttpContext context, string id)
     {
         AccountWire.Need(context.Items.Remove(ProposalKey, out object? value) && value is Proposal, "providerIdentityInvalid", 502);
         var proposal = (Proposal)value!;
         return context.RequestServices.GetRequiredService<MeetAuthorizationTransactions>().CompleteBrowser(
-            id, proposal.Subject, proposal.RefreshToken, proposal.ScopeGranted);
+            id, proposal.Subject, proposal.RefreshToken, proposal.ScopeGranted, proposal.ManagedDomain);
     }
     internal static void Map(WebApplication app)
     {

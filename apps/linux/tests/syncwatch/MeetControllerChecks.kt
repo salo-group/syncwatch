@@ -41,7 +41,7 @@ internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomCont
         owner.action("meetAuthorize"); settles("authorization-created") { "meetOpenAuthorization" in owner.presentation.enabledActions }
         check(owner.presentation.name.isEmpty() && owner.presentation.email.isEmpty())
         owner.action("meetOpenAuthorization"); settles("browser-opened") { authorization != null }
-        val code = completeMeetBrowser(service, checkNotNull(authorization), fixtureToken)
+        val code = completeMeetBrowser(service, checkNotNull(authorization), fixtureToken, "denyNextCreate")
         settles("browser-proof-ready") { owner.presentation.authorizationState == "browserConfirmationRequired" }
         check(owner.presentation.name.isEmpty())
         owner.action("editMeetBrowserProof", code); owner.action("meetVerify")
@@ -52,6 +52,17 @@ internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomCont
         setAccountAvailable(true)
         owner.action("meetConfirm"); settles("permission-granted") { "meetStart" in owner.presentation.enabledActions }
         check(owner.presentation.name.isEmpty())
+        owner.action("meetStart"); settles("provider-permission-rejected") { owner.presentation.status == "meetPermissionUnavailable" && "meetAuthorize" in owner.presentation.enabledActions }
+        check(host.connected && peer.connected && "meetStart" !in owner.presentation.enabledActions && "meetAuthorize" !in guest.presentation.enabledActions)
+        authorization = null
+        owner.action("meetAuthorize"); settles("reauthorization-created") { "meetOpenAuthorization" in owner.presentation.enabledActions }
+        owner.action("meetOpenAuthorization"); settles("reauthorization-opened") { authorization != null }
+        val renewedCode = completeMeetBrowser(service, checkNotNull(authorization), fixtureToken)
+        settles("reauthorization-proof") { owner.presentation.authorizationState == "browserConfirmationRequired" }
+        owner.action("editMeetBrowserProof", renewedCode); owner.action("meetVerify")
+        settles("reauthorization-profile") { owner.presentation.authorizationState == "confirmAuthorization" }
+        check(owner.presentation.name == account.name && owner.presentation.email == account.email)
+        owner.action("meetConfirm"); settles("reauthorization-granted") { "meetStart" in owner.presentation.enabledActions }
         owner.action("meetStart"); settles("first-call-ready") { "meetOpen" in owner.presentation.enabledActions && "meetOpen" in guest.presentation.enabledActions }
         check("meetEnd" !in guest.presentation.enabledActions)
         owner.action("meetEnd"); check("meetConfirmEnd" in owner.presentation.enabledActions)

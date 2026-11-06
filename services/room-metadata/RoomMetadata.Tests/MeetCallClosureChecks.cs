@@ -58,7 +58,7 @@ internal static class MeetCallClosureChecks
                 var device = accounts.SignIn(tag, "Owner", "owner@example.invalid");
                 var principal = accounts.Authorize(device.AccessToken);
                 var admission = rooms.Create(principal, "Owner", tag, Wire.NewId("create-"));
-                grants.Remember(principal, tag, "synthetic-refresh");
+                grants.Remember(principal, tag, "synthetic-refresh", managedDomain: true);
                 return (rooms.Access(principal, admission.RoomId, admission.MemberId, tag, true), device);
             }
             async Task Ready(RoomMemberAccess scope)

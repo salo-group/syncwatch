@@ -6,7 +6,7 @@ namespace SyncWatch.RoomMetadata.Calls;
 
 internal sealed record MeetCallEntry(string Id, string RoomId, string Epoch, string OwnerAccountId, long Generation,
     string RequestId, string State, string? Space = null, string? MeetUri = null, string? Conference = null,
-    string? EndRequestId = null, string? Reason = null, bool ClosureAttempted = false)
+    string? EndRequestId = null, string? Reason = null, bool ClosureAttempted = false, string? RejectedGrantVersion = null)
 {
     public override string ToString() => "[Meet operation redacted]";
 }
@@ -37,6 +37,7 @@ internal sealed class MeetCallJournal : IDisposable
         && state.Calls.All(call => call is not null && AccountWire.Token(call.Id) && Wire.Id(call.RoomId) && Wire.Id(call.Epoch)
             && AccountWire.Token(call.OwnerAccountId) && AccountWire.Token(call.RequestId) && call.Generation is > 0 and <= Wire.MaximumCounter
             && (call.EndRequestId is null || AccountWire.Token(call.EndRequestId))
+            && (call.RejectedGrantVersion is null || AccountWire.Token(call.RejectedGrantVersion))
             && (call.Conference is null || MeetPolicy.ConferenceName(call.Conference))
             && (!call.ClosureAttempted || call.EndRequestId is not null
                 && call.State is "checkingEnd" or "ending" or "ended" or "endFailed" or "endUnknown")

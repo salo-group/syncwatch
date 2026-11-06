@@ -7,11 +7,14 @@ internal sealed class NativeMeetProviderFixture : IMeetProvider, IDisposable
     private sealed record Owned(string Account, MeetSpace Space);
     private readonly object gate = new();
     private readonly Dictionary<string, Owned> spaces = new(StringComparer.Ordinal);
+    private readonly HashSet<string> rejectCreate = new(StringComparer.Ordinal);
+    internal void RejectNextCreate(string account) { lock (gate) rejectCreate.Add(account); }
     public Task<MeetSpace> Create(string account, CancellationToken cancel)
     {
         cancel.ThrowIfCancellationRequested();
         lock (gate)
         {
+            if (rejectCreate.Remove(account)) throw new MeetProviderException("permissionRequired");
             string name = "spaces/fixture-" + Guid.NewGuid().ToString("N");
             string code = new(Enumerable.Range(0, 10).Select(_ => (char)('a' + RandomNumberGenerator.GetInt32(26))).ToArray());
             var space = new MeetSpace(name, "https://meet.google.com/" + code[..3] + "-" + code[3..7] + "-" + code[7..], "conferenceRecords/fixture-" + Guid.NewGuid().ToString("N"));
@@ -34,5 +37,5 @@ internal sealed class NativeMeetProviderFixture : IMeetProvider, IDisposable
     }
     private Owned Find(string account, string name) => spaces.TryGetValue(name, out var value) && value.Account == account
         ? value : throw new MeetProviderException("permissionRequired");
-    public void Dispose() { lock (gate) spaces.Clear(); }
+    public void Dispose() { lock (gate) { spaces.Clear(); rejectCreate.Clear(); } }
 }

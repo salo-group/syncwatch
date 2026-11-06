@@ -27,7 +27,7 @@ import Testing
         #expect(owner.presentation.name.isEmpty && owner.presentation.email.isEmpty)
         owner.action("meetOpenAuthorization")
         try await meetSettles { gate.authorization != nil }
-        let code = try await completeMeetBrowser(service: service, authorization: #require(gate.authorization), fixtureToken: fixtureToken)
+        let code = try await completeMeetBrowser(service: service, authorization: #require(gate.authorization), fixtureToken: fixtureToken, scenario: "denyNextCreate")
         try await meetSettles { owner.presentation.authorizationState == "browserConfirmationRequired" }
         #expect(owner.presentation.name.isEmpty)
         owner.action("editMeetBrowserProof", value: code); owner.action("meetVerify")
@@ -39,6 +39,18 @@ import Testing
         owner.action("meetConfirm")
         try await meetSettles { owner.presentation.enabledActions.contains("meetStart") }
         #expect(owner.presentation.name.isEmpty)
+        owner.action("meetStart")
+        try await meetSettles { owner.presentation.status == "meetPermissionUnavailable" && owner.presentation.enabledActions.contains("meetAuthorize") }
+        #expect(host.connected && peer.connected && !owner.presentation.enabledActions.contains("meetStart") && !guest.presentation.enabledActions.contains("meetAuthorize"))
+        gate.authorization = nil
+        owner.action("meetAuthorize"); try await meetSettles { owner.presentation.enabledActions.contains("meetOpenAuthorization") }
+        owner.action("meetOpenAuthorization"); try await meetSettles { gate.authorization != nil }
+        let renewedCode = try await completeMeetBrowser(service: service, authorization: #require(gate.authorization), fixtureToken: fixtureToken)
+        try await meetSettles { owner.presentation.authorizationState == "browserConfirmationRequired" }
+        owner.action("editMeetBrowserProof", value: renewedCode); owner.action("meetVerify")
+        try await meetSettles { owner.presentation.authorizationState == "confirmAuthorization" }
+        #expect(owner.presentation.name == account.name && owner.presentation.email == account.email)
+        owner.action("meetConfirm"); try await meetSettles { owner.presentation.enabledActions.contains("meetStart") }
         owner.action("meetStart")
         try await meetSettles { owner.presentation.enabledActions.contains("meetOpen") && guest.presentation.enabledActions.contains("meetOpen") }
         #expect(!guest.presentation.enabledActions.contains("meetEnd"))

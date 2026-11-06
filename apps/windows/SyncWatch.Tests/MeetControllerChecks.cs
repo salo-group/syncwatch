@@ -34,7 +34,7 @@ internal static class MeetControllerChecks
             owner.Action("meetAuthorize"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetOpenAuthorization"));
             Require(owner.Presentation.Name.Length == 0 && owner.Presentation.Email.Length == 0);
             owner.Action("meetOpenAuthorization"); await Settles(() => authorization is not null);
-            string code = await CompleteBrowser(service, authorization!, fixtureToken);
+            string code = await CompleteBrowser(service, authorization!, fixtureToken, "denyNextCreate");
             await Settles(() => owner.Presentation.AuthorizationState == "browserConfirmationRequired");
             Require(owner.Presentation.Name.Length == 0);
             owner.Action("editMeetBrowserProof", code); owner.Action("meetVerify");
@@ -45,6 +45,17 @@ internal static class MeetControllerChecks
             setAccountAvailable(true);
             owner.Action("meetConfirm"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetStart"));
             Require(owner.Presentation.Name.Length == 0);
+            owner.Action("meetStart"); await Settles(() => owner.Presentation.Status == "meetPermissionUnavailable" && owner.Presentation.EnabledActions.Contains("meetAuthorize"));
+            Require(host.Connected && peer.Connected && !owner.Presentation.EnabledActions.Contains("meetStart") && !guest.Presentation.EnabledActions.Contains("meetAuthorize"));
+            authorization = null;
+            owner.Action("meetAuthorize"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetOpenAuthorization"));
+            owner.Action("meetOpenAuthorization"); await Settles(() => authorization is not null);
+            string renewedCode = await CompleteBrowser(service, authorization!, fixtureToken);
+            await Settles(() => owner.Presentation.AuthorizationState == "browserConfirmationRequired");
+            owner.Action("editMeetBrowserProof", renewedCode); owner.Action("meetVerify");
+            await Settles(() => owner.Presentation.AuthorizationState == "confirmAuthorization");
+            Require(owner.Presentation.Name == account.Name && owner.Presentation.Email == account.Email);
+            owner.Action("meetConfirm"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetStart"));
             owner.Action("meetStart"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetOpen") && guest.Presentation.EnabledActions.Contains("meetOpen"));
             Require(!guest.Presentation.EnabledActions.Contains("meetEnd"));
             owner.Action("meetEnd"); Require(owner.Presentation.EnabledActions.Contains("meetConfirmEnd"));
