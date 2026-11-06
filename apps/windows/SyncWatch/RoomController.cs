@@ -7,6 +7,7 @@ using SyncWatch.Room;
 namespace SyncWatch;
 
 internal sealed record RoomWatchMembership(RoomMembershipSession Owner, string MemberId, RoomIdentity Identity, string Epoch);
+internal sealed record RoomCallMembership(RoomMembershipSession Owner, string MemberId, string Epoch, bool IsOwner);
 internal sealed record RoomInvitationTransfer(RoomMembershipSession Owner, RoomInvitation Invitation, Guid Revision);
 internal sealed record RoomPreparedPublication(Guid Lease, MediaDescriptor Media);
 
@@ -175,6 +176,18 @@ internal sealed class RoomController
         dispatcher.VerifyAccess();
         if (localRevision == revision) return;
         localRevision = revision; localFiles = files().ToArray(); StartPublisher(); StartMissingReport();
+    }
+    internal RoomCallMembership? CallMembership()
+    {
+        dispatcher.VerifyAccess();
+        return AccountAuthority is not null && !stopping && Connected && session is not null && admission is not null
+            ? new(session, admission.MemberId, admission.Bootstrap.Snapshot.Epoch, Editor.Owner) : null;
+    }
+    internal bool IsCurrent(RoomCallMembership membership)
+    {
+        dispatcher.VerifyAccess();
+        return AccountAuthority is not null && !stopping && Connected && ReferenceEquals(session, membership.Owner)
+            && admission?.MemberId == membership.MemberId && admission?.Bootstrap.Snapshot.Epoch == membership.Epoch;
     }
     internal bool IsCurrent(RoomWatchMembership membership)
     {

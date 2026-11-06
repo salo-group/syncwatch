@@ -11,6 +11,12 @@ struct RoomWatchMembership {
     let identity: RoomIdentity
     let epoch: String
 }
+struct RoomCallMembership {
+    let owner: RoomMembershipSession
+    let memberID: String
+    let epoch: String
+    let isOwner: Bool
+}
 struct RoomInvitationTransfer {
     fileprivate let owner: RoomMembershipSession
     let invitation: RoomInvitation
@@ -236,6 +242,14 @@ struct RoomPreparedPublication {
         localFiles = files
         startPublisher()
         startMissingReport()
+    }
+    func callMembership() -> RoomCallMembership? {
+        guard accountAuthority != nil, !stopping, connected, let session, let admission else { return nil }
+        return RoomCallMembership(owner: session, memberID: admission.memberID, epoch: admission.bootstrap.snapshot.epoch, isOwner: editor.owner)
+    }
+    func isCurrent(_ membership: RoomCallMembership) -> Bool {
+        accountAuthority != nil && !stopping && connected && session === membership.owner
+            && admission?.memberID == membership.memberID && admission?.bootstrap.snapshot.epoch == membership.epoch
     }
     func isCurrent(_ membership: RoomWatchMembership) -> Bool {
         !stopping && connected && session === membership.owner && admission?.memberID == membership.memberID

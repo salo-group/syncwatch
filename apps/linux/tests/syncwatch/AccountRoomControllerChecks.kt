@@ -38,7 +38,13 @@ internal suspend fun accountRoomControllerChecks(scope: CoroutineScope) {
                 } else {
                     roomSettles { peer.connected && host.editor.memberCount == 2 }; check(!peer.editor.owner)
                     val membership = peer.beginWatch().first
-                    check(peer.canContinuePlayback(membership)); guestSource = null
+                    check(peer.canContinuePlayback(membership))
+                    (fixture["browserFixtureToken"] as? String)?.let { token ->
+                        meetApplicationChecks(scope, host, peer, java.net.URI(ownerRecord.service), token, ownerDevice.account) { available ->
+                            guestSource = if (available) guestAuthority else null; ownerSource = if (available) ownerAuthority else null
+                        }
+                    }
+                    guestSource = null
                     check(!peer.connected && !peer.canContinuePlayback(membership)); ownerSource = null
                     check(!host.connected && !host.canCopy(transfer))
                     peer.close(); host.close(); host.invitationCopyCompleted(true, transfer)

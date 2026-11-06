@@ -289,6 +289,39 @@
         "accountForgetStorage",
         "accountUseMemory"
       ]
+    },
+    "Meet": {
+      "tokens": [],
+      "states": [
+        "unavailable",
+        "idle",
+        "working",
+        "pending",
+        "authorizing",
+        "browserConfirmationRequired",
+        "confirmAuthorization",
+        "ready",
+        "handedOff",
+        "failed",
+        "unknown",
+        "ended"
+      ],
+      "actions": [
+        "close",
+        "openRoom",
+        "meetAuthorize",
+        "meetOpenAuthorization",
+        "editMeetBrowserProof",
+        "meetVerify",
+        "meetConfirm",
+        "meetCancelAuthorization",
+        "meetStart",
+        "meetOpen",
+        "meetEnd",
+        "meetRetry",
+        "meetConfirmEnd",
+        "meetCancelEnd"
+      ]
     }
   }
 }

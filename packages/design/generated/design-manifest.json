@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
   "units": "logical",
-  "sourceDigest": "8ac9dcfac1db05b677ef34349c5218a26e41c9be8e541f31664bfa53fe28e532",
+  "sourceDigest": "8c06f8fc654d3bc95f10974cf2c5f2e050140b693034fecb222667b5329e3ddc",
   "sources": {
     "tokens/geometry.json": "83534a4d3b484f7a810a4c67f1f8ee58b2f2f4a14db4e4df404381e936a78a4b",
     "tokens/palette.json": "bb4dabce249ffe75a20192d8ccf523630432a3d1f3ca8dcba45fa787a7028a2c",
     "themes.json": "1a0a77546aeb1c96aaad53408a0a2e14e4be38298b50cfeb2700fd9a18b42b50",
-    "components.json": "8581151304ca175aee723b974f5f88ce55ef1d3243f38e4a37cb0dbf408a3abe",
-    "copy.json": "0b4eb75a092f5a9a45aed8c312a758902fe5d7c0e37eadefb8b1577d640ddd35",
+    "components.json": "207f728d33ab6ef4d8b0218c4fda64c2445128479b331b8f921267367d289f9a",
+    "copy.json": "b391d62f72f5aa31faf6f7c8cbda3a07ba44b6183b146cad666610ff9c860f1e",
     "settings.json": "5c6a9033f9bf3df9e09f094996e75fd5432ac07f69f01120d4517eacce9973d8",
     "room.json": "79f5b66eadd3cdcced4e77166cc3c8024d9c98722e363bbddb6c5a52eb700e7c",
     "player.json": "5cf83f28cc332de38632059c39e19669159a04ca2d2c0515f277b7667e83d9f3",
     "call.json": "a26821925540d925182355af12c02a40780c84c051e53610b300934536186a01",
     "player-settings.json": "ff81d15018deb6d25b2f43bf268d478acdfa63102596522e352e29e6a7fdecdc",
     "selection-menu.json": "86ff7683d675213327acd83ebc38174dbcfea37235b454e0afe37671c59d1502",
-    "layouts.json": "fdc4a3fd99d549a649945d729ffd505a212c6d268a041930559f678a10b2ac05",
+    "layouts.json": "05f35113a86b1339704192b14d03d16ee0c1463370a0287f103f9440728a003d",
     "package.json": "49e278398b736b490a57f3ec73bfdcdcc863d63be73788115f41b6db6bee5165"
   },
   "generatorRevision": "e682398c24e9daffaa4b29e2f7ddc16f6b5d81464975776e45ceedb4bc4a0b0a",
@@ -373,7 +373,35 @@
         "denyRoomAdmission": "Deny",
         "roomPendingUnavailable": "Requests could not be refreshed. Approval is paused until the connection returns.",
         "roomAdmissionChanged": "This request changed or expired. The list is being refreshed.",
-        "roomCancelRequest": "Cancel request"
+        "roomCancelRequest": "Cancel request",
+        "meetTitle": "Google Meet",
+        "meetExternalOwnership": "Meet opens in its own browser or app window. Choose devices and join there. Leaving SyncWatch does not stop that window’s microphone or camera.",
+        "meetAuthorize": "Allow SyncWatch to create calls",
+        "meetConfirm": "Allow calls for this account",
+        "meetCancelAuthorization": "Cancel permission request",
+        "meetRoomRequired": "Join a room to use its call.",
+        "meetIdle": "No call in this room yet.",
+        "meetWorking": "Connecting to Google Meet…",
+        "meetAuthorizing": "Finish the permission request in your browser.",
+        "meetBrowserCode": "Enter the SyncWatch confirmation code shown in your browser.",
+        "meetPermissionConfirmation": "Check the account before allowing SyncWatch to create calls.",
+        "meetReady": "The room’s call is ready. Join in Meet.",
+        "meetHandedOff": "Meet was opened. Choose your devices and join there.",
+        "meetUnavailable": "The call is unavailable. Your movie can continue.",
+        "meetUnknown": "Google’s result could not be confirmed. The request will not be repeated automatically.",
+        "meetEnded": "Meet confirmed the end request. Check the Meet window for local audio and camera.",
+        "meetFailed": "The call action failed. You can keep watching.",
+        "meetEndForEveryone": "End call for everyone",
+        "meetStart": "Start room call",
+        "meetOpen": "Open in Google Meet",
+        "meetRetry": "Check again",
+        "meetInvalidConfirmation": "The code could not be verified. Check it or cancel the permission request.",
+        "meetAccountMismatch": "Use the Google account already signed in to SyncWatch.",
+        "meetPermissionUnavailable": "Google did not grant permission to create calls. You can keep watching.",
+        "meetBrowserUnavailable": "Could not open your browser. Check the default browser setting and try again.",
+        "meetEndConfirmation": "End this room’s call for everyone?",
+        "meetKeepCall": "Keep call",
+        "meetEndConsequences": "Meet will end the active conference for everyone. The movie can continue."
       },
       "ru": {
         "brand": "SyncWatch",
@@ -660,7 +688,35 @@
         "denyRoomAdmission": "Отказать",
         "roomPendingUnavailable": "Не удалось обновить запросы. Одобрение приостановлено до восстановления связи.",
         "roomAdmissionChanged": "Запрос изменился или истёк. Список обновляется.",
-        "roomCancelRequest": "Отменить запрос"
+        "roomCancelRequest": "Отменить запрос",
+        "meetTitle": "Google Meet",
+        "meetExternalOwnership": "Meet откроется в отдельном окне браузера или приложения. Выберите устройства и войдите там. Выход из SyncWatch не выключает микрофон или камеру в этом окне.",
+        "meetAuthorize": "Разрешить SyncWatch создавать звонки",
+        "meetConfirm": "Разрешить звонки для этого аккаунта",
+        "meetCancelAuthorization": "Отменить запрос разрешения",
+        "meetRoomRequired": "Войдите в комнату, чтобы использовать её звонок.",
+        "meetIdle": "В этой комнате пока нет звонка.",
+        "meetWorking": "Подключение к Google Meet…",
+        "meetAuthorizing": "Завершите запрос разрешения в браузере.",
+        "meetBrowserCode": "Введите код подтверждения SyncWatch из браузера.",
+        "meetPermissionConfirmation": "Проверьте аккаунт перед разрешением создавать звонки.",
+        "meetReady": "Звонок комнаты готов. Войдите в Meet.",
+        "meetHandedOff": "Meet открыт. Выберите устройства и войдите там.",
+        "meetUnavailable": "Звонок недоступен. Просмотр фильма можно продолжить.",
+        "meetUnknown": "Не удалось подтвердить результат Google. Запрос не будет повторён автоматически.",
+        "meetEnded": "Meet подтвердил запрос завершения. Проверьте звук и камеру в окне Meet.",
+        "meetFailed": "Действие со звонком не выполнено. Просмотр можно продолжить.",
+        "meetEndForEveryone": "Завершить звонок для всех",
+        "meetStart": "Начать звонок комнаты",
+        "meetOpen": "Открыть в Google Meet",
+        "meetRetry": "Проверить снова",
+        "meetInvalidConfirmation": "Не удалось проверить код. Проверьте его или отмените запрос разрешения.",
+        "meetAccountMismatch": "Используйте аккаунт Google, с которым вы вошли в SyncWatch.",
+        "meetPermissionUnavailable": "Google не предоставил разрешение создавать звонки. Просмотр можно продолжить.",
+        "meetBrowserUnavailable": "Не удалось открыть браузер. Проверьте браузер по умолчанию и повторите попытку.",
+        "meetEndConfirmation": "Завершить звонок этой комнаты для всех?",
+        "meetKeepCall": "Оставить звонок",
+        "meetEndConsequences": "Meet завершит активную конференцию для всех. Просмотр фильма можно продолжить."
       }
     },
     "gallery": {
@@ -8051,6 +8107,510 @@
                       "text": "~accountUseMemory"
                     },
                     "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "Meet": {
+        "id": "meetDialog",
+        "kind": "column",
+        "styles": [
+          "dialog"
+        ],
+        "props": {},
+        "children": [
+          {
+            "id": "meetHeader",
+            "kind": "row",
+            "styles": [],
+            "props": {
+              "padding": "@layout.settingsCardPadding",
+              "gap": "@control.compactGap"
+            },
+            "children": [
+              {
+                "id": "meetTitle",
+                "kind": "text",
+                "styles": [
+                  "dialogTitle"
+                ],
+                "props": {
+                  "text": "~meetTitle",
+                  "width": "fill"
+                },
+                "children": []
+              },
+              {
+                "id": "meetButtonclose",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "close",
+                  "enabled": "$can.close",
+                  "automation": "meet.close",
+                  "label": "~close"
+                },
+                "children": [
+                  {
+                    "id": "meetLabelclose",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~close"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "meetScroll",
+            "kind": "scroll",
+            "styles": [],
+            "props": {
+              "height": "fill",
+              "minHeight": "0"
+            },
+            "children": [
+              {
+                "id": "meetBody",
+                "kind": "column",
+                "styles": [],
+                "props": {
+                  "gap": "@layout.settingsCardPadding",
+                  "padding": "@layout.settingsCardPadding"
+                },
+                "children": [
+                  {
+                    "id": "meetStatus",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~{status}"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "meetOwnership",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~meetExternalOwnership"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "meetEndConsequences",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~meetEndConsequences",
+                      "when": "$can.meetConfirmEnd"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "meetAuthorization",
+                    "kind": "switch",
+                    "styles": [],
+                    "props": {
+                      "value": "$authorizationState"
+                    },
+                    "children": [
+                      {
+                        "id": "meetPendingState",
+                        "kind": "column",
+                        "styles": [],
+                        "props": {
+                          "case": "pending"
+                        },
+                        "children": [
+                          {
+                            "id": "meetButtonmeetOpenAuthorization",
+                            "kind": "button",
+                            "styles": [
+                              "button",
+                              "compact"
+                            ],
+                            "props": {
+                              "action": "meetOpenAuthorization",
+                              "enabled": "$can.meetOpenAuthorization",
+                              "automation": "meet.meetOpenAuthorization",
+                              "label": "~accountOpenBrowser",
+                              "when": "$can.meetOpenAuthorization"
+                            },
+                            "children": [
+                              {
+                                "id": "meetLabelmeetOpenAuthorization",
+                                "kind": "text",
+                                "styles": [],
+                                "props": {
+                                  "text": "~accountOpenBrowser"
+                                },
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "meetProofState",
+                        "kind": "column",
+                        "styles": [],
+                        "props": {
+                          "case": "browserConfirmationRequired",
+                          "gap": "@control.compactGap"
+                        },
+                        "children": [
+                          {
+                            "id": "meetProofLabel",
+                            "kind": "text",
+                            "styles": [],
+                            "props": {
+                              "text": "~accountBrowserProof"
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "meetProofInput",
+                            "kind": "input",
+                            "styles": [
+                              "input"
+                            ],
+                            "props": {
+                              "value": "$browserProof",
+                              "action": "editMeetBrowserProof",
+                              "enabled": "$can.editMeetBrowserProof",
+                              "automation": "meet.browserProof",
+                              "label": "~accountBrowserProof"
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "meetButtonmeetVerify",
+                            "kind": "button",
+                            "styles": [
+                              "button",
+                              "compact"
+                            ],
+                            "props": {
+                              "action": "meetVerify",
+                              "enabled": "$can.meetVerify",
+                              "automation": "meet.meetVerify",
+                              "label": "~accountVerifyBrowserProof",
+                              "when": "$can.meetVerify"
+                            },
+                            "children": [
+                              {
+                                "id": "meetLabelmeetVerify",
+                                "kind": "text",
+                                "styles": [],
+                                "props": {
+                                  "text": "~accountVerifyBrowserProof"
+                                },
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "meetConfirmState",
+                        "kind": "column",
+                        "styles": [],
+                        "props": {
+                          "case": "confirmAuthorization",
+                          "gap": "@control.compactGap"
+                        },
+                        "children": [
+                          {
+                            "id": "meetAccountName",
+                            "kind": "text",
+                            "styles": [],
+                            "props": {
+                              "text": "{name}"
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "meetAccountEmail",
+                            "kind": "text",
+                            "styles": [],
+                            "props": {
+                              "text": "{email}"
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "meetButtonmeetConfirm",
+                            "kind": "button",
+                            "styles": [
+                              "button",
+                              "compact"
+                            ],
+                            "props": {
+                              "action": "meetConfirm",
+                              "enabled": "$can.meetConfirm",
+                              "automation": "meet.meetConfirm",
+                              "label": "~meetConfirm",
+                              "when": "$can.meetConfirm"
+                            },
+                            "children": [
+                              {
+                                "id": "meetLabelmeetConfirm",
+                                "kind": "text",
+                                "styles": [],
+                                "props": {
+                                  "text": "~meetConfirm"
+                                },
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonopenRoom",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "openRoom",
+                      "enabled": "$can.openRoom",
+                      "automation": "meet.openRoom",
+                      "label": "~openRoom",
+                      "when": "$can.openRoom"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelopenRoom",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~openRoom"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonmeetAuthorize",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "meetAuthorize",
+                      "enabled": "$can.meetAuthorize",
+                      "automation": "meet.meetAuthorize",
+                      "label": "~meetAuthorize",
+                      "when": "$can.meetAuthorize"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelmeetAuthorize",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~meetAuthorize"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonmeetCancelAuthorization",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "meetCancelAuthorization",
+                      "enabled": "$can.meetCancelAuthorization",
+                      "automation": "meet.meetCancelAuthorization",
+                      "label": "~meetCancelAuthorization",
+                      "when": "$can.meetCancelAuthorization"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelmeetCancelAuthorization",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~meetCancelAuthorization"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonmeetStart",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "meetStart",
+                      "enabled": "$can.meetStart",
+                      "automation": "meet.meetStart",
+                      "label": "~meetStart",
+                      "when": "$can.meetStart"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelmeetStart",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~meetStart"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonmeetOpen",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "meetOpen",
+                      "enabled": "$can.meetOpen",
+                      "automation": "meet.meetOpen",
+                      "label": "~meetOpen",
+                      "when": "$can.meetOpen"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelmeetOpen",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~meetOpen"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonmeetEnd",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "meetEnd",
+                      "enabled": "$can.meetEnd",
+                      "automation": "meet.meetEnd",
+                      "label": "~meetEndForEveryone",
+                      "when": "$can.meetEnd"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelmeetEnd",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~meetEndForEveryone"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonmeetRetry",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "meetRetry",
+                      "enabled": "$can.meetRetry",
+                      "automation": "meet.meetRetry",
+                      "label": "~meetRetry",
+                      "when": "$can.meetRetry"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelmeetRetry",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~meetRetry"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonmeetCancelEnd",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "meetCancelEnd",
+                      "enabled": "$can.meetCancelEnd",
+                      "when": "$can.meetCancelEnd",
+                      "automation": "meet.meetCancelEnd",
+                      "label": "~meetKeepCall"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelmeetCancelEnd",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~meetKeepCall"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "meetButtonmeetConfirmEnd",
+                    "kind": "button",
+                    "styles": [
+                      "button",
+                      "compact"
+                    ],
+                    "props": {
+                      "action": "meetConfirmEnd",
+                      "enabled": "$can.meetConfirmEnd",
+                      "when": "$can.meetConfirmEnd",
+                      "automation": "meet.meetConfirmEnd",
+                      "label": "~meetEndForEveryone"
+                    },
+                    "children": [
+                      {
+                        "id": "meetLabelmeetConfirmEnd",
+                        "kind": "text",
+                        "styles": [],
+                        "props": {
+                          "text": "~meetEndForEveryone"
+                        },
+                        "children": []
+                      }
+                    ]
                   }
                 ]
               }

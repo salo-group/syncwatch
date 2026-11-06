@@ -422,10 +422,11 @@ struct PlaybackPane: View {
     var roomNotice = ""
     var skipSeconds: Int? = nil
     var onOpenSettings: (() -> Void)? = nil
+    var onOpenCall: (() -> Void)? = nil
     var body: some View {
         PlaybackTrackPane(
             controller: controller, tracks: controller.tracks, playlist: controller.playlist, language: language,
-            roomNotice: roomNotice, skipSeconds: skipSeconds, onOpenSettings: onOpenSettings)
+            roomNotice: roomNotice, skipSeconds: skipSeconds, onOpenSettings: onOpenSettings, onOpenCall: onOpenCall)
     }
 }
 
@@ -437,11 +438,13 @@ private struct PlaybackTrackPane: View {
     var roomNotice: String
     var skipSeconds: Int?
     var onOpenSettings: (() -> Void)?
+    var onOpenCall: (() -> Void)?
     private var presentation: PlayerPresentation {
         var result = playlist.presentation(controller.presentation)
         result.roomNotice = roomNotice
         if let skipSeconds { result.skipSeconds = skipSeconds }
         if onOpenSettings != nil { result.enabledActions.insert("openPlayerSettings") }
+        if onOpenCall != nil { result.enabledActions.insert("openCall") }
         return result
     }
     var body: some View {
@@ -454,6 +457,8 @@ private struct PlaybackTrackPane: View {
                 if action == "openPlayerSettings", let onOpenSettings {
                     controller.dismissMenu()
                     onOpenSettings()
+                } else if action == "openCall", let onOpenCall {
+                    controller.dismissMenu(); onOpenCall()
                 } else {
                     controller.action(action, value: value)
                 }

@@ -55,6 +55,12 @@ func accountRoomApprovalCancellationAndScopeReplacement() async throws {
                     #expect(!peer.editor.owner)
                     let membership = try await peer.beginWatch().membership
                     #expect(peer.canContinuePlayback(membership))
+                    if let token = fixture["browserFixtureToken"] as? String {
+                        try await meetApplicationChecks(host: host, peer: peer, service: #require(URL(string: ownerRecord.service)),
+                            fixtureToken: token, account: ownerDevice.account, setAccountAvailable: { available in
+                                guestSource.value = available ? guestAuthority : nil; ownerSource.value = available ? ownerAuthority : nil
+                            })
+                    }
                     guestSource.value = nil
                     #expect(!peer.connected && !peer.canContinuePlayback(membership))
                     ownerSource.value = nil

@@ -57,7 +57,11 @@ internal static class AccountRoomControllerChecks
                     {
                         await Settles(() => peer.Connected && host.Editor.MemberCount == 2); Require(!peer.Editor.Owner);
                         var membership = (await peer.BeginWatchAsync()).Membership;
-                        Require(peer.CanContinuePlayback(membership)); guestSource = null;
+                        Require(peer.CanContinuePlayback(membership));
+                        if (fixture.RootElement.TryGetProperty("browserFixtureToken", out var browserToken))
+                            await MeetControllerChecks.Run(host, peer, new Uri(ownerRecord.Service), browserToken.GetString()!, ownerDevice.Account,
+                                available => { guestSource = available ? guestAuthority : null; ownerSource = available ? ownerAuthority : null; });
+                        guestSource = null;
                         Require(!peer.Connected && !peer.CanContinuePlayback(membership)); ownerSource = null;
                         Require(!host.Connected && !host.CanCopy(transfer));
                         await peer.CloseAsync(); await host.CloseAsync(); host.InvitationCopyCompleted(true, transfer);

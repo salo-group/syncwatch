@@ -15,6 +15,7 @@ internal class ApplicationSession(media: MediaConfiguration, display: X11Display
         preferences.state.selectedMediaId, LibraryMetadataReader(media))
     val account = AccountController(work, syncwatch.room.AccountSessionStore(statePath.toAbsolutePath().parent, accountHelper))
     val room = RoomController(work, accountSource = { account.roomAuthority })
+    val meet = MeetController(work, room)
     val watch = WatchSessionCoordinator(preferences, media, display, work)
     val shared = RoomWatchCoordinator(room, watch, helper, work, library)
     init {
@@ -27,7 +28,7 @@ internal class ApplicationSession(media: MediaConfiguration, display: X11Display
     fun requestClose(onClosed: () -> Unit) {
         if (closing?.isActive == true) return
         closing = work.launch {
-            try { shared.close(); watch.close(); room.close(); account.close(); library.closeAndWait(); onClosed() }
+            try { meet.close(); shared.close(); watch.close(); room.close(); account.close(); library.closeAndWait(); onClosed() }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { /* The watch owner exposes the close failure and retains the window. */ }
         }

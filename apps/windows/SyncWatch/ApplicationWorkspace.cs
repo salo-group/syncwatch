@@ -15,6 +15,8 @@ internal sealed class ApplicationWorkspace : UserControl
     private readonly WatchSessionCoordinator watch;
     private readonly RoomController room;
     private readonly AccountController account;
+    private readonly MeetController meet;
+    private Window? meetWindow;
     private readonly RoomWatchCoordinator shared;
     private readonly Design.ApplicationChrome chrome;
     private bool started, closing;
@@ -26,6 +28,7 @@ internal sealed class ApplicationWorkspace : UserControl
         preferences = application.Preferences!;
         account = new AccountController(Path.GetDirectoryName(application.StatePath)!);
         room = new RoomController(accountSource: () => account.RoomAuthority);
+        meet = new MeetController(room);
         catalog = new LibraryController(new Library.FileLibraryAccessStore(
             Path.Combine(Path.GetDirectoryName(application.StatePath)!, "library-access.json")), Dispatcher, preferences.State.SelectedMediaId, new LibraryMetadataReader(application.Media!));
         catalog.ConfigureOptions(preferences.State.Preferences.ScanSubfolders, preferences.State.Preferences.AutomaticRefresh);
@@ -39,6 +42,7 @@ internal sealed class ApplicationWorkspace : UserControl
         catalog.Changed += Refresh; watch.Changed += Refresh; room.Changed += Refresh;
         account.Changed += AccountChanged;
         shared.Changed += Refresh;
+        meet.Changed += Refresh;
         library.ActionRequested += Action;
         library.SelectionRequested += catalog.SelectTrack; library.SelectionDismissed += catalog.DismissTracks;
         Loaded += async (_, _) =>
@@ -53,6 +57,7 @@ internal sealed class ApplicationWorkspace : UserControl
     public async Task CloseAsync()
     {
         closing = true; await accountBinding;
+        await meet.CloseAsync(); meet.Changed -= Refresh;
         await shared.CloseAsync(); await watch.CloseAsync(); await room.CloseAsync(); await account.CloseAsync(); await catalog.CloseAsync();
     }
     private void AccountChanged()
@@ -66,11 +71,13 @@ internal sealed class ApplicationWorkspace : UserControl
     {
         room.UpdateLibrary(catalog.RoomRevision, () => catalog.RoomFiles);
         shared.MembershipChanged();
+        meet.MembershipChanged();
         if (watch.PlayerPresented) catalog.DismissTracks();
         library.SelectionPresentation = watch.PlayerPresented ? null : catalog.Tracks.Menu;
-        library.Render(account.LibraryPresentation(shared.LibraryPresentation(watch.LibraryPresentation(catalog.Presentation))), preferences.State.Preferences.Language);
+        library.Render(meet.LibraryPresentation(account.LibraryPresentation(shared.LibraryPresentation(watch.LibraryPresentation(catalog.Presentation)))), preferences.State.Preferences.Language);
         watch.Player?.SetRoomNotice(shared.PlayerNotice);
         watch.Player?.ConfigurePlayerSettings(preferences.State.Preferences.SkipSeconds, OpenPlayerSettings);
+        watch.Player?.ConfigureCall(OpenMeet);
         chrome.SetPlayer(watch.Player); chrome.PresentPlayer(watch.PlayerPresented);
         if (WatchAcceptance.Requested) return;
         if ((catalog.ErrorKey ?? watch.ErrorKey ?? shared.ErrorKey) is not string key) return;
@@ -96,7 +103,31 @@ internal sealed class ApplicationWorkspace : UserControl
         else if (action == "endWatching") _ = shared.EndAsync();
         else if (action == "openRoom") OpenRoom();
         else if (action == "openAccount") OpenAccount();
+        else if (action == "openCall") OpenMeet();
         else if (action == "openSettings") OpenSettings();
+    }
+    private void OpenMeet()
+    {
+        if (closing) return;
+        if (meetWindow is not null) { meetWindow.Activate(); return; }
+        var view = new Design.MeetDialog(); var window = CreateDialog(view); meetWindow = window;
+        bool released = false, dismissing = false, openRoom = false;
+        void Render() => view.Render(meet.Presentation, preferences.State.Preferences.Language);
+        async Task Dismiss()
+        {
+            if (dismissing) return; dismissing = true;
+            await meet.DismissAsync(); released = true; window.Close();
+        }
+        view.ActionRequested += async (action, value) =>
+        {
+            if (action is "close" or "openRoom") { openRoom = action == "openRoom"; await Dismiss(); }
+            else meet.Action(action, value);
+        };
+        window.Closing += async (_, e) => { if (!released) { e.Cancel = true; await Dismiss(); } };
+        meet.Changed += Render; meet.Present(); Render();
+        try { window.ShowDialog(); }
+        finally { meet.Changed -= Render; meetWindow = null; }
+        if (openRoom && !closing) OpenRoom();
     }
     private void OpenAccount(Window? parent = null)
     {

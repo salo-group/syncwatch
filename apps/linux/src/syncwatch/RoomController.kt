@@ -8,6 +8,7 @@ import syncwatch.library.LocalMediaFile
 import syncwatch.domain.MediaDescriptor
 
 internal data class RoomWatchMembership(val owner: RoomMembershipSession, val memberId: String, val identity: RoomIdentity, val epoch: String)
+internal data class RoomCallMembership(val owner: RoomMembershipSession, val memberId: String, val epoch: String, val isOwner: Boolean)
 internal data class RoomInvitationTransfer(val owner: RoomMembershipSession, val invitation: RoomInvitation, val revision: java.util.UUID)
 internal data class RoomPreparedPublication(val lease: java.util.UUID, val media: MediaDescriptor)
 
@@ -152,6 +153,16 @@ internal class RoomController(private val scope: CoroutineScope, legacyValidatio
         verifyOwner()
         if (localRevision == revision) return
         localRevision = revision; localFiles = files.toList(); startPublisher(); startMissingReport()
+    }
+    fun callMembership(): RoomCallMembership? {
+        verifyOwner()
+        val owner = session ?: return null; val value = admission ?: return null
+        return if (accountAuthority != null && !stopping && connected) RoomCallMembership(owner, value.memberId, value.bootstrap.snapshot.epoch, editor.owner) else null
+    }
+    fun isCurrent(membership: RoomCallMembership): Boolean {
+        verifyOwner()
+        return accountAuthority != null && !stopping && connected && session === membership.owner && admission?.memberId == membership.memberId &&
+            admission?.bootstrap?.snapshot?.epoch == membership.epoch
     }
     fun isCurrent(membership: RoomWatchMembership): Boolean {
         verifyOwner()

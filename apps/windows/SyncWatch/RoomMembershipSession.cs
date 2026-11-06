@@ -12,6 +12,16 @@ internal sealed class RoomMembershipSession(RoomClient client, RoomAdmission adm
     internal Task<IReadOnlyList<RoomAdmissionRequest>> PendingAdmissionsAsync(CancellationToken cancellation = default) => client.PendingAsync(admission, cancellation);
     internal Task DecideAdmissionAsync(string id, bool approve, CancellationToken cancellation = default) => client.DecideAsync(admission, id, approve, cancellation);
     internal Task<RoomSyncTicket> SyncTicketAsync(CancellationToken cancellation = default) => client.SyncTicketAsync(admission, cancellation);
+    // Calls are independent of ordered catalog/watch work.
+    internal Task<RoomCallStatus> CallStatusAsync(CancellationToken cancellation = default) => client.CallStatusAsync(admission, cancellation);
+    internal RoomCallOperation CallStartOperation() => client.CallStartOperation(admission);
+    internal RoomCallOperation CallEndOperation(RoomCallStatus status) => client.CallEndOperation(admission, status);
+    internal Task<RoomCallStatus> RequestCallAsync(RoomCallOperation operation, CancellationToken cancellation = default) => client.RequestCallAsync(operation, admission, cancellation);
+    internal Task<RoomMeetAuthorization> BeginMeetAuthorizationAsync(CancellationToken cancellation = default) => client.BeginMeetAuthorizationAsync(admission, cancellation);
+    internal Task<RoomMeetAuthorizationStatus> MeetAuthorizationStatusAsync(RoomMeetAuthorization flow, CancellationToken cancellation = default) => client.MeetAuthorizationStatusAsync(flow, admission, cancellation);
+    internal Task<RoomMeetAuthorizationStatus> VerifyMeetAuthorizationAsync(RoomMeetAuthorization flow, string code, CancellationToken cancellation = default) => client.VerifyMeetAuthorizationAsync(flow, admission, code, cancellation);
+    internal Task<RoomMeetAuthorizationStatus> ConfirmMeetAuthorizationAsync(RoomMeetAuthorization flow, string code, CancellationToken cancellation = default) => client.ConfirmMeetAuthorizationAsync(flow, admission, code, cancellation);
+    internal Task<RoomMeetAuthorizationStatus> CancelMeetAuthorizationAsync(RoomMeetAuthorization flow, CancellationToken cancellation = default) => client.CancelMeetAuthorizationAsync(flow, admission, cancellation);
     private readonly SemaphoreSlim gate = new(1, 1);
     private long minimumSequence = admission.Bootstrap.Snapshot.Sequence;
     private long number;

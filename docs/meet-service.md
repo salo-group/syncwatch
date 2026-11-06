@@ -1,6 +1,6 @@
 # Meet authorization service
 
-Meet permission extends the authenticated account/room service. It is separate from Google sign-in and from ordered watch commands. Authorization and room-call endpoints have native ports on all three desktops; native window integration and real Google calling acceptance remain in development. A successful authorization is not a joined call.
+Meet permission extends the authenticated account/room service. It is separate from Google sign-in and from ordered watch commands. Authorization and room-call endpoints have native ports and Library/Player entry on all three desktops. Real Google calling acceptance remains in development. A successful authorization is not a joined call.
 
 Only the current room owner requests `https://www.googleapis.com/auth/meetings.space.created`. Guests need no organizer permission. Ordinary Google sign-in retains `openid`, `profile` and `email`. The backend uses the existing registered confidential callback and verifies Google's subject against the signed-in SyncWatch account; matching email alone is insufficient.
 
@@ -41,3 +41,9 @@ Termination records the observed conference before dispatch. A matching request 
 Account API rate rejection preserves the 120-request per-minute budget and returns HTTP 429 with the v2 `queueFull` error and a `Retry-After` header. Clients must respect the delay and preserve operation correlation. A rate rejection is not permission to create another operation.
 
 The common request/response schemas and native corpus define the wire shape. Backend checks and native HTTP integration with synthetic provider identities are software qualification; real Google consent, supported-browser/PWA handoff and all six directed desktop media cases remain separate delivery requirements. See [Meet integration](architecture/google-meet.md).
+
+## Native interaction
+
+The common Apache-2.0 Design library owns the Meet surface, localized copy, permission confirmation and end-for-everyone confirmation. Platform adapters supply observations and action capabilities. Each application's call controller binds to the current account, room owner, member and epoch independently of movie playback. Losing that source immediately hides the profile and disables obsolete actions; dismiss, leave and shutdown cancel and join owned work.
+
+The organizer explicitly opens authorization, verifies the browser counterproof and confirms the matching profile. Guests only open the ready room call. Before requesting the registered HTTPS handler, every client re-reads the call and requires the same ready call identity, generation and URI. Handoff is explicit and single-flight; an OS acknowledgement is not a joined call. Read recovery never automatically repeats a provider mutation. The organizer must separately confirm termination for everyone. Closing the Meet panel leaves the room, movie and external browser under their respective owners.

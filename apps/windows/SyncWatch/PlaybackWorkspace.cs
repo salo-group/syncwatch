@@ -54,6 +54,8 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     private string roomNotice = "";
     private int? skipSeconds;
     private Action? openPlayerSettings;
+    private Action? openCall;
+    internal void ConfigureCall(Action open) { openCall = open; RenderChrome(); }
     internal void ConfigurePlayerSettings(int seconds, Action open)
     {
         skipSeconds = seconds; openPlayerSettings = open; RenderChrome();
@@ -65,6 +67,8 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         if (skipSeconds is int seconds) configured = configured with { SkipSeconds = seconds };
         if (!closing && openPlayerSettings is not null)
             configured = configured with { EnabledActions = configured.EnabledActions.Append("openPlayerSettings").ToHashSet() };
+        if (!closing && openCall is not null)
+            configured = configured with { EnabledActions = configured.EnabledActions.Append("openCall").ToHashSet() };
         chrome.Render(configured, language);
     }
     private void RefreshPlaylist() { onPlaylistUpdate?.Invoke(playlist); presentation = playlist.Presentation(presentation); }
@@ -276,6 +280,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         if (closing || cancellation.IsCancellationRequested) return;
         GateSharedActions(); RefreshPlaylist();
         if (action == "openPlayerSettings" && openPlayerSettings is not null) { DismissMenu(); openPlayerSettings(); return; }
+        if (action == "openCall" && openCall is not null) { DismissMenu(); openCall(); return; }
         if (!presentation.EnabledActions.Contains(action)) return;
         if (action is "restoreSharedPosition" or "dismissSharedPosition")
         {

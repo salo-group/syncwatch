@@ -23,8 +23,12 @@ internal sealed class NativeMeetBrowserFixture : IDisposable
         app.MapPost("/__test/meet-browser", async context =>
         {
             string authorization = context.Request.Headers.Authorization.ToString();
-            Wire.Need(authorization.StartsWith("Bearer ", StringComparison.Ordinal), "unauthorized", 401);
-            AccountPrincipal principal = app.Services.GetRequiredService<AccountRepository>().Authorize(authorization[7..]);
+            AccountPrincipal? principal = null;
+            if (authorization.Length > 0)
+            {
+                Wire.Need(authorization.StartsWith("Bearer ", StringComparison.Ordinal), "unauthorized", 401);
+                principal = app.Services.GetRequiredService<AccountRepository>().Authorize(authorization[7..]);
+            }
             byte[] bytes = new byte[4097];
             int count = await context.Request.Body.ReadAtLeastAsync(bytes, bytes.Length, false, context.RequestAborted);
             Wire.Need(count <= 4096);
@@ -33,7 +37,9 @@ internal sealed class NativeMeetBrowserFixture : IDisposable
             Wire.Need(Wire.Integer(body, "v", 2) == 2);
             string id = Wire.String(body, "transactionId"), scenario = Wire.String(body, "scenario");
             Identity? identity;
-            lock (gate) identity = identities.SingleOrDefault(value => value.AccountId == principal.AccountId
+            // Application checks have no API for extracting device bearers. Their private fixture token
+            // identifies only this test server's fixed synthetic provider subject, never a production identity.
+            lock (gate) identity = identities.SingleOrDefault(value => (principal is null || value.AccountId == principal.AccountId)
                 && Wire.SecretMatches(Wire.String(body, "fixtureToken"), value.TokenHash));
             Wire.Need(identity is not null && scenario is "accept" or "wrongAccount" or "missingScope" or "reuse", "forbidden", 403);
 

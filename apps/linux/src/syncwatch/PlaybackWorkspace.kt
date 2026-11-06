@@ -338,11 +338,12 @@ internal class PlaybackController(
 
 @Composable internal fun PlaybackPane(controller: PlaybackController, language: String, theme: SyncWatchTheme,
     onClose: () -> Unit, onFullscreen: () -> Unit, roomNotice: String = "", skipSeconds: Int? = null,
-    onOpenSettings: (() -> Unit)? = null) {
+    onOpenSettings: (() -> Unit)? = null, onOpenCall: (() -> Unit)? = null) {
     LaunchedEffect(controller) { controller.start() }
     val observed = controller.playlist.presentation(controller.presentation)
     val configured = observed.copy(roomNotice = roomNotice, skipSeconds = skipSeconds ?: observed.skipSeconds,
-        enabledActions = observed.enabledActions + if (onOpenSettings != null) setOf("openPlayerSettings") else emptySet())
+        enabledActions = observed.enabledActions + (if (onOpenSettings != null) setOf("openPlayerSettings") else emptySet())
+            + (if (onOpenCall != null) setOf("openCall") else emptySet()))
     PlayerChrome(configured, language, theme,
         videoSurface = { NativePlayerSurface(controller.canvas) },
         selectionMenu = controller.playlist.menu ?: controller.tracks.menu, onSelection = controller::selectMenu,
@@ -350,6 +351,7 @@ internal class PlaybackController(
         onAction = { action, value ->
             controller.language = language
             if (action == "openPlayerSettings" && onOpenSettings != null) { controller.dismissMenu(); onOpenSettings() }
+            else if (action == "openCall" && onOpenCall != null) { controller.dismissMenu(); onOpenCall() }
             else controller.action(action, value, onClose, onFullscreen)
         })
 }
