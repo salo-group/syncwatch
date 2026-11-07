@@ -191,7 +191,8 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
                 await Task.Delay(100, token);
             }
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        // Native and helper adapters can report transport errors after cancellation.
+        catch (Exception) when (closing || token.IsCancellationRequested) { }
         catch (RoomProtocolException error) when (error.Message == "staleGeneration") { follow = true; }
         catch (Exception error)
         {
@@ -248,7 +249,7 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
                     await Task.Delay(100, token);
                 }
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested) { return null; }
+            catch (Exception) when (closing || token.IsCancellationRequested) { return null; }
             catch (Exception error) { watch.End(); ErrorKey = FailureKey(error, false); Status = ErrorKey; Changed?.Invoke(); }
         }
         return null;

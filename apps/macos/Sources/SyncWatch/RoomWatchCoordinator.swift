@@ -260,6 +260,8 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                 }
                 try await Task.sleep(for: .milliseconds(100))
             }
+        } catch _ where closing || Task.isCancelled {
+            // Native and helper adapters can report transport errors after cancellation.
         } catch is CancellationError {
         } catch RoomProtocolFailure.rejected("staleGeneration") {
             // A simultaneous selection lost the compare-and-swap; follow the winning generation.
@@ -316,6 +318,8 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                     }
                     try await Task.sleep(for: .milliseconds(100))
                 }
+            } catch _ where closing || Task.isCancelled {
+                return nil
             } catch is CancellationError { return nil } catch {
                 watch.end()
                 errorKey = Self.failureKey(error, identityRejected: false)

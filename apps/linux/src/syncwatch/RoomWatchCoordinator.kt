@@ -184,14 +184,17 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                 delay(100)
             }
         } catch (_: CancellationException) {
-        } catch (error: RoomProtocolException) {
-            if (error.code == "staleGeneration") follow = true
-            else { errorKey = failureKey(error, owned?.sharedState?.identityRejected == true); status = checkNotNull(errorKey) }
         } catch (error: Exception) {
-            val key = failureKey(error, owned?.sharedState?.identityRejected == true)
-            // Fixed vocabulary only; exception text can contain private local or room data.
-            System.err.println("syncwatch.shared-watch failure stage=$stage key=$key")
-            errorKey = key; status = key
+            // Native and helper adapters can report transport errors after cancellation.
+            if (!closing && currentCoroutineContext().isActive) {
+                if (error is RoomProtocolException && error.code == "staleGeneration") follow = true
+                else {
+                    val key = failureKey(error, owned?.sharedState?.identityRejected == true)
+                    // Fixed vocabulary only; exception text can contain private local or room data.
+                    System.err.println("syncwatch.shared-watch failure stage=$stage key=$key")
+                    errorKey = key; status = key
+                }
+            }
         }
         finally {
             withContext(NonCancellable) {
@@ -235,7 +238,11 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                     delay(100)
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { watch.end(); errorKey = failureKey(error, false); status = checkNotNull(errorKey) }
+            catch (error: Exception) {
+                if (!closing && currentCoroutineContext().isActive) {
+                    watch.end(); errorKey = failureKey(error, false); status = checkNotNull(errorKey)
+                }
+            }
         }
         return null
     }
