@@ -62,12 +62,15 @@ It restores indexed subtitle blocks that overlap a seek but precede its A/V clus
 It validates clusters, block boundaries, actual tracks and packet timing, and rejects duplicate block positions.
 Preroll allows at most 64 attempts and 256 KiB per encoded block.
 Encoded reads and retained decoded packets each have a separate 4 MiB limit per seek.
-The packet budget includes buffer allocations, packet descriptors and side data.
-Optional decompression checks the remaining budget before allocation. Laced packets share that budget, and growth buffers shrink before packet ownership transfers.
+The packet budget includes buffers, queue nodes, reference objects, side-data descriptors and required padding.
+A compile-time check validates the conservative packet overhead against the pinned internal types.
+Before frame parsing, each block reserves storage for every lace and its additional data.
+Optional decompression checks the remaining budget before allocation.
+WebVTT also reserves its copied output. Growth buffers shrink before packet ownership transfers.
 Ordinary playback keeps the original decompression behavior.
 Invalid, incomplete or oversized optional cues are skipped. Normal A/V seeking retains its original position.
 Allocation or resume-position failures propagate.
 Original FFmpeg bytes remain in the source archive.
 The modified demuxer and original grants accompany the package in `sources/configured/ffmpeg/`.
-Native seek checks include small compressed cues, oversized cues and cumulative packet limits.
+Native seek checks include small compressed and raw laces, oversized cues, replicated side data and cumulative packet limits.
 The embedded ASS pixel check selects the track after playback advances, so an active cue must render.

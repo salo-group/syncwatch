@@ -35,7 +35,7 @@ def _unsigned(tag, value, width=None):
     return _element(tag, value.to_bytes(width or max(1, (value.bit_length() + 7) // 8), "big"))
 
 
-def compressed_cues(original, packet_bytes, count=1):
+def compressed_cues(original, packet_bytes, count=1, *, laces=1, additional_bytes=0, compressed=True):
     """Keep authored A/V blocks; rebuild exact seek offsets around compressed ASS cues."""
     root = list(_elements(original, 0, len(original)))
     segment = next(e for e in root if e[0] == 0x18538067)
@@ -49,9 +49,11 @@ def compressed_cues(original, packet_bytes, count=1):
         fields = {e[0]: e for e in _elements(original, entry[2], entry[3])}
         number = fields[0xd7]
         body = original[entry[2]:entry[3]]
-        if int.from_bytes(original[number[2]:number[3]], "big") == 6:
+        if int.from_bytes(original[number[2]:number[3]], "big") == 6 and compressed:
             compression = _element(0x5034, _unsigned(0x4254, 0))
             body += _element(0x6d80, _element(0x6240, _unsigned(0x5032, 1) + compression))
+        if int.from_bytes(original[number[2]:number[3]], "big") == 6 and additional_bytes:
+            body += _unsigned(0x55ee, 1)
         entries.append(_element(entry[0], body))
     prefix = original[info[1]:info[3]] + _element(0x1654ae6b, b"".join(entries))
     clusters = []
@@ -75,8 +77,12 @@ def compressed_cues(original, packet_bytes, count=1):
             raise ValueError("Authored cluster has no timestamp")
         clusters.append((timestamp, _element(0x1f43b675, b"".join(parts))))
     text = b"0,0,Default,,0,0,0,," + b"A" * packet_bytes
-    block = _element(0xa1, b"\x86\0\0\0" + zlib.compress(text))
-    group = _element(0xa0, block + _unsigned(0x9b, 7900))
+    payload = zlib.compress(text) if compressed else text
+    framed = b"\x86\0\0\x04" + bytes([laces - 1]) + payload * laces if laces > 1 else b"\x86\0\0\0" + payload
+    block = _element(0xa1, framed)
+    additions = _element(0x75a1, _element(0xa6,
+        _unsigned(0xee, 1) + _element(0xa5, b"S" * additional_bytes))) if additional_bytes else b""
+    group = _element(0xa0, block + _unsigned(0x9b, 7900) + additions)
     stamp = _unsigned(0xe7, 0)
     cue_cluster = _element(0x1f43b675, stamp + group * count)
     clusters.insert(0, (0, cue_cluster))
@@ -132,4 +138,13 @@ def cases(original):
     body = original[body_start:end] + original[point[1]:point[3]]
     size = ((1 << (7 * width)) | len(body)).to_bytes(width, "big")
     result["duplicate"] = (original[:start + 4] + size + body + original[end:], "normal")
+    for name, size, count, options in [
+            ("small", 65536, 1, {}), ("oversized", 5 * 1024 * 1024, 1, {}),
+            ("aggregate", 1536 * 1024, 4, {}),
+            ("small-laced", 64, 1, {"laces": 4, "additional_bytes": 1024}),
+            ("small-raw-laced", 64, 1, {"laces": 4, "additional_bytes": 1024, "compressed": False}),
+            ("laced-side-data", 64, 1, {"laces": 256, "additional_bytes": 240 * 1024}),
+            ("raw-laced-side-data", 64, 1, {"laces": 256, "additional_bytes": 220 * 1024, "compressed": False})]:
+        name = "bounded-" + name
+        result[name] = (compressed_cues(original, size, count, **options), name)
     return result

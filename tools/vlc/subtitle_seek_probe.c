@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 #include "probe_common.h"
+#include "preroll_limits.h"
 #include <libavformat/avformat.h>
 #include <libavutil/buffer.h>
 #include <libavutil/mathematics.h>
@@ -34,9 +35,10 @@ int main(int argc, char **argv) {
                 stream->codecpar->codec_id == AV_CODEC_ID_ASS && pts >= 0 && pts <= target &&
                 duration > 0 && target - pts < duration) {
                 ++active;
-                retained += sizeof(*packet) + (packet->buf ? packet->buf->size : (size_t)packet->size);
+                retained += SW_CUE_PACKET_OVERHEAD + (packet->buf ? packet->buf->size : (size_t)packet->size);
                 retained += (size_t)packet->side_data_elems * sizeof(*packet->side_data);
-                for (int j = 0; j < packet->side_data_elems; j++) retained += packet->side_data[j].size;
+                for (int j = 0; j < packet->side_data_elems; j++)
+                    retained += packet->side_data[j].size + AV_INPUT_BUFFER_PADDING_SIZE;
             }
             if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 if (video < 0) video = pts;
@@ -47,10 +49,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "subtitle seek: target=%lld active=%u bytes=%zu video=%lld\n",
                 (long long)target, active, retained, (long long)video);
         REQUIRE(video >= 0 && llabs(video - target) <= 40, "A/V seek position changed");
-        const unsigned expected = bounded ? (strcmp(argv[3], "bounded-oversized") == 0 ? 0 :
+        const int rejected = strcmp(argv[3], "bounded-oversized") == 0 ||
+            strcmp(argv[3], "bounded-laced-side-data") == 0 || strcmp(argv[3], "bounded-raw-laced-side-data") == 0;
+        const unsigned expected = bounded ? (rejected ? 0 :
             strcmp(argv[3], "bounded-aggregate") == 0 ? 2 : 1) :
             strcmp(argv[3], "normal") == 0 ? target < 7900 : target == 0;
-        REQUIRE(!bounded || retained <= 4 * 1024 * 1024, "decoded subtitle retention exceeds 4 MiB");
+        REQUIRE(!bounded || retained <= SW_CUE_BYTE_LIMIT, "decoded subtitle retention exceeds 4 MiB");
         REQUIRE(active == expected, "active/expired/duplicate subtitle mismatch");
         if (target && active) ++restored;
     }

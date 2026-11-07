@@ -69,9 +69,11 @@ class SubtitleSeekProofChecks(unittest.TestCase):
         valid = {name: {"seeks": 7, "restored": 5 if name in {"normal", "duplicate"} else 0,
                        "ownedLibraryLoaded": True, "physicalOutputAccepted": False}
                  for name in ["normal", "expired-duration", "wrong-track", "bad-offset", "bad-cluster", "duplicate"]}
-        valid.update({name: {"seeks": 3, "restored": 0 if name == "bounded-oversized" else 3,
+        valid.update({name: {"seeks": 3, "restored": 0 if name in {
+                             "bounded-oversized", "bounded-laced-side-data", "bounded-raw-laced-side-data"} else 3,
                              "ownedLibraryLoaded": True, "physicalOutputAccepted": False}
-                      for name in ["bounded-small", "bounded-oversized", "bounded-aggregate"]})
+                      for name in ["bounded-small", "bounded-oversized", "bounded-aggregate", "bounded-small-laced",
+                                   "bounded-small-raw-laced", "bounded-laced-side-data", "bounded-raw-laced-side-data"]})
         validate_subtitle_seek(valid)
         for name in valid:
             with self.subTest(missing=name), self.assertRaises(ValueError):

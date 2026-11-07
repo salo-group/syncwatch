@@ -100,8 +100,19 @@ def ffmpeg_files(original):
         (b"    { MATROSKA_ID_CUEDURATION,        EBML_NONE },",
          b"    { MATROSKA_ID_CUEDURATION, EBML_UINT, 0, 0, offsetof(MatroskaIndexPos, duration) },"),
         (b"static int matroska_read_seek(AVFormatContext *s, int stream_index,",
+         Path(__file__).with_name("preroll_limits.h").read_bytes() + b"\n" +
          Path(__file__).with_name("matroska_preroll.c").read_bytes() +
          b"\nstatic int matroska_read_seek(AVFormatContext *s, int stream_index,"),
+        (b"static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf, uint8_t *data,",
+         b"static int sw_cue_block_budget(MatroskaTrack *track, const AVBufferRef *buf, int laces,\n"
+         b"                               const MatroskaBlockMore *more, int count, int64_t discard_padding);\n\n"
+         b"static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf, uint8_t *data,"),
+        (b"    trust_default_duration = track->default_duration != 0;",
+         b"    /* SyncWatch: reserve all laced packet and side-data storage before parsing frames. */\n"
+         b"    if (track->sw_preroll_remaining &&\n"
+         b"        !sw_cue_block_budget(track, buf, laces, blockmore, nb_blockmore, discard_padding))\n"
+         b"        return 0;\n\n"
+         b"    trust_default_duration = track->default_duration != 0;"),
         (b"    avpriv_update_cur_dts(s, st, sti->index_entries[index].timestamp);\n    return 0;",
          b"    avpriv_update_cur_dts(s, st, sti->index_entries[index].timestamp);\n"
          b"    return sw_restore_indexed_subtitles(matroska, st, timestamp, sti->index_entries[index].pos);"),
@@ -116,8 +127,9 @@ def ffmpeg_files(original):
     bounded = [
         (b"    if (pkt_size >= 10000000U)",
          b"    /* SyncWatch: bound optional decompression before every allocation. */\n"
+         b"    const int copies = track->stream && track->stream->codecpar->codec_id == AV_CODEC_ID_WEBVTT ? 2 : 1;\n"
          b"    const int max_size = track->sw_preroll_remaining ?\n"
-         b"        FFMAX(0, track->sw_preroll_remaining - AV_INPUT_BUFFER_PADDING_SIZE - AV_LZO_OUTPUT_PADDING) : 10000000;\n"
+         b"        FFMAX(0, track->sw_preroll_remaining / copies - AV_INPUT_BUFFER_PADDING_SIZE - AV_LZO_OUTPUT_PADDING) : 10000000;\n"
          b"    if ((unsigned)pkt_size >= (unsigned)max_size)"),
         (b"        pkt_size = isize + header_size;",
          b"        if (track->sw_preroll_remaining && (header_size < 0 || header_size > max_size - isize))\n"
@@ -131,7 +143,7 @@ def ffmpeg_files(original):
          b"        newpktdata = av_realloc(pkt_data, pkt_size + AV_INPUT_BUFFER_PADDING_SIZE);\n"
          b"        if (!newpktdata) { result = AVERROR(ENOMEM); goto failed; }\n"
          b"        pkt_data = newpktdata;\n"
-         b"        track->sw_preroll_remaining -= pkt_size + AV_INPUT_BUFFER_PADDING_SIZE;\n"
+         b"        track->sw_preroll_remaining -= copies * (pkt_size + AV_INPUT_BUFFER_PADDING_SIZE);\n"
          b"        if (!track->sw_preroll_remaining) track->sw_preroll_remaining = -1;\n"
          b"    }\n"
          b"    memset(pkt_data + pkt_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);"),

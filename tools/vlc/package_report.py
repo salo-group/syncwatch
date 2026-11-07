@@ -20,13 +20,15 @@ def validate_seek_reset(result):
 
 def validate_subtitle_seek(result):
     names = {"normal", "expired-duration", "wrong-track", "bad-offset", "bad-cluster", "duplicate",
-             "bounded-small", "bounded-oversized", "bounded-aggregate"}
+             "bounded-small", "bounded-oversized", "bounded-aggregate", "bounded-small-laced",
+             "bounded-small-raw-laced", "bounded-laced-side-data", "bounded-raw-laced-side-data"}
     if not isinstance(result, dict) or set(result) != names:
         raise ValueError("Indexed subtitle seek proof requires the complete cue corpus")
     for name, proof in result.items():
         bounded = name.startswith("bounded-")
         expected = {"seeks": 3 if bounded else 7,
-                    "restored": (0 if name == "bounded-oversized" else 3) if bounded else
+                    "restored": (0 if name in {"bounded-oversized", "bounded-laced-side-data",
+                                              "bounded-raw-laced-side-data"} else 3) if bounded else
                         5 if name in {"normal", "duplicate"} else 0,
                     "ownedLibraryLoaded": True, "physicalOutputAccepted": False}
         if proof != expected:

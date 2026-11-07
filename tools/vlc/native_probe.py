@@ -130,13 +130,10 @@ def verify_subtitle_seek(context, package, directory):
     try:
         executable, actual = compile_consumer(context, package, directory, "subtitle_seek_probe.c",
                                               "subtitle-seek-probe", ("avformat", "avcodec", "avutil"))
-        from subtitle_seek_fixtures import cases, compressed_cues
+        from package_report import validate_subtitle_seek
+        from subtitle_seek_fixtures import cases
         fixture = embedded_tracks(directory)
-        original = fixture.read_bytes()
-        variants = cases(original)
-        for name, size, count in [("small", 65536, 1), ("oversized", 5 * 1024 * 1024, 1),
-                                  ("aggregate", 1536 * 1024, 4)]:
-            variants["bounded-" + name] = (compressed_cues(original, size, count), "bounded-" + name)
+        variants = cases(fixture.read_bytes())
         for name, (data, expectation) in variants.items():
             fixture.write_bytes(data)
             process = subprocess.run([str(executable), str(fixture), str(actual), expectation],
@@ -144,15 +141,8 @@ def verify_subtitle_seek(context, package, directory):
                 capture_output=True, timeout=30)
             if process.returncode:
                 raise ValueError("Indexed subtitle seek regression " + name + ": " + process.stderr.decode(errors="replace"))
-            result = json.loads(process.stdout)
-            bounded = expectation.startswith("bounded-")
-            expected = {"seeks": 3 if bounded else 7,
-                        "restored": (0 if expectation == "bounded-oversized" else 3) if bounded else
-                            5 if expectation == "normal" else 0,
-                        "ownedLibraryLoaded": True, "physicalOutputAccepted": False}
-            if result != expected:
-                raise ValueError("Subtitle seek proof differs from its required behavior")
-            results[name] = result
+            results[name] = json.loads(process.stdout)
+        validate_subtitle_seek(results)
         return results
     finally:
         executable.unlink(missing_ok=True)
