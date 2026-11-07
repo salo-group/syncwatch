@@ -276,11 +276,31 @@ struct RoomPreparedPublication {
         default: return false
         }
     }
-    func syncTicket(_ membership: RoomWatchMembership) async throws -> RoomSyncTicket {
-        guard accountAuthority != nil, isCurrent(membership) else { throw RoomProtocolFailure.closed }
+    func canRenewWatchAdmission(_ membership: RoomWatchMembership) -> Bool {
+        isCurrent(membership)
+            || (editor.state == "reconnecting" && canContinuePlayback(membership) && session === membership.owner
+                && admission?.memberID == membership.memberID
+                && admission?.bootstrap.snapshot.epoch == membership.epoch)
+    }
+    func syncAdmission(_ membership: RoomWatchMembership, validate: (RoomWatchContext) throws -> Void) async throws
+        -> RoomSyncTicket
+    {
+        guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
+        // Fresh server state authorizes the transport; event-stream backoff does not.
+        let context = try await membership.owner.watchContext()
+        try Task.checkCancellation()
+        guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
+        try validate(context)
+        recordWatch(context.bootstrap)
         let ticket = try await membership.owner.syncTicket()
         try Task.checkCancellation()
-        guard accountAuthority != nil, isCurrent(membership) else { throw RoomProtocolFailure.closed }
+        guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
+        // Events can still be absent when ticket issuance races a generation change.
+        let confirmed = try await membership.owner.watchContext()
+        try Task.checkCancellation()
+        guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
+        try validate(confirmed)
+        recordWatch(confirmed.bootstrap)
         return ticket
     }
     func beginWatch() async throws -> (membership: RoomWatchMembership, context: RoomWatchContext) {

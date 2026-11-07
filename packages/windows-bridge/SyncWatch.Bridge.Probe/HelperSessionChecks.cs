@@ -286,17 +286,26 @@ internal static class HelperSessionChecks
         var native = PlaybackScope.Create().ReplacingMedia(); var peer = new Peer { TicketMode = true }; int calls = 0;
         await using (var session = new HelperSession(peer, new Player(native), native, new("localhost", 8999, "room", "Viewer_2"),
             new("media-1", "Movie.mkv", 60000, 1234), Revision, requireDeclaredIdentity: true,
-            admissionProvider: _ => Task.FromResult(new SyncplayAdmission(new string(++calls == 1 ? 'A' : 'B', 64), "member-run"))))
+            admissionProvider: async token =>
+            {
+                calls++;
+                if (calls == 2) await Task.Delay(TimeSpan.FromSeconds(6), token);
+                return new SyncplayAdmission(new string(calls == 1 ? 'A' : 'B', 64), "member-run");
+            }))
         {
             session.Start(); await Eventually(() => session.State.PlaybackReady);
             Require(calls == 1 && peer.AdmissionMatches(0, new string('A', 64), new string('a', 32)));
             peer.Connection("connecting"); peer.RequestAdmission(new string('b', 32));
+            await Eventually(() => calls == 2);
+            Require(session.State.Connection == HelperConnection.Reconnecting && !session.State.PlaybackReady);
+            await Task.Delay(TimeSpan.FromSeconds(6));
+            Require(session.State.Connection != HelperConnection.Failed);
             await Eventually(() => calls == 2 && session.State.PlaybackReady);
             Require(peer.AdmissionMatches(1, new string('B', 64), new string('b', 32)));
             peer.Connection("connecting"); peer.RequestAdmission(new string('a', 32));
             await Eventually(() => session.State.Connection == HelperConnection.Failed); Require(calls == 2);
         }
-        foreach (bool missing in new[] { false, true })
+        foreach ((bool missing, bool expires) in new[] { (false, false), (true, false), (false, true) })
         {
             calls = 0; bool cancelled = false; peer = new Peer { TicketMode = true, AdvertiseAdmission = !missing };
             await using var session = new HelperSession(peer, new Player(native), native, new("localhost", 8999, "room", "Viewer_2"),
@@ -308,6 +317,11 @@ internal static class HelperSessionChecks
                     return new(new string('A', 64), "member-run");
                 });
             session.Start(); await Eventually(() => missing ? session.State.Connection == HelperConnection.Failed : calls == 1);
+            if (expires)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(11));
+                Require(session.State.Connection == HelperConnection.Failed && cancelled);
+            }
             await session.DisposeAsync(); await session.DisposeAsync();
             Require(calls == (missing ? 0 : 1) && (missing || cancelled) && peer.AdmissionCount == 0);
         }

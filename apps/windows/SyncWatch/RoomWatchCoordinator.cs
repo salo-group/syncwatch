@@ -134,12 +134,7 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
                     runtime.Revision, requireDeclaredIdentity: true, authority: Authorized,
                     admissionProvider: room.AccountAuthority is null ? null : async cancellation =>
                     {
-                        await WaitForTransportAdmissionAsync(cancellation);
-                        var fresh = await room.WatchContextAsync(intent.Membership, cancellation);
-                        RequireSameGeneration(current, fresh); RequireMatch(local, fresh);
-                        var ticket = await room.SyncTicketAsync(intent.Membership, cancellation);
-                        if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
-                        return new(ticket.AdmissionCredential(), intent.Membership.Identity.ClientRunId);
+                        return await TransportAdmissionAsync(intent.Membership, current, local, cancellation);
                     });
             }
             catch { await transport.DisposeAsync(); throw; }
@@ -267,18 +262,30 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
             && current.Snapshot.Epoch == value.Context.Bootstrap.Snapshot.Epoch
             && current.Snapshot.WatchGeneration == value.Context.Bootstrap.Snapshot.WatchGeneration && current.Snapshot.WatchStatus == "active";
     }
-    private bool CanAdmitTransport() => Authorized() && active is { } current && room.IsCurrent(current.Membership)
+    private bool CanAdmitTransport() => Authorized() && active is { } current
+        && (room.IsCurrent(current.Membership) || admitted && room.CanRenewWatchAdmission(current.Membership))
         && room.WatchBootstrap is { } latest && latest.Snapshot.Epoch == current.Context.Bootstrap.Snapshot.Epoch
         && latest.Snapshot.WatchGeneration == current.Context.Bootstrap.Snapshot.WatchGeneration
         && latest.Snapshot.WatchStatus == "active" && latest.Snapshot.MediaId == current.Context.Bootstrap.Snapshot.MediaId;
-    private async Task WaitForTransportAdmissionAsync(CancellationToken token)
+    private async Task<SyncplayAdmission> TransportAdmissionAsync(RoomWatchMembership membership, RoomWatchContext expected, MediaDescriptor local, CancellationToken token)
     {
-        // The helper bounds this wait. Only an established scope may await metadata recovery.
-        while (!CanAdmitTransport())
+        // The helper bounds retries. Only an established scope may outlive the event transport.
+        while (true)
         {
             token.ThrowIfCancellationRequested();
-            if (!admitted || !Authorized() || room.Editor.State != "reconnecting") throw new InvalidOperationException("watch-revoked");
-            await Task.Delay(100, token);
+            if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
+            try
+            {
+                var ticket = await room.SyncAdmissionAsync(membership, fresh => { RequireSameGeneration(expected, fresh); RequireMatch(local, fresh); }, token);
+                if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
+                return new(ticket.AdmissionCredential(), membership.Identity.ClientRunId);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch (Exception error)
+            {
+                if (!admitted || !Authorized() || room.Editor.State != "reconnecting" || !RoomController.IsMetadataInterruption(error)) throw;
+                await Task.Delay(100, token);
+            }
         }
     }
     internal static string FailureKey(Exception error, bool identityRejected) => identityRejected ? "sharedWatchIdentityRejected"

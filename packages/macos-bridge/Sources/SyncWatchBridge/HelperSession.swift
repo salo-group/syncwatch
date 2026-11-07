@@ -294,7 +294,8 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
             }
             if let nonce = pendingAdmissionNonce, let admissionProvider {
                 pendingAdmissionNonce = nil
-                deadline = .now.advanced(by: .seconds(5))
+                // Credential preparation shares the authenticated transport's ten-second admission window.
+                deadline = .now.advanced(by: .seconds(10))
                 let credential = try await admissionProvider()
                 try checkOpen()
                 deadline = nil

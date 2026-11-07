@@ -171,15 +171,7 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                 } else {
                     admissionProvider = { [weak self] in
                         guard let self else { throw HelperSessionFailure.unavailable }
-                        try await self.waitForTransportAdmission()
-                        let fresh = try await self.room.watchContext(intent.membership)
-                        try Self.requireSameGeneration(current, fresh)
-                        try Self.requireMatch(local, fresh)
-                        let ticket = try await self.room.syncTicket(intent.membership)
-                        guard self.canAdmitTransport() else { throw HelperSessionFailure.unavailable }
-                        return try SyncplayAdmission(
-                            credential: ticket.admissionCredential(),
-                            clientRunID: intent.membership.identity.clientRunID)
+                        return try await self.transportAdmission(intent.membership, expected: current, local: local)
                     }
                 }
                 try await player.connectShared(
@@ -346,7 +338,10 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
             && current.snapshot.watchStatus == "active"
     }
     private func canAdmitTransport() -> Bool {
-        guard authorized(), let active, room.isCurrent(active.membership), let latest = room.watchBootstrap else {
+        guard authorized(), let active,
+            room.isCurrent(active.membership) || (admitted && room.canRenewWatchAdmission(active.membership)),
+            let latest = room.watchBootstrap
+        else {
             return false
         }
         return latest.snapshot.epoch == active.context.bootstrap.snapshot.epoch
@@ -354,14 +349,32 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
             && latest.snapshot.watchStatus == "active"
             && latest.snapshot.mediaID == active.context.bootstrap.snapshot.mediaID
     }
-    private func waitForTransportAdmission() async throws {
-        // The helper bounds this wait. Only an established scope may await metadata recovery.
-        while !canAdmitTransport() {
+    private func transportAdmission(
+        _ membership: RoomWatchMembership, expected: RoomWatchContext, local: MediaDescriptor
+    )
+        async throws -> SyncplayAdmission
+    {
+        // The helper bounds retries. Only an established scope may outlive the event transport.
+        while true {
             try Task.checkCancellation()
-            guard admitted, authorized(), room.editor.state == "reconnecting" else {
-                throw HelperSessionFailure.unavailable
+            guard canAdmitTransport() else { throw HelperSessionFailure.unavailable }
+            do {
+                let ticket = try await room.syncAdmission(membership) { fresh in
+                    try Self.requireSameGeneration(expected, fresh)
+                    try Self.requireMatch(local, fresh)
+                }
+                guard canAdmitTransport() else { throw HelperSessionFailure.unavailable }
+                return try SyncplayAdmission(
+                    credential: ticket.admissionCredential(), clientRunID: membership.identity.clientRunID)
+            } catch {
+                try Task.checkCancellation()
+                guard admitted, authorized(), room.editor.state == "reconnecting",
+                    RoomController.isMetadataInterruption(error)
+                else {
+                    throw error
+                }
+                try await Task.sleep(for: .milliseconds(100))
             }
-            try await Task.sleep(for: .milliseconds(100))
         }
     }
     static func failureKey(_ error: Error, identityRejected: Bool) -> String {

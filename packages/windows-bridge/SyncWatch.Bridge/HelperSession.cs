@@ -177,7 +177,8 @@ public sealed class HelperSession : IAsyncDisposable
             }
             if (pendingAdmissionNonce is string nonce && admissionProvider is not null)
             {
-                pendingAdmissionNonce = null; SetDeadline(5);
+                // Credential preparation shares the authenticated transport's ten-second admission window.
+                pendingAdmissionNonce = null; SetDeadline(10);
                 var credential = await admissionProvider(workCancellation.Token); CheckOpen(); deadline = null;
                 await RequestAsync(HelperReplyKind.Applied, id => commands.Admit(id, nonce, credential)); continue;
             }

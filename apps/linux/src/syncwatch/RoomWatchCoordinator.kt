@@ -135,12 +135,7 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                     SharedMedia("loaded-" + UUID.randomUUID(), remote.title, checkNotNull(local.durationMs), local.fileSizeBytes),
                     runtime.revision, requireDeclaredIdentity = true, authority = ::authorized,
                     admissionProvider = if (room.accountAuthority == null) null else suspend {
-                        waitForTransportAdmission()
-                        val fresh = room.watchContext(ticket)
-                        requireSameGeneration(current, fresh); requireMatch(local, fresh)
-                        val admission = room.syncTicket(ticket)
-                        check(canAdmitTransport()) { "watch-revoked" }
-                        SyncplayAdmission(admission.admissionCredential(), ticket.identity.clientRunId)
+                        transportAdmission(ticket, current, local)
                     })
                 transport = null
             } finally { withContext(NonCancellable + Dispatchers.IO) { transport?.close() } }
@@ -333,16 +328,24 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
     }
     private fun canAdmitTransport(): Boolean {
         val current = active ?: return false; val latest = room.watchBootstrap ?: return false
-        return authorized() && room.isCurrent(current.membership) && latest.snapshot.epoch == current.context.bootstrap.snapshot.epoch &&
+        return authorized() && (room.isCurrent(current.membership) || admitted && room.canRenewWatchAdmission(current.membership)) && latest.snapshot.epoch == current.context.bootstrap.snapshot.epoch &&
             latest.snapshot.watchGeneration == current.context.bootstrap.snapshot.watchGeneration && latest.snapshot.watchStatus == "active" &&
             latest.snapshot.mediaId == current.context.bootstrap.snapshot.mediaId
     }
-    private suspend fun waitForTransportAdmission() {
-        // The helper bounds this wait. Only an established scope may await metadata recovery.
-        while (!canAdmitTransport()) {
+    private suspend fun transportAdmission(membership: RoomWatchMembership, expected: RoomWatchContext, local: MediaDescriptor): SyncplayAdmission {
+        // The helper bounds retries. Only an established scope may outlive the event transport.
+        while (true) {
             currentCoroutineContext().ensureActive()
-            check(admitted && authorized() && room.editor.state == "reconnecting") { "watch-revoked" }
-            delay(100)
+            check(canAdmitTransport()) { "watch-revoked" }
+            try {
+                val ticket = room.syncAdmission(membership) { fresh -> requireSameGeneration(expected, fresh); requireMatch(local, fresh) }
+                check(canAdmitTransport()) { "watch-revoked" }
+                return SyncplayAdmission(ticket.admissionCredential(), membership.identity.clientRunId)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                if (!admitted || !authorized() || room.editor.state != "reconnecting" || !RoomController.isMetadataInterruption(error)) throw error
+                delay(100)
+            }
         }
     }
     companion object {

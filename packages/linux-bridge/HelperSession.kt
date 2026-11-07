@@ -179,7 +179,8 @@ class HelperSession(
             while (inbox.isNotEmpty()) { val data = inbox.removeFirst(); receive(data, PlayerCorrection.frameValue(data)) }
             val nonce = pendingAdmissionNonce
             if (nonce != null && admissionProvider != null) {
-                pendingAdmissionNonce = null; setDeadline(5)
+                // Credential preparation shares the authenticated transport's ten-second admission window.
+                pendingAdmissionNonce = null; setDeadline(10)
                 val credential = admissionProvider(); checkOpen(); deadline = null
                 request(HelperReplyKind.applied) { commands.admit(it, nonce, credential) }; continue
             }

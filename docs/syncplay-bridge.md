@@ -63,6 +63,20 @@ After verifying the server certificate, each transport requests a fresh nonce th
 
 Native writers queue the challenge until the current command acknowledgement completes; an event arriving before the connect acknowledgement cannot create nested writes. A bounded credential wait is canceled and joined on close. Noncanonical or replayed nonces, stale rooms/generations, unavailable account authority and late callbacks fail without sending a credential to a replacement transport. Reconnection requests another ticket; no credential is reused or persisted. The typed admission DTO has redacted diagnostic descriptions.
 
-An already admitted native transport can retain its frozen media under the existing continuation policy. Opening a new transport requires current connected metadata and the active generation, independently of that continuation permission. The enforcing server accepts both empty upstream list forms (`null` and `{}`), keeps room isolation, and rejects nonempty filters and invalid types.
+Credential preparation uses the authenticated transport's ten-second admission window.
+Metadata event recovery can outlast an ordinary IPC acknowledgement while the established membership remains valid.
+Replacement admission reads fresh server context through the retained membership owner.
+It validates the original generation and media before requesting a new ticket.
+It repeats that read and validation after issuance, before transferring the ticket to the helper.
+An established scope can retry transport errors while its event stream reconnects.
+New starts still require connected metadata.
+Account loss, member replacement, changed generation, and media disagreement remain terminal.
+The native bridge must not end that credential wait after five seconds.
+Ordinary IPC acknowledgements retain their five-second limit.
+The overall recovery budget remains 25 seconds, and expired transport challenges remain terminal.
+
+An already admitted native transport can retain its frozen media under the existing continuation policy.
+Each replacement transport requires fresh server metadata and the original active generation, independently of continuation permission.
+The enforcing server accepts both empty upstream list forms (`null` and `{}`), keeps room isolation, and rejects nonempty filters and invalid types.
 
 Shared native command/reply fixtures and scripted peers verify correlation, capability, fresh reconnect authority and canceled credential waits. Real TLS checks run the pinned client against the private enforcing server, including revocation and shutdown. These checks use synthetic authority and a simulated player; they do not qualify packaged VLC windows, Google sign-in, or cross-desktop watch acceptance.

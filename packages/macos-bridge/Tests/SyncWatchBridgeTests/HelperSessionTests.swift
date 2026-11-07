@@ -477,9 +477,11 @@ private actor SessionPlayer: PlaybackPort {
 @MainActor private final class AdmissionSource {
     var calls = 0
     var slow = false
+    var recoveryDelay = false
     var cancelled = false
     func provide() async throws -> SyncplayAdmission {
         calls += 1
+        if recoveryDelay && calls == 2 { try await Task.sleep(for: .seconds(6)) }
         if slow {
             do { try await Task.sleep(for: .seconds(20)) } catch {
                 cancelled = true
@@ -494,6 +496,7 @@ private actor SessionPlayer: PlaybackPort {
 @Test @MainActor func helperAdmissionUsesFreshChallengesAndRejectsReplay() async throws {
     let native = try PlaybackScope.fresh().replacingMedia()
     let source = AdmissionSource()
+    source.recoveryDelay = true
     let peer = SessionPeer()
     await peer.configureAdmission()
     let session = try HelperSession(
@@ -510,6 +513,10 @@ private actor SessionPlayer: PlaybackPort {
                 0, ticket: String(repeating: "A", count: 64), nonce: String(repeating: "a", count: 32)))
         try await peer.connection("connecting")
         try await peer.requestAdmission(String(repeating: "b", count: 32))
+        try await eventually { source.calls == 2 }
+        #expect(session.state.connection == .reconnecting && !session.state.playbackReady)
+        try await Task.sleep(for: .seconds(6))
+        try #require(session.state.connection != .failed)
         try await eventually { source.calls == 2 && session.state.playbackReady }
         #expect(
             try await peer.admissionMatches(
@@ -526,7 +533,7 @@ private actor SessionPlayer: PlaybackPort {
 }
 
 @Test @MainActor func helperAdmissionCloseJoinsCredentialWaitAndRequiresCapability() async throws {
-    for missingCapability in [false, true] {
+    for (missingCapability, expires) in [(false, false), (true, false), (false, true)] {
         let native = try PlaybackScope.fresh().replacingMedia()
         let source = AdmissionSource()
         source.slow = true
@@ -540,6 +547,10 @@ private actor SessionPlayer: PlaybackPort {
         do {
             try session.start()
             try await eventually { missingCapability ? session.state.connection == .failed : source.calls == 1 }
+            if expires {
+                try await Task.sleep(for: .seconds(11))
+                #expect(session.state.connection == .failed && source.cancelled)
+            }
             await session.close()
             await session.close()
             #expect(source.calls == (missingCapability ? 0 : 1))

@@ -186,11 +186,26 @@ internal class RoomController(private val scope: CoroutineScope, legacyValidatio
             }
         }
     }
-    suspend fun syncTicket(membership: RoomWatchMembership): RoomSyncTicket {
-        check(accountAuthority != null && isCurrent(membership))
+    fun canRenewWatchAdmission(membership: RoomWatchMembership): Boolean = isCurrent(membership) ||
+        (editor.state == "reconnecting" && canContinuePlayback(membership) && session === membership.owner &&
+            admission?.memberId == membership.memberId && admission?.bootstrap?.snapshot?.epoch == membership.epoch)
+    suspend fun syncAdmission(membership: RoomWatchMembership, validate: (RoomWatchContext) -> Unit): RoomSyncTicket {
+        check(accountAuthority != null && canRenewWatchAdmission(membership))
+        // Fresh server state authorizes the transport; event-stream backoff does not.
+        val context = membership.owner.watchContext()
+        currentCoroutineContext().ensureActive()
+        check(accountAuthority != null && canRenewWatchAdmission(membership))
+        validate(context)
+        recordWatch(context.bootstrap)
         val ticket = membership.owner.syncTicket()
         currentCoroutineContext().ensureActive()
-        check(accountAuthority != null && isCurrent(membership))
+        check(accountAuthority != null && canRenewWatchAdmission(membership))
+        // Events can still be absent when ticket issuance races a generation change.
+        val confirmed = membership.owner.watchContext()
+        currentCoroutineContext().ensureActive()
+        check(accountAuthority != null && canRenewWatchAdmission(membership))
+        validate(confirmed)
+        recordWatch(confirmed.bootstrap)
         return ticket
     }
     suspend fun beginWatch(): Pair<RoomWatchMembership, RoomWatchContext> {

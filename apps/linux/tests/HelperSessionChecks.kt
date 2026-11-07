@@ -254,17 +254,24 @@ private suspend fun admissionChecks(owner: CoroutineScope) {
     var peer = SessionPeer().apply { ticketMode = true }
     var session = HelperSession(peer, SessionPlayer(native), native, SyncplayEndpoint("localhost", 8999, "room", "Viewer_2"),
         SharedMedia("media-1", "Movie.mkv", 60000, 1234), SESSION_REVISION, owner, requireDeclaredIdentity = true,
-        admissionProvider = { calls++; SyncplayAdmission((if (calls == 1) "A" else "B").repeat(64), "member-run") })
+        admissionProvider = {
+            calls++; if (calls == 2) delay(6000)
+            SyncplayAdmission((if (calls == 1) "A" else "B").repeat(64), "member-run")
+        })
     try {
         session.start(); eventually { session.state.playbackReady }
         check(calls == 1 && peer.admissionMatches(0, "A".repeat(64), "a".repeat(32)))
         peer.connection("connecting"); peer.requestAdmission("b".repeat(32))
+        eventually { calls == 2 }
+        check(session.state.connection == HelperConnection.reconnecting && !session.state.playbackReady)
+        delay(6000)
+        check(session.state.connection != HelperConnection.failed) { "Transport admission ended before its challenge window" }
         eventually { calls == 2 && session.state.playbackReady }
         check(peer.admissionMatches(1, "B".repeat(64), "b".repeat(32)))
         peer.connection("connecting"); peer.requestAdmission("a".repeat(32))
         eventually { session.state.connection == HelperConnection.failed }; check(calls == 2)
     } finally { session.close() }
-    for (missing in listOf(false, true)) {
+    for ((missing, expires) in listOf(false to false, true to false, false to true)) {
         calls = 0; var cancelled = false
         peer = SessionPeer().apply { ticketMode = true; advertiseAdmission = !missing }
         session = HelperSession(peer, SessionPlayer(native), native, SyncplayEndpoint("localhost", 8999, "room", "Viewer_2"),
@@ -276,6 +283,10 @@ private suspend fun admissionChecks(owner: CoroutineScope) {
             })
         try {
             session.start(); eventually { if (missing) session.state.connection == HelperConnection.failed else calls == 1 }
+            if (expires) {
+                delay(11_000)
+                check(session.state.connection == HelperConnection.failed && cancelled)
+            }
             session.close(); session.close()
             check(calls == (if (missing) 0 else 1) && (missing || cancelled) && peer.admissionCount() == 0)
         } finally { session.close() }
