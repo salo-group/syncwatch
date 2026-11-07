@@ -1,7 +1,7 @@
 # Owned call-host experiment
 
 This directory defines fixed inputs for an isolated first-party CEF host experiment on macOS, Windows and Linux.
-Preparation is in progress; no host executable exists yet.
+The first-party host is a compile-only, blank-surface experiment.
 It is not an adopted application runtime or a supported calling feature.
 The native application clients remain Swift, C# and Kotlin on their respective operating systems.
 
@@ -23,8 +23,33 @@ This is a candidate configuration; runtime behavior and persistent reuse remain 
 
 Preparation and compilation must not launch the browser engine.
 The current browser policy requires a specific owner exception before native browser testing.
-No launch command is implemented or authorized by this document.
+This document does not authorize execution or supply a launch procedure.
 
 Before product adoption, close every qualification item in `inputs.json`.
 Retain complete notices, exact source/artifact correspondence and actual native evidence.
 A version header, archive digest or successful compilation does not qualify Google Meet.
+
+## Compile-only preparation
+
+While source qualification remains open, compilation requires an explicit research exception.
+This exception does not authorize product adoption.
+
+1. Obtain the native archive identified in `inputs.json`.
+2. Run `python3 tools/cef-host-experiment/prepare.py --archive ARCHIVE --output PREPARED`.
+3. After research approval, configure CMake with `SYNCWATCH_CEF_RESEARCH_BUILD=ON`.
+4. Set `CEF_ROOT` to the returned SDK directory.
+5. Set `PROJECT_ARCH=arm64` on macOS or `PROJECT_ARCH=x86_64` on Linux.
+6. Use the native x64 Visual Studio generator on Windows.
+7. Build the Release configuration with at most two parallel compiler jobs.
+
+The preparation command verifies the fixed digest and size before extraction.
+It rejects unsafe archive paths and preserves complete vendor notices.
+It records each prepared file without executing vendor code.
+CMake reads dimensions and the window title from shared Design sources.
+The host requires a new installation root and rejects reuse of an existing directory.
+It rejects navigation, popups, downloads, file dialogs and capture permissions.
+Its browser lifetime remains separate from the native application clients.
+
+Compilation does not prove normal close, sandbox behavior or Google compatibility.
+Verify all child processes, capture and audio release during authorized native experiments.
+Delete only the experiment-owned installation root after every child process exits.

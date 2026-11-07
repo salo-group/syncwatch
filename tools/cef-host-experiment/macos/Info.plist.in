@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>@BUNDLE_EXECUTABLE@</string>
+<key>CFBundleIdentifier</key><string>@BUNDLE_ID@</string>
+<key>CFBundleName</key><string>@BUNDLE_EXECUTABLE@</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleVersion</key><string>@BUNDLE_VERSION@</string>
+<key>CFBundleShortVersionString</key><string>@BUNDLE_VERSION@</string>
+<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+<key>LSMinimumSystemVersion</key><string>13.0</string>
+<key>LSUIElement</key><@BUNDLE_BACKGROUND@/>
+<key>NSSupportsAutomaticGraphicsSwitching</key><true/>
+<key>NSHighResolutionCapable</key><true/>
+<key>LSEnvironment</key><dict><key>MallocNanoZone</key><string>0</string></dict>
+</dict></plist>
