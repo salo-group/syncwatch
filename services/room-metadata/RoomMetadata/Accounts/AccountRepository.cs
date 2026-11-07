@@ -172,7 +172,8 @@ public sealed class AccountRepository : IDisposable
             Save(current with
             {
                 Devices = current.Devices.Where(d => !AccountWire.Matches(refresh, d.RefreshHash)
-                && !(d.PreviousHash is string previous && AccountWire.Matches(refresh, previous))).ToArray()
+                && !(d.PreviousHash is string previous && AccountWire.Matches(refresh, previous))
+                && !(d.RetiredHashes ?? []).Any(hash => AccountWire.Matches(refresh, hash))).ToArray()
             });
         }
     }

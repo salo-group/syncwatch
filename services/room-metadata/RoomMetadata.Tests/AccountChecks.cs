@@ -60,6 +60,22 @@ internal static class AccountChecks
                 DeviceSession newest = repository.Refresh(intermediate.RefreshToken, Secret());
                 Reject(() => repository.Refresh(oldFamily.RefreshToken, Secret()), "sessionRevoked");
                 Reject(() => repository.Authenticate(newest.AccessToken), "unauthorized");
+                foreach (int rotations in new[] { 0, 1, 2, 4 })
+                {
+                    string receipt = transactions.Start(Hash(proof)).TransactionId;
+                    transactions.BeginBrowser(receipt);
+                    string code = transactions.CompleteBrowser(receipt, subject, "Account", "a@example.invalid");
+                    _ = transactions.VerifyBrowser(receipt, proof, code);
+                    DeviceSession confirmed = transactions.Confirm(receipt, proof, Secret(), code).Session!;
+                    for (int rotation = 0; rotation < rotations; rotation++) confirmed = repository.Refresh(confirmed.RefreshToken, Secret());
+                    Reject(() => transactions.Cancel(receipt, Secret()), "unauthorized");
+                    Require(repository.Authenticate(confirmed.AccessToken).Id == sameSubject.Account.Id);
+                    transactions.Cancel(receipt, proof);
+                    Require(transactions.Poll(receipt, proof).Status == "cancelled");
+                    Reject(() => repository.Authenticate(confirmed.AccessToken), "unauthorized");
+                    Reject(() => repository.Refresh(confirmed.RefreshToken, Secret()), "unauthorized");
+                    Require(repository.Authenticate(sameSubject.AccessToken).Id == sameSubject.Account.Id);
+                }
                 session = sameSubject;
                 string cancelled = transactions.Start(Hash(proof)).TransactionId;
                 transactions.BeginBrowser(cancelled); transactions.Cancel(cancelled, proof);
