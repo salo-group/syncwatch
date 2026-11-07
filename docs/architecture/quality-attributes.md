@@ -44,7 +44,8 @@ Absolute security or optimal performance must never be claimed without evidence.
    Use hardware acceleration when measurements confirm correctness and benefit.
 5. Verify sustained use, repeated sessions, file replacement, reconnect and application exit.
    Owned processes, capture, connections, descriptors and memory must return to a measured idle state.
-   Investigate retained resources and unexplained material regressions before delivery.
+   Investigate retained resources before delivery.
+   Block the affected delivery while a material performance regression remains unexplained.
 
 ## Acceptance
 
