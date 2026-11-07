@@ -71,7 +71,8 @@ class LinuxRuntimeCacheTests(unittest.TestCase):
         for name in ("jvm", "clients"):
             executable = self.directory / name / "payload/engine"
             self.assertEqual(executable.read_bytes(), b"source-built fixture executable")
-            self.assertTrue(executable.stat().st_mode & 0o111)
+            if os.name == "posix":
+                self.assertTrue(executable.stat().st_mode & 0o111)
         restored = json.loads(self.path.read_text())
         self.assertTrue(restored["cacheHit"])
         self.assertRegex(restored["buildSourceCommit"], r"^[0-9a-f]{40}$")
@@ -98,6 +99,7 @@ class LinuxRuntimeCacheTests(unittest.TestCase):
             cache.stage(self.path)
         self.assertFalse(Path(self.request["archive"]).exists())
 
+    @unittest.skipUnless(os.name == "posix", "Exact POSIX permission bits require a POSIX filesystem")
     def test_runtime_cache_preserves_empty_directories_and_exact_file_permissions(self):
         self.payloads()
         original = self.directory / "jvm/payload"

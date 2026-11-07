@@ -27,6 +27,11 @@ async function main() {
         return result.status === 0;
     }
     const run = operation => runCommand([python, 'tools/dependencies/build.py', operation, '--component', component, '--platform', platform, ...(cold ? ['--cold'] : [])]);
+    if (component === 'libvlc' && platform === 'windows-x64'
+        && !runCommand([python, '-X', 'utf8=0', '-m', 'unittest', 'discover',
+            '-s', 'tools/ci/tests', '-p', 'test_*cache.py', '-v'])) {
+        throw new Error('Windows CI cache regressions failed before SDK provisioning');
+    }
     if (component === 'syncplay-runtime' && !runCommand([python, '-m', 'unittest', 'discover',
         '-s', 'tools/bridge/tests', '-p', 'test_build.py', '-v'])) {
         throw new Error('Native helper producer regressions failed before SDK provisioning');
