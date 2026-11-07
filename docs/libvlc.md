@@ -51,8 +51,26 @@ VideoToolbox/CVPX modules are selected on macOS, and D3D11VA on Windows. Hardwar
 
 ## Corresponding sources and declared changes
 
-The payload contains headers, owned dynamic libraries, selected plugins, full notices, per-source original ZIPs, exact configured VLC files, first-party rebuild recipes, source inventories, compiler SDK identity, command flags, import closure and a payload digest report. ZIP entries preserve original bytes; executable modes are reconstructed from the retained profile inventory. The SDK and its build executables are not distributed as application libraries. Dynamic dependencies must remain replaceable when packaging an application.
+The payload contains headers, owned dynamic libraries, selected plugins, full notices, per-source original ZIPs, exact configured VLC and FFmpeg files, first-party rebuild recipes, source inventories, compiler SDK identity, command flags, import closure and a payload digest report. ZIP entries preserve original bytes; executable modes are reconstructed from the retained profile inventory. The SDK and its build executables are not distributed as application libraries. Dynamic dependencies must remain replaceable when packaging an application.
 
 VLC configuration derivatives have explicit source correspondence and dated notices. `src/revision.txt` records the base source pin. `configure.ac` uses that original commit's date instead of the current clock. `lib/media_player.c` inherits an explicitly configured audio-filter list when creating a player: the original empty variable otherwise masks the initialization setting, leaving normalization inactive. `modules/common.am` links Windows plugins to the owned shared codec libraries while retaining static compiler support, replacing the upstream assumption that every contrib library is static. The changed files retain their original grants and a dated change notice. The exact configured files accompany the original sources; this is a modified build of the recorded base revision.
 
 The GNU iconv mirror's pinned MSVC patch is reversed only in an isolated source tree. Every restored file must match the complete original GNU release inventory. The libraries and public headers are built; the GPL command-line program is not packaged. macOS selects VLC's original pipe/dup fallbacks for its deployment floor. VLC uses C11 explicitly, and its Windows configure step sees the Windows 10 API baseline so that its synchronization import-library check matches the compiler headers.
+
+The FFmpeg Matroska derivative retains `CueDuration` and `CueRelativePosition`.
+It restores indexed subtitle blocks that overlap a seek but precede its A/V cluster.
+It validates clusters, block boundaries, actual tracks and packet timing, and rejects duplicate block positions.
+Preroll allows at most 64 attempts and 256 KiB per encoded block.
+Encoded reads and retained decoded packets each have a separate 4 MiB limit per seek.
+The packet budget includes buffers, queue nodes, reference objects, side-data descriptors and required padding.
+A compile-time check validates the conservative packet overhead against the pinned internal types.
+Before frame parsing, each block reserves storage for every lace and its additional data.
+Optional decompression checks the remaining budget before allocation.
+WebVTT also reserves its copied output. Growth buffers shrink before packet ownership transfers.
+Ordinary playback keeps the original decompression behavior.
+Invalid, incomplete or oversized optional cues are skipped. Normal A/V seeking retains its original position.
+Allocation or resume-position failures propagate.
+Original FFmpeg bytes remain in the source archive.
+The modified demuxer and original grants accompany the package in `sources/configured/ffmpeg/`.
+Native seek checks include small compressed and raw laces, oversized cues, replicated side data and cumulative packet limits.
+The embedded ASS pixel check selects the track after playback advances, so an active cue must render.

@@ -18,6 +18,23 @@ def validate_seek_reset(result):
         raise ValueError("Native decoder seek reset proof requires fresh video, native clock and normal close")
 
 
+def validate_subtitle_seek(result):
+    names = {"normal", "expired-duration", "wrong-track", "bad-offset", "bad-cluster", "duplicate",
+             "bounded-small", "bounded-oversized", "bounded-aggregate", "bounded-small-laced",
+             "bounded-small-raw-laced", "bounded-laced-side-data", "bounded-raw-laced-side-data"}
+    if not isinstance(result, dict) or set(result) != names:
+        raise ValueError("Indexed subtitle seek proof requires the complete cue corpus")
+    for name, proof in result.items():
+        bounded = name.startswith("bounded-")
+        expected = {"seeks": 3 if bounded else 7,
+                    "restored": (0 if name in {"bounded-oversized", "bounded-laced-side-data",
+                                              "bounded-raw-laced-side-data"} else 3) if bounded else
+                        5 if name in {"normal", "duplicate"} else 0,
+                    "ownedLibraryLoaded": True, "physicalOutputAccepted": False}
+        if proof != expected:
+            raise ValueError("Indexed subtitle seek proof requires active cues and unchanged A/V positions")
+
+
 def inventory(package):
     files = {}
     for path in sorted(package.rglob("*")):
@@ -34,6 +51,7 @@ def inventory(package):
 
 def create(package, sdk, sources, imports, proof, codec):
     validate_seek_reset(proof.get("seekReset"))
+    validate_subtitle_seek(proof.get("subtitleSeek"))
     report = {"schemaVersion": 1, "profile": "native-decoder-v1", "sdk": sdk,
               "sources": sources, "imports": imports, "proof": proof, "codec": codec,
               "physicalOutputAccepted": False, "applicationIntegrationReady": False,
@@ -54,6 +72,7 @@ def verify(package, sdk, sources, original_contents):
             report.get("files") != inventory(package)):
         raise ValueError("Native media payload, source or SDK identity changed")
     validate_seek_reset(report.get("proof", {}).get("seekReset"))
+    validate_subtitle_seek(report.get("proof", {}).get("subtitleSeek"))
     for name, data in original_contents.items():
         if not (package / name).is_file() or (package / name).read_bytes() != data:
             raise ValueError("Original media source, recipe or grant changed: " + name)

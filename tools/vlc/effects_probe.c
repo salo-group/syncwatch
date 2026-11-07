@@ -80,6 +80,11 @@ int main(int argc, char **argv) {
     if (external_audio)
         REQUIRE(libvlc_media_player_add_slave(player, libvlc_media_slave_type_audio, argv[4], true) == 0,
                 "external audio track rejected while playing");
+    /* Exercise a cue already in progress, after its original block was discarded. */
+    if (embedded_ass) {
+        deadline = milliseconds() + 500;
+        while (milliseconds() < deadline) delay();
+    }
     if (embedded_srt || embedded_ass || embedded_audio) {
         libvlc_track_description_t *head = embedded_audio ? libvlc_audio_get_track_description(player)
                                                          : libvlc_video_get_spu_description(player);
@@ -102,6 +107,9 @@ int main(int argc, char **argv) {
         deadline = milliseconds() + 1800;
         /* A uniformly bright authored video frame cannot count as subtitle text. */
         while (((white = atomic_load(&white_pixels)) < 20 || white > WIDTH * HEIGHT / 4) && milliseconds() < deadline) delay();
+        fprintf(stderr, "subtitle observations: white=%u frames=%u track=%d time=%lld state=%d\n",
+                white, atomic_load(&observed.frames), libvlc_video_get_spu(player),
+                (long long)libvlc_media_player_get_time(player), (int)libvlc_media_player_get_state(player));
         REQUIRE(white >= 20 && white <= WIDTH * HEIGHT / 4 && libvlc_video_get_spu(player) >= 0,
                 "subtitle track did not render actual text pixels");
     }
