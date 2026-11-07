@@ -8,6 +8,7 @@ SyncWatch lets people watch their local movie files together with synchronized p
 - [Running the room service](room-service.md): service setup, configuration, and startup.
 - [Google sign-in and Meet setup](google-meet-setup.md): developer registration, protected credentials, test users, and browser/PWA requirements.
 - [Building and running](building.md): source checkout, declared toolchains, native builds, and launch commands.
+- [Continuous integration](continuous-integration.md): change selection, required results and native acceptance boundaries.
 - [Building the design tools](design-generator.md): source-only Style Dictionary profile and API.
 - [Inspecting JVM dependencies](jvm-dependencies.md): offline runtime metadata inventory before source adoption.
 - [Building JVM annotations](jvm-annotations.md): pinned Java sources, compiler SDK and verified JAR artifacts.

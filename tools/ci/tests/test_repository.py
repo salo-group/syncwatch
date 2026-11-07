@@ -411,6 +411,31 @@ class WorkflowChecks(unittest.TestCase):
             with self.subTest(target=target), self.assertRaisesRegex(ValidationError, "wait for all verified"):
                 self.validate(lambda data: data["jobs"][target].pop("needs"))
 
+    def test_native_jobs_cannot_ignore_the_validated_change_mode(self):
+        for target in ("macos", "windows", "linux"):
+            with self.subTest(target=target), self.assertRaisesRegex(ValidationError, "validation mode"):
+                self.validate(lambda data: data["jobs"][target].pop("if", None))
+
+    def test_native_jobs_cannot_omit_the_plan_dependency(self):
+        for target in ("macos", "windows", "linux"):
+            with self.subTest(target=target), self.assertRaisesRegex(ValidationError, "selection"):
+                self.validate(lambda data: data["jobs"][target].update({"needs": ["dependencies"]}))
+
+    def test_validation_mode_cannot_be_missing_or_replaced_by_a_constant(self):
+        for mode in (None, "documentation", "${{ 'documentation' }}"):
+            def replace(data):
+                outputs = data["jobs"]["dependency-plan"]["outputs"]
+                if mode is None:
+                    outputs.pop("mode")
+                else:
+                    outputs["mode"] = mode
+            with self.subTest(mode=mode), self.assertRaisesRegex(ValidationError, "validation mode"):
+                self.validate(replace)
+
+    def test_metadata_gate_cannot_ignore_validation_mode(self):
+        with self.assertRaisesRegex(ValidationError, "Windows service result"):
+            self.validate(lambda data: data["jobs"]["metadata"].update({"if": "${{ always() }}"}))
+
     def test_native_packages_require_same_run_artifact_access(self):
         for target in ("macos", "windows", "linux"):
             def remove(data):
