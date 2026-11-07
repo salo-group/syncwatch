@@ -52,6 +52,8 @@ Absolute security or optimal performance must never be claimed without evidence.
 ## Acceptance
 
 Each feature records its applicable security checks and performance budgets.
+Record the change impact and why each check applies.
+A documentation result does not qualify native application behavior.
 Run affected native checks on Swift/macOS, C#/Windows and Kotlin/Linux.
 For network changes, measure the applicable behavior in all six directed client combinations.
 Retain a baseline, results, cleanup evidence and unresolved limits.
