@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -96,6 +97,40 @@ class LinuxRuntimeCacheTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "actual package bytes"):
             cache.stage(self.path)
         self.assertFalse(Path(self.request["archive"]).exists())
+
+    def test_runtime_cache_preserves_empty_directories_and_exact_file_permissions(self):
+        self.payloads()
+        original = self.directory / "jvm/payload"
+        (original / "empty/configuration").mkdir(parents=True)
+        (original / "empty/configuration").chmod(0o700)
+        (original / "engine").chmod(0o750)
+        cache.stage(self.path)
+        self.clear_outputs()
+        self.assertTrue(cache.restore(self.path))
+        restored = self.directory / "jvm/payload"
+        self.assertTrue((restored / "empty/configuration").is_dir())
+        self.assertEqual((restored / "empty/configuration").stat().st_mode & 0o777, 0o700)
+        self.assertEqual((restored / "engine").stat().st_mode & 0o777, 0o750)
+
+    def test_unsafe_or_privileged_cached_layout_cannot_publish_outputs(self):
+        self.payloads()
+        cache.stage(self.path)
+        self.clear_outputs()
+        archive = Path(self.request["archive"])
+        with zipfile.ZipFile(archive) as package:
+            entries = [(entry, package.read(entry)) for entry in package.infolist()]
+        for name, mode in (("jvm/../../escape", 0o755), ("jvm", 0o4755)):
+            with self.subTest(name=name), zipfile.ZipFile(archive, "w") as package:
+                for entry, data in entries:
+                    if entry.filename == "build-manifest.json":
+                        manifest = json.loads(data)
+                        manifest["layout"][name] = {"kind": "directory", "mode": mode}
+                        data = json.dumps(manifest).encode()
+                    package.writestr(entry, data)
+            with self.assertRaises(ValueError):
+                cache.restore(self.path)
+            self.assertFalse((self.directory / "jvm").exists())
+            self.assertFalse((self.directory / "escape").exists())
 
     def test_cold_request_ignores_existing_runtime_archive(self):
         self.payloads()

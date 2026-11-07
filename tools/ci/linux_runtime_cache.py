@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import platform
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -107,9 +108,42 @@ def smoke(payload, request):
 def unpack_verified(archive, staging, request):
     dependencies, _ = modules()
     manifest = dependencies.unpack(archive, staging, request)
+    restore_layout(staging / "payload", manifest.get("layout"), dependencies)
     verify(staging / "payload", request)
     smoke(staging / "payload", request)
     return manifest
+
+
+def layout(payload):
+    result = {}
+    for path in sorted(payload.rglob("*")):
+        if path.is_symlink() or not (path.is_file() or path.is_dir()):
+            raise ValueError("Linux runtime cache requires regular files and directories")
+        result[path.relative_to(payload).as_posix()] = {
+            "kind": "directory" if path.is_dir() else "file", "mode": stat.S_IMODE(path.stat().st_mode)}
+    return result
+
+
+def restore_layout(payload, expected, dependencies):
+    if not isinstance(expected, dict) or not 0 < len(expected) <= 100000:
+        raise ValueError("Linux runtime cache has no bounded file layout")
+    ordered = sorted(expected, key=lambda name: (len(Path(name).parts), name))
+    for name in ordered:
+        dependencies.member(name)
+        metadata = expected[name]
+        if (name.split("/")[0] not in {"jvm", "clients"} or not isinstance(metadata, dict)
+                or set(metadata) != {"kind", "mode"} or metadata["kind"] not in {"file", "directory"}
+                or type(metadata["mode"]) is not int or not 0 <= metadata["mode"] <= 0o777):
+            raise ValueError("Linux runtime cache has an invalid file layout")
+        path = inside(payload, name)
+        if metadata["kind"] == "directory":
+            path.mkdir(exist_ok=True)
+        elif not path.is_file():
+            raise ValueError("Linux runtime cache layout differs from its verified files")
+    for name in reversed(ordered):
+        inside(payload, name).chmod(expected[name]["mode"])
+    if layout(payload) != expected:
+        raise ValueError("Linux runtime cache changed directories or permissions")
 
 
 def restore(path):
@@ -159,7 +193,8 @@ def stage(path):
         verify(staging / "payload", request)
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         manifest = {"schemaVersion": 1, "key": request["key"], "inputs": request["inputs"], "result": "success",
-                    "buildSourceCommit": request.get("buildSourceCommit", commit), "verifiedSourceCommit": commit}
+                    "buildSourceCommit": request.get("buildSourceCommit", commit), "verifiedSourceCommit": commit,
+                    "layout": layout(staging / "payload")}
         try:
             packed = dependencies.pack(staging, manifest)
         except ValueError as error:
