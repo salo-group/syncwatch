@@ -220,7 +220,7 @@ def check_workflows(root: Path) -> None:
     require(set(jobs) == {*selected, "required"}, "unexpected repository job set")
     runners = {name: "ubuntu-24.04" for name in ("repository", "tests", "contracts", "required", "metadata", "dependency-plan")}
     runners.update({"macos": "macos-15", "windows": "windows-2025", "linux": "ubuntu-24.04"})
-    require(jobs["metadata"].get("needs") == ["windows"] and jobs["metadata"].get("if") == "${{ always() }}"
+    require(jobs["metadata"].get("needs") == ["windows", "dependency-plan"] and jobs["metadata"].get("if") == "${{ always() && needs.dependency-plan.outputs.mode == 'full' }}"
             and "strategy" not in jobs["metadata"], "metadata gate must require the Windows service result even after failure")
     for name, job in jobs.items():
         if name == "dependencies":
@@ -253,7 +253,8 @@ def check_workflows(root: Path) -> None:
     for name, python in (("macos", "python3"), ("windows", "python"), ("linux", "python3")):
         steps = jobs[name].get("steps", [])
         require(any(step.get("run") == f"{python} tools/ci/native_job.py {name}" for step in steps), "native jobs must execute real native checks")
-        require(jobs[name].get("needs") == ["dependencies"], "native packaging must wait for all verified dependency producers")
+        require(jobs[name].get("needs") == ["dependencies", "dependency-plan"], "native packaging must wait for all verified dependency producers and selection")
+        require(jobs[name].get("if") == "${{ needs.dependency-plan.outputs.mode == 'full' }}", "native jobs must use the validated validation mode")
         packaging = next(step for step in steps if step.get("run") == f"{python} tools/ci/native_job.py {name}")
         require(packaging.get("env", {}).get("GITHUB_TOKEN") == "${{ github.token }}", "native packaging must use the read-only same-run artifact transport")
         uploads = [step for step in steps if "uses" in step]
@@ -306,7 +307,7 @@ def check_workflows(root: Path) -> None:
     require("python3 -m unittest discover -s tools/jvm/tests -v" in test_commands, "offline JVM metadata audit tests must execute")
     require("python3 -m unittest discover -s tools/server/tests -v" in test_commands, "server SDK provisioning tests must execute")
     metadata_steps = jobs["metadata"]["steps"]
-    require(any(step.get("run") == "python3 tools/ci/required_status.py windows"
+    require(any(step.get("run") == "python3 tools/ci/required_status.py windows dependency-plan"
                 and step.get("env") == {"CI_NEEDS_JSON": "${{ toJSON(needs) }}"} for step in metadata_steps),
             "metadata gate must inspect the actual Windows service result")
     require("node --test tools/ci/tests/artifact_upload.test.mjs tools/ci/tests/artifact_download.test.mjs" in test_commands,
@@ -314,7 +315,8 @@ def check_workflows(root: Path) -> None:
     require("python3 -m unittest discover -s tools/dependencies/tests -v\nnode --test tools/dependencies/tests/cache.test.mjs" in test_commands, "dependency infrastructure tests must execute")
     planner = jobs["dependency-plan"]
     require(any(step.get("id") == "plan" and step.get("run") == "python3 tools/dependencies/build.py plan" for step in planner["steps"]), "dependency planner must validate real source manifests")
-    require(planner.get("outputs") == {"matrix": "${{ steps.plan.outputs.matrix }}"}, "dependency matrix must come from the validated plan")
+    require(planner.get("outputs") == {"matrix": "${{ steps.plan.outputs.matrix }}", "mode": "${{ steps.plan.outputs.mode }}"},
+            "dependency matrix and validation mode must come from the validated plan")
     action = load_json(root / ".github/actions/upload-native/action.yml")
     require(action.get("runs") == {"using": "node24", "main": "upload.mjs"}, "artifact action must use its declared runner runtime")
     reusable = load_json(root / ".github/workflows/dependency-build.yml")
