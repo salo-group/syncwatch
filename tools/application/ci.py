@@ -77,8 +77,10 @@ def linux_inputs(directory, media, desktop):
                 *common, "--patchelf", shutil.which("patchelf"), "--output", directory / "clients")
         trusted = os.environ.get("GITHUB_EVENT_NAME") in {"push", "schedule", "workflow_dispatch"} \
             and os.environ.get("GITHUB_REF") == "refs/heads/main"
-        if cache and trusted:
+        if cache and (trusted or not hit):
             run(sys.executable, "tools/ci/linux_runtime_cache.py", "stage", request)
+            if not hit:
+                run(sys.executable, "tools/ci/linux_runtime_cache.py", "validate-staged", request)
     run(sys.executable, "tools/application/build_linux.py", "--toolchain-root", ROOT,
         "--desktop-sdk", desktop, "--output", directory / "application")
     return jdk.home()

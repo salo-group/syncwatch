@@ -104,18 +104,23 @@ def smoke(payload, request):
                    env=environment, stdout=sys.stderr, check=True, timeout=180)
 
 
+def unpack_verified(archive, staging, request):
+    dependencies, _ = modules()
+    manifest = dependencies.unpack(archive, staging, request)
+    verify(staging / "payload", request)
+    smoke(staging / "payload", request)
+    return manifest
+
+
 def restore(path):
     request = read_request(path)
     archive = inside(ROOT, Path(request["archive"]).relative_to(ROOT))
     if request["cold"] or not archive.exists():
         return False
-    dependencies, _ = modules()
     directory = inside(ROOT, Path(request["directory"]).relative_to(ROOT))
     with tempfile.TemporaryDirectory(prefix=".runtime-cache-", dir=directory) as temporary:
         staging = Path(temporary)
-        manifest = dependencies.unpack(archive, staging, request)
-        verify(staging / "payload", request)
-        smoke(staging / "payload", request)
+        manifest = unpack_verified(archive, staging, request)
         for name in ("jvm", "clients"):
             destination = directory / name
             if destination.exists() or destination.is_symlink():
@@ -128,6 +133,17 @@ def restore(path):
         request["cacheHit"] = True
         Path(path).write_text(json.dumps(request, indent=2) + "\n")
     return True
+
+
+def validate_staged(path):
+    request = read_request(path)
+    archive = inside(ROOT, Path(request["archive"]).relative_to(ROOT))
+    if not archive.exists():
+        return  # The fresh runtime can exceed the optional cache transport bound.
+    directory = inside(ROOT, Path(request["directory"]).relative_to(ROOT))
+    with tempfile.TemporaryDirectory(prefix=".runtime-cache-check-", dir=directory) as temporary:
+        unpack_verified(archive, Path(temporary), request)
+    print("Fresh Linux runtime archive passed cache extraction, receipt and JVM execution checks", file=sys.stderr)
 
 
 def stage(path):
@@ -157,7 +173,7 @@ def stage(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("prepare", "restore", "stage"))
+    parser.add_argument("operation", choices=("prepare", "restore", "stage", "validate-staged"))
     parser.add_argument("path", type=Path)
     for name in ("media", "autotools", "xorg-macros", "gnu-config", "pkg-config-macros", "jvm-sources", "client-sources"):
         parser.add_argument("--" + name)
@@ -170,6 +186,8 @@ def main():
         prepare(args.path, context)
     elif args.operation == "restore":
         print(json.dumps({"hit": restore(args.path)}))
+    elif args.operation == "validate-staged":
+        validate_staged(args.path)
     else:
         stage(args.path)
 

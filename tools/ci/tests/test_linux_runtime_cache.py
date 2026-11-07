@@ -107,6 +107,16 @@ class LinuxRuntimeCacheTests(unittest.TestCase):
         with patch.object(cache, "verify", side_effect=AssertionError("a cold build cannot restore")):
             self.assertFalse(cache.restore(self.path))
 
+    def test_fresh_cache_archive_is_exercised_without_replacing_build_outputs(self):
+        self.payloads()
+        cache.stage(self.path)
+        before = (self.directory / "jvm/payload/engine").read_bytes()
+        with patch.object(cache, "smoke") as smoke:
+            cache.validate_staged(self.path)
+            smoke.assert_called_once()
+        self.assertEqual((self.directory / "jvm/payload/engine").read_bytes(), before)
+        self.assertFalse(json.loads(self.path.read_text()).get("cacheHit", False))
+
     def test_cached_jvm_smoke_executes_without_service_tokens_or_ambient_java_options(self):
         payload = self.directory / "payload"
         with patch.dict(os.environ, {"ACTIONS_RUNTIME_TOKEN": "secret", "GITHUB_TOKEN": "secret",
