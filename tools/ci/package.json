@@ -8,7 +8,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "test": "node --test tests/artifact_upload.test.mjs tests/artifact_download.test.mjs"
+    "test": "node --test tests/artifact_upload.test.mjs tests/artifact_download.test.mjs tests/sdk_cache.test.mjs"
   },
   "dependencies": {}
 }

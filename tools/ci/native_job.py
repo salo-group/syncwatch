@@ -16,6 +16,8 @@ from urllib.parse import urlsplit
 import xml.etree.ElementTree as ET
 import zipfile
 
+from sdk_cache import cold_requested, inside, sdk_command
+
 
 ROOT = Path(__file__).resolve().parents[2]
 NATIVE_ARCHIVE_BOUND = json.loads((ROOT / "tools/ci/artifact-policy.json").read_text())["nativeApplicationMaximumBytes"]
@@ -24,6 +26,47 @@ NATIVE_ARCHIVE_BOUND = json.loads((ROOT / "tools/ci/artifact-policy.json").read_
 def sha256(path: Path) -> str:
     with path.open("rb") as data:
         return hashlib.file_digest(data, "sha256").hexdigest()
+
+
+def seed_dependency_cache(root, archive, request):
+    with zipfile.ZipFile(archive) as package:
+        entry = package.getinfo("build-manifest.json")
+        if entry.file_size > 1024**2:
+            raise ValueError("Dependency manifest exceeds its bound")
+        manifest = json.loads(package.read(entry))
+    canonical = lambda value: json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    if (manifest.get("result") != "success" or manifest.get("key") != request["key"]
+            or canonical(manifest.get("inputs")) != canonical(request["inputs"])):
+        print("Current-run dependency inputs differ; rebuilding with this runner", flush=True)
+        return False
+    relative = Path(request["cacheFile"]).relative_to(root)
+    if relative.parts[:2] != (".local", "dependency-cache"):
+        raise ValueError("Dependency cache must remain in its declared directory")
+    cache = inside(root, relative)
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    # The build entry point still unpacks, validates all bytes, runs verifyCommand
+    # and emits a fresh manifest for this consumer. No test result is reused.
+    with tempfile.TemporaryDirectory(dir=cache.parent) as temporary:
+        staged = Path(temporary) / "cache.zip"
+        shutil.copyfile(archive, staged)
+        staged.replace(cache)
+    return True
+
+
+def restore_current_dependency_cache(component, target, root=ROOT):
+    if os.environ.get("GITHUB_ACTIONS") != "true" or cold_requested():
+        return False
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith(("ACTIONS_", "INPUT_")) and key != "GITHUB_TOKEN"}
+    subprocess.run([sys.executable, "tools/dependencies/build.py", "prepare", "--component", component,
+                    "--platform", target], cwd=root, env=environment, check=True)
+    directory = root / "artifacts/dependencies" / component / target
+    request = json.loads((directory / "request.json").read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory(dir=directory) as temporary:
+        archive = Path(temporary) / "dependency.zip"
+        subprocess.run(["node", "tools/application/fetch_input.mjs",
+                        f"syncwatch-dependency-{component}-{target}", str(archive)], cwd=root, check=True)
+        return seed_dependency_cache(root, archive, request)
 
 
 class Report:
@@ -275,20 +318,31 @@ def main() -> int:
             versions["dotnet"] = subprocess.check_output([str(dotnet), "--version"], cwd=ROOT, text=True).strip()
             command = ["pwsh", "-NoProfile", "-File", "tools/native/check_windows.ps1", "-DotNet", str(dotnet)]
         else:
+            if os.environ.get("GITHUB_ACTIONS") == "true":
+                report.execute("Restore and verify developer SDK archives", lambda: subprocess.run(
+                    ["node", "tools/ci/sdk_cache.mjs", "--current-run", "--platform", "linux-x64",
+                     "--sdk", "jdk", "--sdk", "kotlin"],
+                    cwd=ROOT, check=True))
             report.execute("Provision exact developer JDK", lambda: subprocess.run(
-                [sys.executable, "tools/jvm/jdk.py", "--provision"], cwd=ROOT, env=environment, check=True))
+                sdk_command("jdk", "linux-x64"), cwd=ROOT, env=environment, check=True))
             sys.path.insert(0, str(ROOT / "tools/jvm"))
             from jdk import home
             versions["javac"] = subprocess.check_output([str(home() / "bin/javac"), "--version"], text=True).strip()
             report.execute("Provision exact developer Kotlin compiler", lambda: subprocess.run(
-                [sys.executable, "tools/jvm/kotlin.py", "--provision"], cwd=ROOT, env=environment, check=True))
+                sdk_command("kotlin", "linux-x64"), cwd=ROOT, env=environment, check=True))
             versions["kotlin"] = json.loads((ROOT / "tools/jvm/kotlin_toolchain.json").read_text())["version"]
+            report.execute("Reuse this run's verified Kotlin dependency", lambda:
+                           restore_current_dependency_cache("kotlin-stdlib", "linux-x64"))
             report.execute("Build and verify owned Kotlin runtime and shared domain", lambda: subprocess.run(
                 [sys.executable, "tools/dependencies/build.py", "build", "--component", "kotlin-stdlib", "--platform", "linux-x64"],
                 cwd=ROOT, env=environment, check=True))
             command = [sys.executable, "tools/native/check_linux.py"]
         stage = "Linux Kotlin domain and JVM boundary checks" if args.target == "linux" else "Native formatting, domain tests, and application build"
         report.execute(stage, lambda: subprocess.run(command, cwd=ROOT, env=environment, check=True))
+        if args.target == "windows" and os.environ.get("GITHUB_ACTIONS") == "true":
+            report.execute("Restore and verify native media developer archives", lambda: subprocess.run(
+                ["node", "tools/ci/sdk_cache.mjs", "--current-run", "--platform", "windows-x64", "--sdk", "windows-vlc"],
+                cwd=ROOT, check=True))
         package = [sys.executable, "tools/application/ci.py", "--target",
                    {"macos": "macos-arm64", "windows": "windows-x64", "linux": "linux-x64"}[args.target]]
         if dotnet:

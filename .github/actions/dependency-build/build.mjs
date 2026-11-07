@@ -3,6 +3,7 @@ import {access, appendFile, readFile} from 'node:fs/promises';
 import {delimiter, dirname, resolve} from 'node:path';
 import {restoreCache} from '../../../tools/dependencies/cache.mjs';
 import {main as upload} from '../../../tools/ci/artifact_upload.mjs';
+import {warmSdkArchives, publishSdkArchives} from '../../../tools/ci/sdk_cache.mjs';
 
 async function main() {
     const component = process.env.INPUT_COMPONENT;
@@ -33,8 +34,13 @@ async function main() {
     const registry = JSON.parse(await readFile(resolve(root, 'tools/dependencies/components.json'), 'utf8'));
     const target = registry.components[component]?.targets[platform];
     if (!target) throw new Error('Unregistered dependency target');
+    const sdks = ['jdk', 'kotlin'].filter(sdk => Object.hasOwn(target.toolchains, sdk));
+    if (component === 'libvlc' && platform === 'windows-x64') sdks.push('windows-vlc');
+    const sdkSelection = sdks.length ? await warmSdkArchives({
+        root, platform, sdks, cold, token: process.env['INPUT_CACHE-TOKEN'],
+    }) : null;
     for (const sdk of ['jdk', 'kotlin']) {
-        if (Object.hasOwn(target.toolchains, sdk) && !runCommand([python, `tools/jvm/${sdk}.py`, '--provision'])) {
+        if (Object.hasOwn(target.toolchains, sdk) && !runCommand([python, ...sdkSelection.commands[sdk]])) {
             throw new Error(`Pinned developer ${sdk} provisioning failed`);
         }
     }
@@ -95,6 +101,7 @@ async function main() {
         process.env.INPUT_NAME = `syncwatch-dependency-cache-${prepared.key}`;
         await upload();
     }
+    if (sdkSelection && !process.exitCode) await publishSdkArchives(sdkSelection, {root, component, platform, trusted});
     if (process.env.GITHUB_STEP_SUMMARY) {
         await appendFile(process.env.GITHUB_STEP_SUMMARY, `\nVerified dependency: ${component} / ${platform}\n\nInput key: \`${prepared.key}\`\n\nCold requested: ${cold}\n`);
     }

@@ -82,6 +82,10 @@
           "run": "node --test tools/ci/tests/artifact_upload.test.mjs tools/ci/tests/artifact_download.test.mjs"
         },
         {
+          "name": "Developer SDK cache regression tests",
+          "run": "node --test tools/ci/tests/sdk_cache.test.mjs"
+        },
+        {
           "name": "Dependency infrastructure tests",
           "run": "python3 -m unittest discover -s tools/dependencies/tests -v\nnode --test tools/dependencies/tests/cache.test.mjs"
         },
