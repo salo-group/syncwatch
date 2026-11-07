@@ -74,10 +74,11 @@ Change only SyncWatch-owned code during application development.
 Do not edit dependency sources or apply local patches under `3rdparty/`.
 Do not bypass this rule through modified copies, build snapshots or generated source rewrites.
 Use public dependency APIs and supported settings from first-party adapters and build configuration.
-Preserve current submodule pins, dependency membership and `.gitmodules`.
-Changes to these inputs require an explicit owner instruction.
+New dependencies may be added as pinned Git submodules under `3rdparty/`.
+Record exact upstream revisions, the complete source graph and required notices.
+Keep each dependency's code identical to its selected upstream revision.
 
-Before each commit, verify that dependency sources and gitlinks remain unchanged.
+Before each commit, verify dependency source integrity and intentional gitlink/declaration changes.
 Record unsupported capabilities as limitations instead of patching a dependency.
 Source correspondence, security and license requirements still apply.
 
@@ -95,8 +96,7 @@ Before building a component:
 
 1. Resolve its complete runtime and build dependency graph for the selected configuration.
 2. Record upstream URLs, exact revisions, licenses, and scope.
-3. Verify the corresponding source submodules and configure builds to use local sources.
-   If a source is missing, obtain an explicit owner instruction before changing dependency declarations.
+3. Add the corresponding pinned source submodules and configure builds to use unmodified local sources.
 4. Associate distributed binaries with their source revisions, build flags, toolchain, and SHA-256 digests.
 5. Disable implicit dependency downloads and verify the notices for the resulting binary module set.
 
