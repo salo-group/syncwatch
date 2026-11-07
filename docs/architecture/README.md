@@ -20,6 +20,13 @@ SyncWatch is a native desktop product for synchronized local movie viewing and v
 
 The Windows SDK selection is pinned in [global.json](../../global.json) and the [toolchain manifest](../../tools/native/toolchains.json). See the [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core). Additional Apple platforms require explicit decisions about process hosting, video surfaces, and call windows; macOS support does not imply iOS or tvOS support.
 
+## Security and performance
+
+Every feature must satisfy the [security and performance requirements](quality-attributes.md) on all three native targets.
+Use secure defaults, least privilege, bounded resource ownership and measured performance budgets.
+Retain baseline comparisons, negative security checks and cleanup evidence for affected scenarios.
+Open quality checks remain delivery requirements.
+
 ## Component topology
 
 ```mermaid

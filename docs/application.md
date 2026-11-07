@@ -2,6 +2,10 @@
 
 This guide describes the intended SyncWatch interface on macOS, Windows, and Linux, using the [shared component contracts](../packages/design/components.json). Library, local playback, shared watch, account/room flows, and Meet provisioning have native implementations. Complete functional qualification remains open. The required owned Meet host is unimplemented; see [native playback](playback.md) and [Meet integration](architecture/google-meet.md).
 
+Security and performance are mandatory acceptance criteria on every supported platform.
+Follow the [security and performance requirements](architecture/quality-attributes.md) for each feature and optimization.
+Record measured results and unresolved checks before claiming readiness.
+
 ## Library and watch session
 
 The main window has a header, a text-focused movie-library column, a selected-movie panel, room status, and recent activity. Layout, dimensions, dark/light appearance, and control composition come from the common design library.
