@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "purpose": "isolated first-party call-host experiment; not an adopted application runtime",
+  "productionQualified": false,
+  "version": "156.0.26+g8ea0c73+chromium-156.0.8078.88",
+  "apiVersion": 15600,
+  "sourceRoots": {
+    "cef": {
+      "path": "3rdparty/cef",
+      "url": "https://github.com/chromiumembedded/cef.git",
+      "revision": "8ea0c73b5dbed1389c8dafb911a98c41246bb8cb",
+      "notices": [
+        "LICENSE.txt"
+      ]
+    },
+    "chromium": {
+      "path": "3rdparty/chromium",
+      "url": "https://chromium.googlesource.com/chromium/src.git",
+      "revision": "8954d18543712dc11b97c3aca0a6e714aa2d7dcd",
+      "notices": [
+        "LICENSE"
+      ]
+    },
+    "wtl": {
+      "path": "3rdparty/wtl",
+      "url": "https://git.code.sf.net/p/wtl/git",
+      "revision": "52b76041c7016ac92ab6d7bb8657deb9326a522f",
+      "notices": [
+        "Notes/MS-PL.txt"
+      ]
+    }
+  },
+  "assets": {
+    "macos-arm64": {
+      "url": "https://cef-builds.spotifycdn.com/cef_binary_156.0.26+g8ea0c73+chromium-156.0.8078.88_macosarm64_minimal.tar.bz2",
+      "compressedBytes": 134979837,
+      "sha256": "6d7936cdd55ef30cf351a6358b2d922becefe87b25a8a8870a2b9ff5af2d39f6",
+      "publisherSha1": "ca4fafe7a9c52d9f28200bb8713971a9662b891c",
+      "expandedBytes": 353085527
+    },
+    "windows-x64": {
+      "url": "https://cef-builds.spotifycdn.com/cef_binary_156.0.26+g8ea0c73+chromium-156.0.8078.88_windows64_minimal.tar.bz2",
+      "compressedBytes": 175046254,
+      "sha256": "2b0aa070793a6bb858b737f5edf9cb01a3ef7b9adcad5efe1e08affaf250f809",
+      "publisherSha1": "15d29eea209d857c22dc163706080295aea69b5c",
+      "expandedBytes": 444676468
+    },
+    "linux-x64": {
+      "url": "https://cef-builds.spotifycdn.com/cef_binary_156.0.26+g8ea0c73+chromium-156.0.8078.88_linux64_minimal.tar.bz2",
+      "compressedBytes": 333351579,
+      "sha256": "600ac0b8f37cb953f884e7c89998a6c200d24959aa74820ad431b61d5ebcf360",
+      "publisherSha1": "cacfbb7d7261fea682fb67c108de7e4347519ff7",
+      "expandedBytes": 1597614644
+    }
+  },
+  "disabledFeatures": [
+    "ScreenAIOCREnabled",
+    "ScreenAIMainContentExtractionEnabled",
+    "MainNodeAnnotations"
+  ],
+  "componentUpdates": "enabled",
+  "initialNavigation": "about:blank",
+  "capturePermissions": "denied",
+  "designSource": "packages/design/tokens/geometry.json",
+  "designWidthToken": "callInitialWidth",
+  "designHeightToken": "callInitialHeight",
+  "unqualified": [
+    "complete enabled runtime source graph",
+    "archive-bound compiler and build flags",
+    "runtime sandbox and cleanup",
+    "certificate-data and component behavior",
+    "Google organizer and guest behavior",
+    "independent output and physical media"
+  ]
+}

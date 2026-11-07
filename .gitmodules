@@ -436,3 +436,12 @@
 [submodule "3rdparty/jvm-libxinerama"]
 	path = 3rdparty/jvm-libxinerama
 	url = https://gitlab.freedesktop.org/xorg/lib/libxinerama.git
+[submodule "cef"]
+	path = 3rdparty/cef
+	url = https://github.com/chromiumembedded/cef.git
+[submodule "chromium"]
+	path = 3rdparty/chromium
+	url = https://chromium.googlesource.com/chromium/src.git
+[submodule "wtl"]
+	path = 3rdparty/wtl
+	url = https://git.code.sf.net/p/wtl/git
