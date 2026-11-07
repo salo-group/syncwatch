@@ -41,6 +41,7 @@ FRAMEWORK_INPUTS = ("tools/dependencies", "tools/ci/artifact_upload.mjs", "tools
                     "tools/ci/artifact_policy.mjs", "tools/ci/artifact-policy.json",
                     ".github/actions/dependency-build", ".github/workflows")
 MAXIMUM_ARCHIVE = 256 * 1024**2
+MAXIMUM_DOCUMENTATION_PATHS = 512
 
 
 def require(condition, message):
@@ -649,6 +650,44 @@ def build(root, name, target, cold=False):
     return manifest
 
 
+def documentation_change(root, base, kind, changes, cold, components):
+    eligible_event = kind == "pull_request" or (kind == "push" and os.environ.get("GITHUB_REF") == "refs/heads/main")
+    if cold or not eligible_event or not isinstance(changes, list) or not 0 < len(changes) <= MAXIMUM_DOCUMENTATION_PATHS:
+        return False
+    for path in changes:
+        try:
+            member(path)
+        except ValueError:
+            return False
+        if any(character in path for character in '<>"|'):
+            return False
+        if path != "README.md" and not (path.startswith("docs/") and path.endswith(".md")):
+            return False
+        for component in components.values():
+            if component["status"] != "ready":
+                continue
+            declared = [*component["watch"], *component["inputs"], *component.get("verificationInputs", []), *component["sources"]]
+            if any(path.casefold() == prefix.casefold() or path.casefold().startswith(prefix.casefold() + "/") for prefix in declared):
+                return False
+    seen = set()
+    try:
+        for revision in (base, "HEAD"):
+            entries = git(root, "ls-tree", "-r", "-z", revision, "--", *(":(literal)" + path for path in changes))
+            for entry in entries.decode().split("\0"):
+                if not entry:
+                    continue
+                metadata, path = entry.split("\t", 1)
+                mode, object_kind, _identity = metadata.split(" ")
+                if mode != "100644" or object_kind != "blob":
+                    return False
+                seen.add(path)
+    except (subprocess.CalledProcessError, OSError, UnicodeError, ValueError):
+        return False
+    if seen != set(changes):
+        return False
+    return True
+
+
 def plan(root):
     components = registry(root)
     event = read_json(Path(os.environ["GITHUB_EVENT_PATH"])) if os.environ.get("GITHUB_EVENT_PATH") else {}
@@ -656,21 +695,30 @@ def plan(root):
     cold = kind == "schedule" or event.get("inputs", {}).get("cold") in {True, "true"}
     base = event.get("pull_request", {}).get("base", {}).get("sha") or event.get("before")
     changes = None
-    if base and re.fullmatch(r"[0-9a-f]{40}", base) and set(base) != {"0"}:
+    if isinstance(base, str) and re.fullmatch(r"[0-9a-f]{40}", base) and set(base) != {"0"}:
         try:
             changes = git(root, "diff", "--no-renames", "--name-only", "-z", base, "HEAD").decode().strip("\0").split("\0")
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, UnicodeError):
             # An unavailable comparison selects every ready component; it never skips work.
             pass
     matrix, unavailable = selected(components, changes, cold)
-    result = {"matrix": matrix, "unavailable": unavailable, "cold": cold}
+    mode = "documentation" if documentation_change(root, base, kind, changes, cold, components) else "full"
+    if mode == "documentation":
+        baseline = components.get("fastjsonschema", {})
+        require(baseline.get("status") == "ready" and baseline.get("always") is True,
+                "Documentation validation requires the ready validator baseline")
+        matrix["include"] = [entry for entry in matrix["include"] if entry["component"] == "fastjsonschema"]
+        require(bool(matrix["include"]), "Documentation validation cannot omit the validator baseline")
+    result = {"matrix": matrix, "unavailable": unavailable, "cold": cold, "mode": mode}
     print(json.dumps(result, indent=2))
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
             output.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
+            output.write("mode=" + mode + "\n")
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
             summary.write("## Dependency build selection\n\n")
+            summary.write(f"Validation mode: {mode}. Native packages are {'selected' if mode == 'full' else 'not selected'}.\n\n")
             for item in matrix["include"]:
                 summary.write(f"- Selected: {item['component']} / {item['platform']}; cold={cold}\n")
             for name, reason in unavailable.items():

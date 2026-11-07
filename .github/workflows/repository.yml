@@ -227,8 +227,10 @@
         }
       ],
       "needs": [
-        "dependencies"
-      ]
+        "dependencies",
+        "dependency-plan"
+      ],
+      "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
     },
     "windows": {
       "name": "Native Windows x64",
@@ -307,8 +309,10 @@
         }
       ],
       "needs": [
-        "dependencies"
-      ]
+        "dependencies",
+        "dependency-plan"
+      ],
+      "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
     },
     "required": {
       "name": "ci/required",
@@ -349,7 +353,8 @@
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 10,
       "outputs": {
-        "matrix": "${{ steps.plan.outputs.matrix }}"
+        "matrix": "${{ steps.plan.outputs.matrix }}",
+        "mode": "${{ steps.plan.outputs.mode }}"
       },
       "steps": [
         {
@@ -389,9 +394,10 @@
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 5,
       "needs": [
-        "windows"
+        "windows",
+        "dependency-plan"
       ],
-      "if": "${{ always() }}",
+      "if": "${{ always() && needs.dependency-plan.outputs.mode == 'full' }}",
       "steps": [
         {
           "name": "Check out the exact workflow revision",
@@ -406,7 +412,7 @@
           "env": {
             "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
           },
-          "run": "python3 tools/ci/required_status.py windows"
+          "run": "python3 tools/ci/required_status.py windows dependency-plan"
         }
       ]
     },
@@ -443,8 +449,10 @@
         }
       ],
       "needs": [
-        "dependencies"
-      ]
+        "dependencies",
+        "dependency-plan"
+      ],
+      "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
     }
   }
 }

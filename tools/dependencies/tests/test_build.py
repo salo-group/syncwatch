@@ -104,6 +104,141 @@ class DependencyBuildTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             return build.prepare(self.root, "example", TARGET)
 
+    def plan_cli(self, event, kind="pull_request", ref=""):
+        metadata = self.root / "artifacts/planning"
+        metadata.mkdir(parents=True, exist_ok=True)
+        event_path = metadata / "event.json"
+        event_path.write_text(json.dumps(event), encoding="utf-8")
+        environment = dict(os.environ, GITHUB_EVENT_NAME=kind, GITHUB_EVENT_PATH=str(event_path), GITHUB_REF=ref,
+                           GITHUB_OUTPUT=str(metadata / "outputs"), GITHUB_STEP_SUMMARY=str(metadata / "summary"))
+        return subprocess.run([sys.executable, "tools/dependencies/build.py", "plan"], cwd=self.root,
+                              env=environment, capture_output=True, text=True)
+
+    def test_plan_uses_full_validation_for_code_assets_and_mixed_changes(self):
+        self.manifest["components"]["fastjsonschema"] = copy.deepcopy(self.component)
+        self.write_manifest()
+        self.commit(self.root)
+        for name, mode in (("README.md", "documentation"), ("docs/guide.md", "documentation"),
+                           ("docs/image.svg", "full"), ("apps/macos/Main.swift", "full"),
+                           ("apps/windows/Main.cs", "full"), ("apps/linux/Main.kt", "full"),
+                           ("contracts/example.json", "full"), ("packages/design/example.json", "full"),
+                           ("tools/ci/example.py", "full"), (".github/workflows/example.yml", "full")):
+            with self.subTest(path=name):
+                base = build.git(self.root, "rev-parse", "HEAD").decode().strip()
+                path = self.root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("Fixture change\n", encoding="utf-8")
+                if mode == "full":
+                    (self.root / "docs/guide.md").write_text(name + "\n", encoding="utf-8")
+                self.commit(self.root)
+                result = self.plan_cli({"pull_request": {"base": {"sha": base}}})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report["mode"], mode)
+                expected = {"fastjsonschema"} if mode == "documentation" else {"example", "fastjsonschema"}
+                self.assertEqual({entry["component"] for entry in report["matrix"]["include"]}, expected)
+
+    def test_plan_cannot_skip_native_validation_for_unknown_history_or_forced_events(self):
+        self.manifest["components"]["fastjsonschema"] = copy.deepcopy(self.component)
+        self.write_manifest()
+        self.commit(self.root)
+        base = build.git(self.root, "rev-parse", "HEAD").decode().strip()
+        (self.root / "docs").mkdir()
+        (self.root / "docs/guide.md").write_text("# Guide\n", encoding="utf-8")
+        self.commit(self.root)
+        head = build.git(self.root, "rev-parse", "HEAD").decode().strip()
+        for kind, comparison, inputs, ref, expected in (
+            ("push", base, {}, "refs/heads/main", "documentation"),
+            ("push", base, {}, "refs/heads/topic", "full"),
+            ("workflow_dispatch", base, {"cold": False}, "", "full"),
+            ("workflow_dispatch", base, {"cold": True}, "", "full"),
+            ("schedule", base, {}, "", "full"), ("merge_group", base, {}, "", "full"),
+            ("pull_request", "f" * 40, {}, "", "full"), ("pull_request", "0" * 40, {}, "", "full"),
+            ("pull_request", 42, {}, "", "full"), ("pull_request", None, {}, "", "full"),
+            ("pull_request", head, {}, "", "full"),
+        ):
+            with self.subTest(kind=kind, comparison=comparison, inputs=inputs, ref=ref):
+                result = self.plan_cli({"before": comparison, "inputs": inputs}, kind, ref)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report["mode"], expected)
+                self.assertEqual({entry["component"] for entry in report["matrix"]["include"]},
+                                 {"fastjsonschema"} if expected == "documentation" else {"example", "fastjsonschema"})
+
+    def test_documentation_plan_keeps_only_the_verified_validator_baseline(self):
+        self.manifest["components"]["fastjsonschema"] = copy.deepcopy(self.component)
+        self.write_manifest()
+        self.commit(self.root)
+        base = build.git(self.root, "rev-parse", "HEAD").decode().strip()
+        (self.root / "docs").mkdir()
+        (self.root / "docs/application.md").write_text("# Application\n", encoding="utf-8")
+        self.commit(self.root)
+        event = self.root / "event.json"
+        event.write_text(json.dumps({"pull_request": {"base": {"sha": base}}}), encoding="utf-8")
+        environment = dict(os.environ, GITHUB_EVENT_NAME="pull_request", GITHUB_EVENT_PATH=str(event),
+                           GITHUB_OUTPUT=str(self.root / "outputs"), GITHUB_STEP_SUMMARY=str(self.root / "summary"))
+        result = subprocess.run([sys.executable, "tools/dependencies/build.py", "plan"], cwd=self.root,
+                                env=environment, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["mode"], "documentation")
+        self.assertEqual(report["matrix"], {"include": [{"component": "fastjsonschema", "platform": TARGET, "cold": False}]})
+        self.assertIn("mode=documentation\n", (self.root / "outputs").read_text())
+
+    def test_markdown_declared_as_a_component_input_requires_full_validation(self):
+        self.manifest["components"]["fastjsonschema"] = copy.deepcopy(self.component)
+        self.component["watch"] = ["docs/application.md"]
+        self.write_manifest()
+        self.commit(self.root)
+        base = build.git(self.root, "rev-parse", "HEAD").decode().strip()
+        (self.root / "docs").mkdir()
+        (self.root / "docs/application.md").write_text("# Input consumed by a component\n", encoding="utf-8")
+        self.commit(self.root)
+        event = self.root / "event.json"
+        event.write_text(json.dumps({"pull_request": {"base": {"sha": base}}}), encoding="utf-8")
+        environment = dict(os.environ, GITHUB_EVENT_NAME="pull_request", GITHUB_EVENT_PATH=str(event),
+                           GITHUB_OUTPUT=str(self.root / "outputs"), GITHUB_STEP_SUMMARY=str(self.root / "summary"))
+        result = subprocess.run([sys.executable, "tools/dependencies/build.py", "plan"], cwd=self.root,
+                                env=environment, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["mode"], "full")
+
+    def test_markdown_symlink_requires_full_validation_without_host_symlink_privileges(self):
+        self.manifest["components"]["fastjsonschema"] = copy.deepcopy(self.component)
+        self.write_manifest()
+        self.commit(self.root)
+        base = build.git(self.root, "rev-parse", "HEAD").decode().strip()
+        blob = subprocess.run(["git", "hash-object", "-w", "--stdin"], cwd=self.root, input="../recipe.py",
+                              capture_output=True, text=True, check=True).stdout.strip()
+        subprocess.run(["git", "update-index", "--add", "--cacheinfo", "120000", blob, "docs/link.md"], cwd=self.root, check=True)
+        subprocess.run(["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "Fixture link"], cwd=self.root, check=True)
+        event = self.root / "event.json"
+        event.write_text(json.dumps({"pull_request": {"base": {"sha": base}}}), encoding="utf-8")
+        result = subprocess.run([sys.executable, "tools/dependencies/build.py", "plan"], cwd=self.root,
+                                env=dict(os.environ, GITHUB_EVENT_NAME="pull_request", GITHUB_EVENT_PATH=str(event)),
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["mode"], "full")
+
+    def test_nonportable_markdown_names_require_full_validation(self):
+        self.manifest["components"]["fastjsonschema"] = copy.deepcopy(self.component)
+        self.write_manifest()
+        self.commit(self.root)
+        blob = subprocess.run(["git", "hash-object", "-w", "--stdin"], cwd=self.root, input="# Guide\n",
+                              capture_output=True, text=True, check=True).stdout.strip()
+        # Index-only malformed fixtures never materialize these names on the host.
+        for name in ("docs/CON.md", "docs/guide:extra.md", "docs/guide\t.md", "docs/guide|.md", 'docs/guide".md',
+                     "docs/<guide>.md", "docs/aux/file.md", "docs/trailing./guide.md"):
+            with self.subTest(name=name):
+                base = build.git(self.root, "rev-parse", "HEAD").decode().strip()
+                subprocess.run(["git", "-c", "core.protectNTFS=false", "update-index", "--add", "--cacheinfo", "100644", blob, name],
+                               cwd=self.root, check=True)
+                subprocess.run(["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "Malformed name fixture"],
+                               cwd=self.root, check=True)
+                result = self.plan_cli({"pull_request": {"base": {"sha": base}}})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(json.loads(result.stdout)["mode"], "full")
+
     def test_sparse_index_materialization_is_separate_from_exact_source_exports(self):
         source = self.root / "3rdparty/example"
         for directory in ("client", "server"):

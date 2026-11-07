@@ -1,0 +1,40 @@
+# Continuous integration
+
+Repository CI always produces the `ci/required` aggregate result.
+Repository validation, regression tests, shared contracts and dependency planning run on every event.
+The dependency planner selects an explicit validation mode from the verified Git comparison.
+
+## Validation modes
+
+| Mode | Eligible changes | Dependency builds | Native checks |
+| --- | --- | --- | --- |
+| Documentation | Only regular `README.md` or Markdown files below `docs/`, with no declared component input changed | Verified fastjsonschema baseline on all three target runners | Not selected; reported as skipped |
+| Full | Any other change, mixed changes, unavailable history or empty comparison | The complete selected component matrix | Swift/macOS, C#/Windows, Kotlin/Linux and the Windows service result |
+
+Documentation mode applies only to pull requests and known `main` push comparisons.
+Manual, scheduled and merge-group runs use full validation.
+Cold runs always use full validation.
+Symlinks, executable files, invalid paths and comparisons exceeding 512 paths also require full validation.
+Declared component inputs, verification inputs, source paths and watched paths override the Markdown allowance.
+
+## Required results
+
+The aggregate validates the actual job results and the successful planner's mode output.
+In documentation mode, only macOS, Windows, Linux and metadata jobs may be skipped.
+Repository checks, tests, contracts, planning and baseline dependency builds must succeed.
+Failed, cancelled, missing and unexpected results cannot satisfy the aggregate.
+Missing or invalid selection metadata fails validation.
+Full validation requires every selected job to succeed.
+
+The workflow uses job conditions without workflow-level path filters.
+The aggregate runs after failed or skipped prerequisites to inspect their actual results.
+This preserves a stable required check for every comparison.
+See [job dependencies](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-jobs)
+and [job conditions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idif).
+
+## Acceptance boundaries
+
+A documentation result does not qualify a native package, playback or a call.
+Full native CI remains separate from real desktop, hardware and provider acceptance.
+Application behavior still requires its applicable three-platform and six-direction checks.
+Read-only permissions, source verification, cache isolation and bounded job timeouts apply in both modes.
