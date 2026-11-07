@@ -66,7 +66,7 @@ def plan(root, platform, sdks):
         records = []
         for name, item in entries:
             url = urllib.parse.urlsplit(item["url"])
-            if (not re.fullmatch(r"[A-Za-z0-9_.+-]+", name) or name in {".", ".."}
+            if (not re.fullmatch(r"[A-Za-z0-9_.+~-]+", name) or name in {".", ".."}
                     or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])
                     or url.scheme != "https" or not url.hostname or url.username or url.password):
                 raise ValueError("SDK archives require safe names, HTTPS and exact digests")

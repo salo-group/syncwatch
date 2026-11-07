@@ -49,6 +49,16 @@ class SdkCacheTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.plan("jdk", target="unknown")
 
+    def test_pinned_windows_epoch_versions_keep_their_literal_archive_names(self):
+        name = "mingw-w64-ucrt-x86_64-pkgconf-1~3.0.10-1-any.pkg.tar.zst"
+        self.write("tools/vlc/windows-sdk.json", {"base": self.item, "archives": {name: self.item}})
+        selection = self.plan("windows-vlc", target="windows-x64")
+        entry = next(entry for group in selection["groups"] for entry in group["entries"] if entry["name"] == name)
+        self.assertEqual(entry["destination"], ".local/vlc-sdk/windows/packages/" + name)
+        # The real reviewed inventory must also pass the same filename boundary.
+        repository = Path(__file__).resolve().parents[3]
+        sdk_cache.plan(repository, "windows-x64", ["windows-vlc"])
+
     def test_restored_archives_supply_exact_vendor_bytes_without_network(self):
         plan = self.plan("jdk")
         self.materialize(plan)
