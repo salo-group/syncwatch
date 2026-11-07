@@ -57,4 +57,17 @@ VLC configuration derivatives have explicit source correspondence and dated noti
 
 The GNU iconv mirror's pinned MSVC patch is reversed only in an isolated source tree. Every restored file must match the complete original GNU release inventory. The libraries and public headers are built; the GPL command-line program is not packaged. macOS selects VLC's original pipe/dup fallbacks for its deployment floor. VLC uses C11 explicitly, and its Windows configure step sees the Windows 10 API baseline so that its synchronization import-library check matches the compiler headers.
 
-The FFmpeg Matroska derivative retains `CueDuration` and `CueRelativePosition` and restores indexed subtitle blocks that overlap a seek but precede its A/V cluster. It validates the referenced cluster, block boundaries, actual track and packet timing, rejects duplicate block positions, and bounds preroll to 64 attempts, 256 KiB per block and 4 MiB per seek. Invalid or incomplete optional cues are skipped; normal A/V seeking retains its original position. Allocation or resume-position failures propagate. Original FFmpeg bytes remain in the source archive; the modified demuxer and original grants accompany the package in `sources/configured/ffmpeg/`. The embedded ASS pixel check selects the track after playback has advanced, so an already active cue must actually render.
+The FFmpeg Matroska derivative retains `CueDuration` and `CueRelativePosition`.
+It restores indexed subtitle blocks that overlap a seek but precede its A/V cluster.
+It validates clusters, block boundaries, actual tracks and packet timing, and rejects duplicate block positions.
+Preroll allows at most 64 attempts and 256 KiB per encoded block.
+Encoded reads and retained decoded packets each have a separate 4 MiB limit per seek.
+The packet budget includes buffer allocations, packet descriptors and side data.
+Optional decompression checks the remaining budget before allocation. Laced packets share that budget, and growth buffers shrink before packet ownership transfers.
+Ordinary playback keeps the original decompression behavior.
+Invalid, incomplete or oversized optional cues are skipped. Normal A/V seeking retains its original position.
+Allocation or resume-position failures propagate.
+Original FFmpeg bytes remain in the source archive.
+The modified demuxer and original grants accompany the package in `sources/configured/ffmpeg/`.
+Native seek checks include small compressed cues, oversized cues and cumulative packet limits.
+The embedded ASS pixel check selects the track after playback advances, so an active cue must render.
