@@ -25,6 +25,37 @@ struct RoomWatchContext: Sendable {
         minimumSequence = admission.bootstrap.snapshot.sequence
     }
 
+    func invitation() async throws -> RoomInvitation { try await client.invite(admission) }
+    func pendingAdmissions() async throws -> [RoomAdmissionRequest] { try await client.pending(admission) }
+    func decideAdmission(_ id: String, approve: Bool) async throws {
+        try await client.decide(admission, approvalID: id, approve: approve)
+    }
+    func syncTicket() async throws -> RoomSyncTicket { try await client.syncTicket(admission) }
+    // Calls have their own aggregate and do not acquire the ordered catalog/watch lock.
+    func callStatus() async throws -> RoomCallStatus { try await client.callStatus(admission) }
+    func callStartOperation() async throws -> RoomCallOperation { try await client.callStartOperation(admission) }
+    func callEndOperation(_ status: RoomCallStatus) async throws -> RoomCallOperation {
+        try await client.callEndOperation(admission, status: status)
+    }
+    func requestCall(_ operation: RoomCallOperation) async throws -> RoomCallStatus {
+        try await client.requestCall(operation, admission: admission)
+    }
+    func beginMeetAuthorization() async throws -> RoomMeetAuthorization {
+        try await client.beginMeetAuthorization(admission)
+    }
+    func meetAuthorizationStatus(_ flow: RoomMeetAuthorization) async throws -> RoomMeetAuthorizationStatus {
+        try await client.meetAuthorizationStatus(flow, admission: admission)
+    }
+    func verifyMeetAuthorization(_ flow: RoomMeetAuthorization, code: String) async throws
+        -> RoomMeetAuthorizationStatus
+    { try await client.verifyMeetAuthorization(flow, admission: admission, code: code) }
+    func confirmMeetAuthorization(_ flow: RoomMeetAuthorization, code: String) async throws
+        -> RoomMeetAuthorizationStatus
+    { try await client.confirmMeetAuthorization(flow, admission: admission, code: code) }
+    func cancelMeetAuthorization(_ flow: RoomMeetAuthorization) async throws -> RoomMeetAuthorizationStatus {
+        try await client.cancelMeetAuthorization(flow, admission: admission)
+    }
+
     func refresh(initial: RoomBootstrap? = nil, sequence: UInt64 = 0) async throws -> RoomCatalogView {
         try await enter()
         defer { leave() }

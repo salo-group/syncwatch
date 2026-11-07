@@ -64,19 +64,28 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dotnet")
     parser.add_argument("--provision", action="store_true")
+    parser.add_argument("--admission-runtime", required=True, type=Path)
     args = parser.parse_args()
     spec = json.loads((ROOT / "tools/server/toolchains.json").read_text())
     if spec["sdkVersion"] != json.loads((ROOT / "global.json").read_text())["sdk"]["version"]:
         raise ValueError("Server SDK must match global.json")
-    targets = {("Darwin", "arm64"): "osx-arm64", ("Linux", "x86_64"): "linux-x64", ("Windows", "AMD64"): "win-x64"}
-    target = targets.get((platform.system(), platform.machine()))
-    if target is None:
-        raise ValueError("Unsupported server validation platform")
+    if (platform.system(), platform.machine()) != ("Windows", "AMD64"):
+        raise ValueError("C# service validation requires Windows x64")
+    target = "win-x64"
+    runtime = args.admission_runtime.resolve()
+    if not (runtime / "bin/syncwatch-helper.exe").is_file():
+        raise ValueError("Supply the matching owned admission helper package")
     environment = os.environ | {
         "DOTNET_CLI_TELEMETRY_OPTOUT": "1", "DOTNET_NOLOGO": "1", "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
         "DOTNET_GENERATE_ASPNET_CERTIFICATE": "false", "DOTNET_CLI_WORKLOAD_UPDATE_NOTIFY_DISABLE": "true",
         "SYNCWATCH_CONTRACT_FIXTURES": str(ROOT / "contracts/fixtures/acceptance.json"),
+        "SYNCWATCH_ADMISSION_RUNTIME": str(runtime),
+        "MSBUILDDISABLENODEREUSE": "1", "DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER": "1",
     }
+    for name in ("SYNCWATCH_GOOGLE_CLIENT_FILE", "SYNCWATCH_PUBLIC_ORIGIN", "SYNCWATCH_ACCOUNT_DIRECTORY",
+                 "SYNCWATCH_SYNCPLAY_SERVER_RUNTIME", "SYNCWATCH_SYNCPLAY_TLS_DIRECTORY", "SYNCWATCH_SYNCPLAY_BIND_ADDRESS",
+                 "SYNCWATCH_SYNCPLAY_PUBLIC_HOST", "SYNCWATCH_SYNCPLAY_PORT", "SYNCWATCH_CREATE_KEY"):
+        environment.pop(name, None)
     executable = args.dotnet or shutil.which("dotnet")
     installed_version = None
     if executable is not None:
@@ -94,14 +103,20 @@ def main():
     output.parent.mkdir(parents=True, exist_ok=True)
     output.unlink(missing_ok=True)
     environment["SYNCWATCH_ROOM_CONTRACT_OUTPUT"] = str(output)
+    authority_output = output.with_name("observed-account-room-contracts.json")
+    authority_output.unlink(missing_ok=True)
+    environment["SYNCWATCH_ROOM_ACCESS_CONTRACT_OUTPUT"] = str(authority_output)
     solution = "services/room-metadata/RoomMetadata.slnx"
-    for command in (
-        ["restore", solution, "--configfile", "NuGet.Config"],
-        ["format", solution, "--no-restore", "--verify-no-changes"],
-        ["build", solution, "--no-restore", "--configuration", "Debug"],
-        ["run", "--project", "services/room-metadata/RoomMetadata.Tests", "--no-restore", "--no-build", "--configuration", "Debug"],
-    ):
-        subprocess.run([executable, *command], cwd=ROOT, env=environment, check=True)
+    try:
+        for command in (
+            ["restore", solution, "--configfile", "NuGet.Config"],
+            ["format", solution, "--no-restore", "--verify-no-changes"],
+            ["build", solution, "--no-restore", "--configuration", "Debug", "--disable-build-servers", "-p:UseSharedCompilation=false"],
+            ["run", "--project", "services/room-metadata/RoomMetadata.Tests", "--no-restore", "--no-build", "--configuration", "Debug"],
+        ):
+            subprocess.run([executable, *command], cwd=ROOT, env=environment, check=True, timeout=180)
+    finally:
+        subprocess.run([executable, "build-server", "shutdown"], cwd=ROOT, env=environment, check=True, timeout=30)
     sys.path.insert(0, str(ROOT / "tools/contracts"))
     from check_contracts import Context, Registry
     registry = Registry(ROOT)
@@ -127,7 +142,13 @@ def main():
                 members.pop(value["memberId"])
             contexts[value["roomEpoch"]] = Context(roomEpoch=value["roomEpoch"], sequence=value["sequence"],
                 watchGeneration=value["watchGeneration"], members=members)
+    access = json.loads(authority_output.read_text())
+    if not access or {value["schema"] for value in access} != {"account-response", "room-access-response"}:
+        raise ValueError("Account-room checks must produce actual versioned API responses")
+    for observation in access:
+        registry.validate(observation["schema"], observation["value"])
     print(f"Validated {len(observations)} actual metadata events/snapshots/selections against the pinned wire contracts")
+    print(f"Validated {len(access)} actual account/room API responses after real TLS admission and fail-closed host checks")
 
 
 if __name__ == "__main__":

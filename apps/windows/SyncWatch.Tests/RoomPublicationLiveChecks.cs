@@ -11,7 +11,7 @@ internal static class RoomPublicationLiveChecks
         string caseRoot = Environment.GetEnvironmentVariable("SYNCWATCH_PUBLICATION_CASE")!;
         string directory = Path.Combine(caseRoot, "movies"); if (Directory.Exists(directory)) throw new Exception("Owned publication directory already exists"); Directory.CreateDirectory(directory);
         foreach (string suffix in new[] { "A", "B" }) File.WriteAllText(Path.Combine(directory, $"Windows publication {suffix}.mkv"), "authored catalog fixture");
-        string rootId = Guid.NewGuid().ToString("D"); var scanner = new FileSystemLibrary(); var controller = new RoomController();
+        string rootId = Guid.NewGuid().ToString("D"); var scanner = new FileSystemLibrary(); var controller = new RoomController(legacyValidation: true);
         async Task WaitAsync(Func<bool> condition, bool allowPublicationFailure = false)
         {
             using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));

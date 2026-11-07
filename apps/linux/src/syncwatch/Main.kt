@@ -96,9 +96,11 @@ fun main(arguments: Array<String>) {
     val room = workspace.room
     val account = workspace.account
     val shared = workspace.shared
+    val meet = workspace.meet
     val roomWork = rememberCoroutineScope()
     var roomOpen by remember { mutableStateOf(false) }
     var accountOpen by remember { mutableStateOf(false) }
+    var meetOpen by remember { mutableStateOf(false) }
     var settingsOpen by remember { mutableStateOf(false) }
     var editor by remember { mutableStateOf(preferences.editor()) }
     val library = workspace.library
@@ -108,13 +110,14 @@ fun main(arguments: Array<String>) {
     }
     DisposableEffect(library) { onDispose { library.close() } }
     LaunchedEffect(library.roomRevision) { room.updateLibrary(library.roomRevision, library.roomFiles) }
-    LaunchedEffect(room.connected) { shared.membershipChanged() }
+    LaunchedEffect(room.connected) { shared.membershipChanged(); meet.membershipChanged() }
+    LaunchedEffect(room.callMembership()) { meet.membershipChanged() }
     LaunchedEffect(watch.playerPresented) { if (watch.playerPresented) library.dismissTracks() }
     val language = state.preferences.language
     val dark = when (state.preferences.theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }
     val theme = if (dark) SyncWatchTheme.dark else SyncWatchTheme.light
     ApplicationChrome(watch.playerPresented, library = {
-    LibraryWorkspace(account.libraryPresentation(shared.libraryPresentation(watch.libraryPresentation(library.presentation))), language, theme,
+    LibraryWorkspace(meet.libraryPresentation(account.libraryPresentation(shared.libraryPresentation(watch.libraryPresentation(library.presentation)))), language, theme,
         selectionMenu = if (watch.playerPresented) null else library.tracks.menu,
         onSelection = library::selectTrack, onDismissSelection = library::dismissTracks) { action, value ->
         if (action !in setOf("openLibraryAudio", "openLibrarySubtitles")) library.dismissTracks()
@@ -126,6 +129,7 @@ fun main(arguments: Array<String>) {
         else if (action == "continueWatching") watch.continueWatching()
         else if (action == "endWatching") roomWork.launch { shared.end() }
         else if (action == "openRoom") roomOpen = true
+        else if (action == "openCall") { meet.present(); meetOpen = true }
         else if (action == "openAccount") {
             if (account.presentation.service.isEmpty()) account.action("editAccountService", room.editor.values["serviceAddress"].orEmpty())
             accountOpen = true
@@ -135,7 +139,8 @@ fun main(arguments: Array<String>) {
     }, player = {
         watch.player?.let { controller -> key(controller.scope.clientRunId, controller.scope.mediaGeneration) {
             ConfiguredPlaybackPane(controller, preferences, theme, onClose, onFullscreen,
-                roomNotice = shared.playerNotice, onSaved = watch::preferencesChanged)
+                roomNotice = shared.playerNotice, onSaved = watch::preferencesChanged,
+                onOpenCall = { meet.present(); meetOpen = true })
         } }
     })
     LaunchedEffect(library.errorKey, watch.errorKey, shared.errorKey) {
@@ -145,8 +150,22 @@ fun main(arguments: Array<String>) {
             library.clearError(); watch.clearError(); shared.clearError()
         }
     }
+    LaunchedEffect(account.roomAuthority, account.presentation.name) {
+        shared.bindAccount(account.roomAuthority, account.presentation.name)
+        meet.membershipChanged()
+    }
+    if (meetOpen) {
+        fun closeMeet(openRoom: Boolean = false) { roomWork.launch { meet.dismiss(); meetOpen = false; if (openRoom) roomOpen = true } }
+        DialogWindow(onCloseRequest = { closeMeet() }, title = SyncWatchCopy.text("meetTitle", language),
+            state = rememberDialogState(width = SyncWatchTokens.layoutSettingsWidth.dp, height = SyncWatchTokens.layoutSettingsHeight.dp)) {
+            MeetDialog(meet.presentation, language, theme) { action, value ->
+                if (action == "close" || action == "openRoom") closeMeet(action == "openRoom") else meet.action(action, value)
+            }
+        }
+    }
+    var accountFromRoom by remember { mutableStateOf(false) }
     if (accountOpen) {
-        fun closeAccount() { roomWork.launch { account.dismiss(); accountOpen = false } }
+        fun closeAccount() { roomWork.launch { account.dismiss(); accountOpen = false; if (accountFromRoom) { accountFromRoom = false; roomOpen = true } } }
         DialogWindow(onCloseRequest = ::closeAccount, title = SyncWatchCopy.text("openAccount", language),
             state = rememberDialogState(width = SyncWatchTokens.layoutSettingsWidth.dp, height = SyncWatchTokens.layoutSettingsHeight.dp)) {
             AccountDialog(account.presentation, language, theme) { action, value ->
@@ -158,17 +177,21 @@ fun main(arguments: Array<String>) {
         fun closeDialog() { if (room.editor.busy) roomWork.launch { room.close(); roomOpen = false } else { room.editor = room.editor.clearSecrets(); roomOpen = false } }
         DialogWindow(onCloseRequest = ::closeDialog, title = SyncWatchCopy.text("openRoom", language),
             state = rememberDialogState(width = SyncWatchTokens.layoutSettingsWidth.dp, height = SyncWatchTokens.layoutSettingsHeight.dp)) {
-            RoomDialog(room.editor, { room.editor = it }, language, theme) { action -> when (action) {
+            RoomDialog(room.editor, { room.editor = it }, language, theme, onAdmissionDecision = room::decideAdmission) { action -> when (action) {
                 "connectRoom" -> room.connect()
+                "openAccount" -> { room.editor = room.editor.clearSecrets(); roomOpen = false; accountFromRoom = true; accountOpen = true }
                 "leaveRoom" -> roomWork.launch { shared.leave() }
                 "pasteInvitation" -> room.pasteInvitation(runCatching {
                     java.awt.Toolkit.getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String
                 }.getOrNull() ?: "")
-                "copyInvitation" -> room.invitationToCopy()?.let { value ->
-                    val copied = try { java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(value), null); true }
-                        catch (_: IllegalStateException) { false }
-                        catch (_: SecurityException) { false }
-                    room.invitationCopyCompleted(copied)
+                "copyInvitation" -> roomWork.launch {
+                    val transfer = room.invitationForCopy()
+                    if (transfer != null && room.canCopy(transfer)) {
+                        val copied = try { java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(transfer.invitation.copyText()), null); true }
+                            catch (_: IllegalStateException) { false }
+                            catch (_: SecurityException) { false }
+                        room.invitationCopyCompleted(copied, transfer)
+                    }
                 }
                 "close" -> closeDialog()
             } }

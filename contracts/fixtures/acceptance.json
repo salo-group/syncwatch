@@ -1264,8 +1264,8 @@
         "media": {
           "v": 1,
           "mediaId": "movie-a",
-          "title": "Кино 映画",
-          "titleKey": "Кино 映画",
+          "title": "\u041a\u0438\u043d\u043e \u6620\u753b",
+          "titleKey": "\u041a\u0438\u043d\u043e \u6620\u753b",
           "fileSizeBytes": 1000,
           "durationMs": 10000,
           "fullHashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -1287,8 +1287,8 @@
         "media": {
           "v": 1,
           "mediaId": "movie-a",
-          "title": "Кино 映画",
-          "titleKey": "Кино 映画",
+          "title": "\u041a\u0438\u043d\u043e \u6620\u753b",
+          "titleKey": "\u041a\u0438\u043d\u043e \u6620\u753b",
           "fileSizeBytes": 1000,
           "durationMs": 10000,
           "fullHashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -1422,5 +1422,1261 @@
       }
     },
     "error": null
+  },
+  {
+    "name": "room-access-create",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "clientRunId": "native-run",
+      "requestId": "create-1"
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-request",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "clientRunId": "native-run",
+      "requestId": "request-1",
+      "invitation": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-decision",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "approvalId": "request-opaque",
+      "approve": true
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-endpoint-injection",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "clientRunId": "native-run",
+      "requestId": "create-1",
+      "syncplayHost": "untrusted.invalid"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-display-identity-injection",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "clientRunId": "native-run",
+      "requestId": "request-1",
+      "invitation": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "name": "Owner"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-truthy-approval",
+    "schema": "room-access-request",
+    "value": {
+      "v": 2,
+      "approvalId": "request-opaque",
+      "approve": 1
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-duplicate-version",
+    "schema": "room-access-request",
+    "frame": "{\"v\":2,\"v\":2,\"clientRunId\":\"run\",\"requestId\":\"request\"}",
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-admission",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "roomId": "room-1",
+        "memberId": "member-1",
+        "expiresAt": "2026-11-05T12:00:00+00:00",
+        "bootstrap": {
+          "snapshot": {
+            "v": 1,
+            "roomEpoch": "epoch-1",
+            "sequence": 10,
+            "watchGeneration": 4,
+            "watch": {
+              "status": "active",
+              "mediaId": "movie-1"
+            },
+            "members": [
+              {
+                "memberId": "member-1",
+                "clientRunId": "run-7",
+                "syncplayUsername": "Viewer"
+              }
+            ],
+            "meetUri": null
+          },
+          "connection": {
+            "host": "syncplay.example.invalid",
+            "port": 8999,
+            "room": "sw-room",
+            "requireTls": true
+          },
+          "catalogCursor": "cursor-1",
+          "missingMembers": []
+        }
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-legacy-member-token",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "roomId": "room-1",
+        "memberId": "member-1",
+        "expiresAt": "2026-11-05T12:00:00+00:00",
+        "bootstrap": {
+          "snapshot": {
+            "v": 1,
+            "roomEpoch": "epoch-1",
+            "sequence": 10,
+            "watchGeneration": 4,
+            "watch": {
+              "status": "active",
+              "mediaId": "movie-1"
+            },
+            "members": [
+              {
+                "memberId": "member-1",
+                "clientRunId": "run-7",
+                "syncplayUsername": "Viewer"
+              }
+            ],
+            "meetUri": null
+          },
+          "connection": {
+            "host": "syncplay.example.invalid",
+            "port": 8999,
+            "room": "sw-room",
+            "requireTls": true
+          },
+          "catalogCursor": "cursor-1",
+          "missingMembers": []
+        },
+        "token": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-plaintext-syncplay",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "roomId": "room-1",
+        "memberId": "member-1",
+        "expiresAt": "2026-11-05T12:00:00+00:00",
+        "bootstrap": {
+          "snapshot": {
+            "v": 1,
+            "roomEpoch": "epoch-1",
+            "sequence": 10,
+            "watchGeneration": 4,
+            "watch": {
+              "status": "active",
+              "mediaId": "movie-1"
+            },
+            "members": [
+              {
+                "memberId": "member-1",
+                "clientRunId": "run-7",
+                "syncplayUsername": "Viewer"
+              }
+            ],
+            "meetUri": null
+          },
+          "connection": {
+            "host": "syncplay.example.invalid",
+            "port": 8999,
+            "room": "sw-room",
+            "requireTls": false
+          },
+          "catalogCursor": "cursor-1",
+          "missingMembers": []
+        }
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-ticket",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "ticket": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "expiresIn": 30
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-ticket-lifetime",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "ticket": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "expiresIn": 300
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-access-verified-pending",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "result": [
+        {
+          "id": "request-opaque",
+          "status": "pending",
+          "name": "Guest",
+          "accountId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "email": "guest@example.invalid"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "room-access-error",
+    "schema": "room-access-response",
+    "value": {
+      "v": 2,
+      "error": {
+        "code": "admissionRequired"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "helper-admission-required",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "type": "sync.admissionRequired",
+      "id": "event-1",
+      "payload": {
+        "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "helper-admit",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "type": "sync.admit",
+      "id": "cmd-41",
+      "payload": {
+        "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ticket": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "clientRunId": "room-run"
+      }
+    },
+    "error": null,
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "helper-admit-short-ticket",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "type": "sync.admit",
+      "id": "cmd-42",
+      "payload": {
+        "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ticket": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "clientRunId": "room-run"
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "helper-admission-foreign-field",
+    "schema": "helper-ipc",
+    "value": {
+      "v": 1,
+      "clientRunId": "run-7",
+      "mediaGeneration": 3,
+      "type": "sync.admissionRequired",
+      "id": "event-1",
+      "payload": {
+        "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "host": "untrusted"
+      }
+    },
+    "error": "malformed",
+    "context": {
+      "clientRunId": "run-7",
+      "mediaGeneration": 3
+    }
+  },
+  {
+    "name": "meet-authorization.pending",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "pending",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.authorizing",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "authorizing",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.browserConfirmationRequired",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "browserConfirmationRequired",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.complete",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "complete",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.cancelled",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "cancelled",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.expired",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "expired",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.native confirmation",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner",
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.roomChanged",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "roomChanged"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.accountMismatch",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "accountMismatch"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.permissionUnavailable",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "permissionUnavailable"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.invalidConfirmation",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "invalidConfirmation"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.wrong code feedback",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "browserConfirmationRequired",
+        "account": null,
+        "reason": "invalidConfirmation"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.confirm wrong code",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner",
+          "email": "owner@example.invalid"
+        },
+        "reason": "invalidConfirmation"
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.unknown status",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "joined",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.profile disclosed early",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "browserConfirmationRequired",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner",
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.missing confirmation profile",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong account",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "name": "Owner",
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.arbitrary failure",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": "provider secret"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.missing failure reason",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.unexpected complete reason",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "complete",
+        "account": null,
+        "reason": "invalidConfirmation"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong reason type",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "failed",
+        "account": null,
+        "reason": 7
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong state type",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": 7,
+        "account": null,
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.token disclosure",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "pending",
+        "account": null,
+        "reason": null,
+        "refreshToken": "synthetic-provider-token"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.bad profile",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "",
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.request.0",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.request.1",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.request.2",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "browserProof": "AAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.request.3",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "browserProof": "AAAAAAAAAAAA",
+      "requestId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "meet-authorization.request.reject-provider-token",
+    "schema": "meet-authorization-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "refreshToken": "synthetic-provider-token"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong account type",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": [],
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.wrong name type",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": 7,
+          "email": "owner@example.invalid"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.extra account field",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner",
+          "email": "owner@example.invalid",
+          "refreshToken": "must-not-enter-native-profile"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "meet-authorization.missing account field",
+    "schema": "meet-authorization-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAuthorization",
+        "account": {
+          "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "name": "Owner"
+        },
+        "reason": null
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-idle",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "idle",
+        "callId": null,
+        "generation": 0,
+        "meetUri": null,
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-creating",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "creating",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-ready",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-creationFailed",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "creationFailed",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": "providerUnavailable",
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-creationUnknown",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "creationUnknown",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": "providerOutcomeUnknown",
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-ending",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ending",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-ended",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ended",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-endFailed",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "endFailed",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": "providerUnavailable",
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-endUnknown",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "endUnknown",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": "providerOutcomeUnknown",
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-unavailable",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "unavailable",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": "roomChanged",
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-unknown-state",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "joined",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-foreign-uri",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://example.invalid/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-query-uri",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij?x=1",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-missing-id",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": null,
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-bad-id",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "short",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-zero-generation",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 0,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-fractional-generation",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1.5,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-boolean-generation",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": true,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-overflow-generation",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 9007199254740992,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-bad-permission",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": "false",
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-bad-poll",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 0
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-ready-reason",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": "providerOutcomeUnknown",
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-unexpected-credential",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000,
+        "googleToken": "forbidden"
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-unknown-with-uri",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "creationUnknown",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": "https://meet.google.com/abc-defg-hij",
+        "reason": "providerOutcomeUnknown",
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-idle-with-id",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "idle",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-missing-uri",
+    "schema": "room-call-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "ready",
+        "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "generation": 1,
+        "meetUri": null,
+        "reason": null,
+        "authorizationRequired": false,
+        "pollAfterMs": 5000
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-request-start",
+    "schema": "room-call-request",
+    "value": {
+      "v": 2,
+      "requestId": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-request-end",
+    "schema": "room-call-request",
+    "value": {
+      "v": 2,
+      "requestId": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "generation": 1
+    },
+    "error": null
+  },
+  {
+    "name": "room-call-request-bad-start",
+    "schema": "room-call-request",
+    "value": {
+      "v": 2,
+      "requestId": "x"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "room-call-request-bad-end",
+    "schema": "room-call-request",
+    "value": {
+      "v": 2,
+      "requestId": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "callId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "generation": 0
+    },
+    "error": "malformed"
   }
 ]

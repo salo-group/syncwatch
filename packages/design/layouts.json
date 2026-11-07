@@ -4714,6 +4714,80 @@
                   "children": []
                 },
                 {
+                  "id": "roomAccountRequired",
+                  "kind": "column",
+                  "styles": [],
+                  "props": {
+                    "when": "$needsAccount",
+                    "gap": "@control.compactGap"
+                  },
+                  "children": [
+                    {
+                      "id": "roomAccountRequiredText",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~roomAccountRequired"
+                      },
+                      "children": []
+                    },
+                    {
+                      "id": "roomAccountSignIn",
+                      "kind": "button",
+                      "styles": [
+                        "button",
+                        "compact"
+                      ],
+                      "props": {
+                        "action": "openAccount",
+                        "automation": "{namespace}.openAccount",
+                        "enabled": "$can.openAccount",
+                        "label": "~accountSignIn"
+                      },
+                      "children": [
+                        {
+                          "id": "roomAccountSignInLabel",
+                          "kind": "text",
+                          "styles": [],
+                          "props": {
+                            "text": "~accountSignIn"
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "roomAccountIdentity",
+                  "kind": "column",
+                  "styles": [],
+                  "props": {
+                    "when": "$showAccountIdentity",
+                    "gap": "@control.compactGap"
+                  },
+                  "children": [
+                    {
+                      "id": "roomAccountName",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "{~openAccount}: {accountName}"
+                      },
+                      "children": []
+                    },
+                    {
+                      "id": "roomAccountService",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "{~roomService}: {accountService}"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
                   "id": "roomModeSelector",
                   "kind": "row",
                   "styles": [],
@@ -4868,6 +4942,137 @@
                   ]
                 },
                 {
+                  "id": "roomPendingRequests",
+                  "kind": "column",
+                  "styles": [],
+                  "props": {
+                    "when": "$showPendingRequests",
+                    "gap": "@control.compactGap"
+                  },
+                  "children": [
+                    {
+                      "id": "roomPendingHeading",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~roomApprovalRequests"
+                      },
+                      "children": []
+                    },
+                    {
+                      "id": "roomPendingRows",
+                      "kind": "repeat",
+                      "styles": [],
+                      "props": {
+                        "items": "pendingRequests"
+                      },
+                      "children": [
+                        {
+                          "id": "roomPendingRow",
+                          "kind": "row",
+                          "styles": [],
+                          "props": {
+                            "gap": "@control.compactGap",
+                            "paddingY": "@control.compactGap"
+                          },
+                          "children": [
+                            {
+                              "id": "roomPendingPerson",
+                              "kind": "column",
+                              "styles": [],
+                              "props": {
+                                "width": "fill",
+                                "gap": "@control.compactGap"
+                              },
+                              "children": [
+                                {
+                                  "id": "roomPendingName",
+                                  "kind": "text",
+                                  "styles": [],
+                                  "props": {
+                                    "text": "{name}"
+                                  },
+                                  "children": []
+                                },
+                                {
+                                  "id": "roomPendingEmail",
+                                  "kind": "text",
+                                  "styles": [],
+                                  "props": {
+                                    "text": "{email}"
+                                  },
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "roomApproveAdmission",
+                              "kind": "button",
+                              "styles": [
+                                "button",
+                                "compact"
+                              ],
+                              "props": {
+                                "action": "approveRoomAdmission",
+                                "automation": "{namespace}.approveRoomAdmission.{requestID}",
+                                "enabled": "$can.decide",
+                                "label": "{~approveRoomAdmission}: {name}",
+                                "payload": "$requestID"
+                              },
+                              "children": [
+                                {
+                                  "id": "roomApproveAdmissionLabel",
+                                  "kind": "text",
+                                  "styles": [],
+                                  "props": {
+                                    "text": "~approveRoomAdmission"
+                                  },
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "roomDenyAdmission",
+                              "kind": "button",
+                              "styles": [
+                                "button",
+                                "compact"
+                              ],
+                              "props": {
+                                "action": "denyRoomAdmission",
+                                "automation": "{namespace}.denyRoomAdmission.{requestID}",
+                                "enabled": "$can.decide",
+                                "label": "{~denyRoomAdmission}: {name}",
+                                "payload": "$requestID"
+                              },
+                              "children": [
+                                {
+                                  "id": "roomDenyAdmissionLabel",
+                                  "kind": "text",
+                                  "styles": [],
+                                  "props": {
+                                    "text": "~denyRoomAdmission"
+                                  },
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "roomPendingStatus",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~{pendingStatus}"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
                   "id": "roomStatus",
                   "kind": "text",
                   "styles": [],
@@ -4971,6 +5176,32 @@
                   "styles": [],
                   "props": {
                     "text": "~leaveRoom"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "roomCancelAdmission",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "leaveRoom",
+                "automation": "{namespace}.leaveRoom",
+                "enabled": "$can.cancelRequest",
+                "label": "~roomCancelRequest",
+                "when": "$can.cancelRequest"
+              },
+              "children": [
+                {
+                  "id": "roomCancelAdmissionLabel",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~roomCancelRequest"
                   },
                   "children": []
                 }
@@ -5428,6 +5659,510 @@
                     "text": "~accountUseMemory"
                   },
                   "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "Meet": {
+      "id": "meetDialog",
+      "kind": "column",
+      "styles": [
+        "dialog"
+      ],
+      "props": {},
+      "children": [
+        {
+          "id": "meetHeader",
+          "kind": "row",
+          "styles": [],
+          "props": {
+            "padding": "@layout.settingsCardPadding",
+            "gap": "@control.compactGap"
+          },
+          "children": [
+            {
+              "id": "meetTitle",
+              "kind": "text",
+              "styles": [
+                "dialogTitle"
+              ],
+              "props": {
+                "text": "~meetTitle",
+                "width": "fill"
+              },
+              "children": []
+            },
+            {
+              "id": "meetButtonclose",
+              "kind": "button",
+              "styles": [
+                "button",
+                "compact"
+              ],
+              "props": {
+                "action": "close",
+                "enabled": "$can.close",
+                "automation": "meet.close",
+                "label": "~close"
+              },
+              "children": [
+                {
+                  "id": "meetLabelclose",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~close"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "meetScroll",
+          "kind": "scroll",
+          "styles": [],
+          "props": {
+            "height": "fill",
+            "minHeight": "0"
+          },
+          "children": [
+            {
+              "id": "meetBody",
+              "kind": "column",
+              "styles": [],
+              "props": {
+                "gap": "@layout.settingsCardPadding",
+                "padding": "@layout.settingsCardPadding"
+              },
+              "children": [
+                {
+                  "id": "meetStatus",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~{status}"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "meetOwnership",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~meetExternalOwnership"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "meetEndConsequences",
+                  "kind": "text",
+                  "styles": [],
+                  "props": {
+                    "text": "~meetEndConsequences",
+                    "when": "$can.meetConfirmEnd"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "meetAuthorization",
+                  "kind": "switch",
+                  "styles": [],
+                  "props": {
+                    "value": "$authorizationState"
+                  },
+                  "children": [
+                    {
+                      "id": "meetPendingState",
+                      "kind": "column",
+                      "styles": [],
+                      "props": {
+                        "case": "pending"
+                      },
+                      "children": [
+                        {
+                          "id": "meetButtonmeetOpenAuthorization",
+                          "kind": "button",
+                          "styles": [
+                            "button",
+                            "compact"
+                          ],
+                          "props": {
+                            "action": "meetOpenAuthorization",
+                            "enabled": "$can.meetOpenAuthorization",
+                            "automation": "meet.meetOpenAuthorization",
+                            "label": "~accountOpenBrowser",
+                            "when": "$can.meetOpenAuthorization"
+                          },
+                          "children": [
+                            {
+                              "id": "meetLabelmeetOpenAuthorization",
+                              "kind": "text",
+                              "styles": [],
+                              "props": {
+                                "text": "~accountOpenBrowser"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "meetProofState",
+                      "kind": "column",
+                      "styles": [],
+                      "props": {
+                        "case": "browserConfirmationRequired",
+                        "gap": "@control.compactGap"
+                      },
+                      "children": [
+                        {
+                          "id": "meetProofLabel",
+                          "kind": "text",
+                          "styles": [],
+                          "props": {
+                            "text": "~accountBrowserProof"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "meetProofInput",
+                          "kind": "input",
+                          "styles": [
+                            "input"
+                          ],
+                          "props": {
+                            "value": "$browserProof",
+                            "action": "editMeetBrowserProof",
+                            "enabled": "$can.editMeetBrowserProof",
+                            "automation": "meet.browserProof",
+                            "label": "~accountBrowserProof"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "meetButtonmeetVerify",
+                          "kind": "button",
+                          "styles": [
+                            "button",
+                            "compact"
+                          ],
+                          "props": {
+                            "action": "meetVerify",
+                            "enabled": "$can.meetVerify",
+                            "automation": "meet.meetVerify",
+                            "label": "~accountVerifyBrowserProof",
+                            "when": "$can.meetVerify"
+                          },
+                          "children": [
+                            {
+                              "id": "meetLabelmeetVerify",
+                              "kind": "text",
+                              "styles": [],
+                              "props": {
+                                "text": "~accountVerifyBrowserProof"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "meetConfirmState",
+                      "kind": "column",
+                      "styles": [],
+                      "props": {
+                        "case": "confirmAuthorization",
+                        "gap": "@control.compactGap"
+                      },
+                      "children": [
+                        {
+                          "id": "meetAccountName",
+                          "kind": "text",
+                          "styles": [],
+                          "props": {
+                            "text": "{name}"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "meetAccountEmail",
+                          "kind": "text",
+                          "styles": [],
+                          "props": {
+                            "text": "{email}"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "meetButtonmeetConfirm",
+                          "kind": "button",
+                          "styles": [
+                            "button",
+                            "compact"
+                          ],
+                          "props": {
+                            "action": "meetConfirm",
+                            "enabled": "$can.meetConfirm",
+                            "automation": "meet.meetConfirm",
+                            "label": "~meetConfirm",
+                            "when": "$can.meetConfirm"
+                          },
+                          "children": [
+                            {
+                              "id": "meetLabelmeetConfirm",
+                              "kind": "text",
+                              "styles": [],
+                              "props": {
+                                "text": "~meetConfirm"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonopenRoom",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "openRoom",
+                    "enabled": "$can.openRoom",
+                    "automation": "meet.openRoom",
+                    "label": "~openRoom",
+                    "when": "$can.openRoom"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelopenRoom",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~openRoom"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonmeetAuthorize",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "meetAuthorize",
+                    "enabled": "$can.meetAuthorize",
+                    "automation": "meet.meetAuthorize",
+                    "label": "~meetAuthorize",
+                    "when": "$can.meetAuthorize"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelmeetAuthorize",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~meetAuthorize"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonmeetCancelAuthorization",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "meetCancelAuthorization",
+                    "enabled": "$can.meetCancelAuthorization",
+                    "automation": "meet.meetCancelAuthorization",
+                    "label": "~meetCancelAuthorization",
+                    "when": "$can.meetCancelAuthorization"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelmeetCancelAuthorization",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~meetCancelAuthorization"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonmeetStart",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "meetStart",
+                    "enabled": "$can.meetStart",
+                    "automation": "meet.meetStart",
+                    "label": "~meetStart",
+                    "when": "$can.meetStart"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelmeetStart",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~meetStart"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonmeetOpen",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "meetOpen",
+                    "enabled": "$can.meetOpen",
+                    "automation": "meet.meetOpen",
+                    "label": "~meetOpen",
+                    "when": "$can.meetOpen"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelmeetOpen",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~meetOpen"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonmeetEnd",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "meetEnd",
+                    "enabled": "$can.meetEnd",
+                    "automation": "meet.meetEnd",
+                    "label": "~meetEndForEveryone",
+                    "when": "$can.meetEnd"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelmeetEnd",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~meetEndForEveryone"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonmeetRetry",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "meetRetry",
+                    "enabled": "$can.meetRetry",
+                    "automation": "meet.meetRetry",
+                    "label": "~meetRetry",
+                    "when": "$can.meetRetry"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelmeetRetry",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~meetRetry"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonmeetCancelEnd",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "meetCancelEnd",
+                    "enabled": "$can.meetCancelEnd",
+                    "when": "$can.meetCancelEnd",
+                    "automation": "meet.meetCancelEnd",
+                    "label": "~meetKeepCall"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelmeetCancelEnd",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~meetKeepCall"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "meetButtonmeetConfirmEnd",
+                  "kind": "button",
+                  "styles": [
+                    "button",
+                    "compact"
+                  ],
+                  "props": {
+                    "action": "meetConfirmEnd",
+                    "enabled": "$can.meetConfirmEnd",
+                    "when": "$can.meetConfirmEnd",
+                    "automation": "meet.meetConfirmEnd",
+                    "label": "~meetEndForEveryone"
+                  },
+                  "children": [
+                    {
+                      "id": "meetLabelmeetConfirmEnd",
+                      "kind": "text",
+                      "styles": [],
+                      "props": {
+                        "text": "~meetEndForEveryone"
+                      },
+                      "children": []
+                    }
+                  ]
                 }
               ]
             }

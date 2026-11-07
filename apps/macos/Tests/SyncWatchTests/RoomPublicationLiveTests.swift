@@ -21,7 +21,7 @@ func normalRoomPublicationExchangesThreeNativeCatalogs() async throws {
     }
     let rootID = UUID().uuidString.lowercased()
     let scanner = FileSystemLibrary()
-    let controller = RoomController()
+    let controller = RoomController(legacyValidation: true)
     func wait(allowPublicationFailure: Bool = false, _ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now + .seconds(30)
         while !condition() {

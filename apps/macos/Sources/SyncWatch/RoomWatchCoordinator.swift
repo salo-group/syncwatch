@@ -165,6 +165,23 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                 guard authorized() else { throw HelperSessionFailure.unavailable }
                 let connection = current.bootstrap.connection
                 let remote = current.definition.selection!.media
+                let admissionProvider: (@MainActor () async throws -> SyncplayAdmission)?
+                if room.accountAuthority == nil {
+                    admissionProvider = nil
+                } else {
+                    admissionProvider = { [weak self] in
+                        guard let self else { throw HelperSessionFailure.unavailable }
+                        try await self.waitForTransportAdmission()
+                        let fresh = try await self.room.watchContext(intent.membership)
+                        try Self.requireSameGeneration(current, fresh)
+                        try Self.requireMatch(local, fresh)
+                        let ticket = try await self.room.syncTicket(intent.membership)
+                        guard self.canAdmitTransport() else { throw HelperSessionFailure.unavailable }
+                        return try SyncplayAdmission(
+                            credential: ticket.admissionCredential(),
+                            clientRunID: intent.membership.identity.clientRunID)
+                    }
+                }
                 try await player.connectShared(
                     transport: transport,
                     endpoint: SyncplayEndpoint(
@@ -174,7 +191,8 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                         handle: "loaded-" + UUID().uuidString, name: remote.title,
                         durationMs: local.durationMs!, fileSizeBytes: UInt64(local.fileSizeBytes)),
                     revision: runtime.revision, requireDeclaredIdentity: true,
-                    authority: { [weak self] in self?.authorized() == true })
+                    authority: { [weak self] in self?.authorized() == true },
+                    admissionProvider: admissionProvider)
             } catch {
                 await transport.close()
                 throw error
@@ -327,6 +345,25 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
             && current.snapshot.watchGeneration == active.context.bootstrap.snapshot.watchGeneration
             && current.snapshot.watchStatus == "active"
     }
+    private func canAdmitTransport() -> Bool {
+        guard authorized(), let active, room.isCurrent(active.membership), let latest = room.watchBootstrap else {
+            return false
+        }
+        return latest.snapshot.epoch == active.context.bootstrap.snapshot.epoch
+            && latest.snapshot.watchGeneration == active.context.bootstrap.snapshot.watchGeneration
+            && latest.snapshot.watchStatus == "active"
+            && latest.snapshot.mediaID == active.context.bootstrap.snapshot.mediaID
+    }
+    private func waitForTransportAdmission() async throws {
+        // The helper bounds this wait. Only an established scope may await metadata recovery.
+        while !canAdmitTransport() {
+            try Task.checkCancellation()
+            guard admitted, authorized(), room.editor.state == "reconnecting" else {
+                throw HelperSessionFailure.unavailable
+            }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+    }
     static func failureKey(_ error: Error, identityRejected: Bool) -> String {
         if identityRejected { return "sharedWatchIdentityRejected" }
         if case RoomProtocolFailure.rejected("staleGeneration") = error { return "sharedWatchRoomChanged" }
@@ -449,6 +486,25 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
         watch.end()
         status = ""
     }
+    private var accountBinding = UUID()
+    private var accountBindingWork: Task<Void, Never>?
+    func bindAccount(_ authority: RoomAccountAuthority?, name: String) async {
+        guard !closing else { return }
+        let revision = UUID()
+        accountBinding = revision
+        let previous = accountBindingWork
+        // View task cancellation must not interrupt revocation or race the next account.
+        let job = Task { [self] in
+            await previous?.value
+            guard !closing, accountBinding == revision else { return }
+            if room.accountAuthority !== authority && room.hasRoomScope { await leave() }
+            guard !closing, accountBinding == revision else { return }
+            room.bindAccount(authority, name: name)
+        }
+        accountBindingWork = job
+        await job.value
+        if accountBinding == revision { accountBindingWork = nil }
+    }
     func leave() async {
         await stop()
         await room.close()
@@ -462,7 +518,10 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
         await work?.value
     }
     func close() async {
+        accountBinding = UUID()
         closing = true
+        await accountBindingWork?.value
+        accountBindingWork = nil
         await stop()
     }
 }

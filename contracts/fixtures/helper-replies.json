@@ -252,6 +252,38 @@
       "accepted": false,
       "expectedKind": "applied",
       "expectedRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "admission-ready",
+      "frame": "{\"v\":1,\"replyTo\":\"cmd-9\",\"type\":\"bridge.ready\",\"clientRunId\":\"helper-run\",\"mediaGeneration\":7,\"payload\":{\"syncplayRevision\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"admissionVersion\":1}}\n",
+      "accepted": true,
+      "expectedKind": "ready",
+      "expectedRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requireAdmission": true
+    },
+    {
+      "name": "legacy-helper-admission-required",
+      "frame": "{\"v\":1,\"replyTo\":\"cmd-9\",\"type\":\"bridge.ready\",\"clientRunId\":\"helper-run\",\"mediaGeneration\":7,\"payload\":{\"syncplayRevision\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}\n",
+      "accepted": false,
+      "expectedKind": "ready",
+      "expectedRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requireAdmission": true
+    },
+    {
+      "name": "unknown-admission-version",
+      "frame": "{\"v\":1,\"replyTo\":\"cmd-9\",\"type\":\"bridge.ready\",\"clientRunId\":\"helper-run\",\"mediaGeneration\":7,\"payload\":{\"syncplayRevision\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"admissionVersion\":2}}\n",
+      "accepted": false,
+      "expectedKind": "ready",
+      "expectedRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requireAdmission": false
+    },
+    {
+      "name": "bool-admission-version",
+      "frame": "{\"v\":1,\"replyTo\":\"cmd-9\",\"type\":\"bridge.ready\",\"clientRunId\":\"helper-run\",\"mediaGeneration\":7,\"payload\":{\"syncplayRevision\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"admissionVersion\":true}}\n",
+      "accepted": false,
+      "expectedKind": "ready",
+      "expectedRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requireAdmission": false
     }
   ]
 }

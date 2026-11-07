@@ -5,14 +5,14 @@ import syncwatch.room.*
 
 /** Replaces only the event transport; membership commands retain their owner and numbering. */
 internal object RoomEventMonitor {
-    suspend fun run(address: RoomAddress, membership: RoomMembershipSession,
+    suspend fun run(address: RoomAddress, membership: RoomMembershipSession, authority: RoomAccountAuthority? = null,
         reconnecting: () -> Unit, accepted: (RoomCatalogView) -> Unit) {
         val delays = longArrayOf(500, 1000, 2000, 4000, 8000)
         var failures = 0
         var deadline: Long? = null
         while (true) {
             currentCoroutineContext().ensureActive()
-            val client = RoomClient(address)
+            val client = authority?.let(::RoomClient) ?: RoomClient(address)
             val failure: Exception
             try {
                 val allowance = minOf(20000L, deadline?.let { (it - System.nanoTime()) / 1000000 } ?: 20000L)

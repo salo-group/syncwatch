@@ -8,17 +8,31 @@ import syncwatch.library.LocalMediaFile
 import syncwatch.domain.MediaDescriptor
 
 internal data class RoomWatchMembership(val owner: RoomMembershipSession, val memberId: String, val identity: RoomIdentity, val epoch: String)
+internal data class RoomCallMembership(val owner: RoomMembershipSession, val memberId: String, val epoch: String, val isOwner: Boolean)
+internal data class RoomInvitationTransfer(val owner: RoomMembershipSession, val invitation: RoomInvitation, val revision: java.util.UUID)
 internal data class RoomPreparedPublication(val lease: java.util.UUID, val media: MediaDescriptor)
 
 /** The workspace owns membership independently of the visible dialog. */
-internal class RoomController(private val scope: CoroutineScope) {
-    var editor by mutableStateOf(RoomEditor())
+internal class RoomController(private val scope: CoroutineScope, legacyValidation: Boolean = false, private val accountSource: (() -> RoomAccountAuthority?)? = null) {
+    var editor by mutableStateOf(RoomEditor(flow = if (legacyValidation) "legacy" else syncwatch.design.SyncWatchRoomForm.defaultFlow))
+    var accountAuthority: RoomAccountAuthority? = null
+        private set
+    fun bindAccount(authority: RoomAccountAuthority?, name: String) {
+        verifyOwner()
+        if (!editor.requiresAccount) return
+        accountAuthority = authority
+        editor = editor.copy(accountReady = authority != null, accountName = if (authority == null) "" else name,
+            accountService = authority?.address?.origin?.toString().orEmpty())
+    }
     var catalogView by mutableStateOf<RoomCatalogView?>(null)
         private set
     val bootstrap: RoomBootstrap? get() = catalogView?.bootstrap
     var watchBootstrap: RoomBootstrap? = null
         private set
-    val connected: Boolean get() = editor.connected && bootstrap != null
+    private val currentAccount: Boolean get() = !editor.requiresAccount || accountAuthority != null && (accountSource == null || accountSource.invoke() === accountAuthority)
+    val hasRoomScope: Boolean get() = editor.state != "disconnected" || work != null || playbackSession != null
+    val connected: Boolean get() = editor.connected && bootstrap != null && currentAccount
+    private var approvals: RoomApprovalController? = null
     private var admission: RoomAdmission? = null
     private var work: Job? = null
     private var session: RoomMembershipSession? = null
@@ -38,10 +52,12 @@ internal class RoomController(private val scope: CoroutineScope) {
     fun connect() {
         verifyOwner()
         if (stopping || editor.busy || connected || work != null || !editor.isValid) return
+        if (!currentAccount) return
         playbackSession = null; playbackEpoch = null
+        val authority = accountAuthority
         val values = editor.values; val owner = editor.mode == "createRoom"
         editor = editor.copy(state = "connecting", status = "")
-        val job = scope.launch(start = CoroutineStart.LAZY) { run(values, owner) }; work = job; job.start()
+        val job = scope.launch(start = CoroutineStart.LAZY) { run(values, owner, authority) }; work = job; job.start()
     }
     fun libraryPresentation(source: syncwatch.design.LibraryPresentation, sharedStartAvailable: Boolean = false) = source.copy(
         enabledActions = (source.enabledActions + if (stopping) emptySet() else setOf("openRoom")) -
@@ -92,6 +108,32 @@ internal class RoomController(private val scope: CoroutineScope) {
             editor.clearSecrets().edit("roomID", "").copy(status = "roomInvitationInvalid")
         }
     }
+    fun decideAdmission(id: String, approve: Boolean) {
+        verifyOwner()
+        if (!stopping && connected && editor.owner) approvals?.decide(id, approve)
+    }
+    private var invitationCopyBusy = false
+    private var invitationCopyRevision = java.util.UUID.randomUUID()
+    suspend fun invitationForCopy(): RoomInvitationTransfer? {
+        if (invitationCopyBusy || stopping || !connected || !editor.owner) return null
+        val owner = session ?: return null; val value = admission ?: return null
+        invitationCopyBusy = true; val revision = java.util.UUID.randomUUID(); invitationCopyRevision = revision
+        return try {
+            val invitation = if (accountAuthority != null) owner.invitation() else RoomInvitation(value.roomId, value.invitation ?: throw RoomProtocolException("malformed"))
+            RoomInvitationTransfer(owner, invitation, revision).takeIf(::canCopy)
+        } catch (_: Exception) { currentCoroutineContext().ensureActive(); if (connected && session === owner) editor = editor.copy(status = "roomInvitationCopyFailed"); null }
+        finally { invitationCopyBusy = false }
+    }
+    fun canCopy(transfer: RoomInvitationTransfer): Boolean = !stopping && connected && editor.owner && session === transfer.owner && invitationCopyRevision == transfer.revision
+    fun invitationCopyCompleted(copied: Boolean, transfer: RoomInvitationTransfer) { if (canCopy(transfer)) invitationCopyCompleted(copied) }
+    private fun startApprovals(owner: RoomMembershipSession) {
+        if (approvals != null || !connected || !editor.owner || accountAuthority == null) return
+        val controller = RoomApprovalController(owner, scope) { value ->
+            if (!stopping && connected && session === owner) editor = editor.copy(pendingRequests = value.rows,
+                pendingAvailable = value.available, deciding = value.deciding, pendingStatus = value.notice)
+        }
+        approvals = controller; controller.start()
+    }
     fun invitationToCopy(): String? = if (connected) admission?.let { value -> value.invitation?.let { RoomInvitation(value.roomId, it).copyText() } } else null
     fun invitationCopyCompleted(copied: Boolean) {
         verifyOwner()
@@ -112,13 +154,23 @@ internal class RoomController(private val scope: CoroutineScope) {
         if (localRevision == revision) return
         localRevision = revision; localFiles = files.toList(); startPublisher(); startMissingReport()
     }
+    fun callMembership(): RoomCallMembership? {
+        verifyOwner()
+        val owner = session ?: return null; val value = admission ?: return null
+        return if (accountAuthority != null && !stopping && connected) RoomCallMembership(owner, value.memberId, value.bootstrap.snapshot.epoch, editor.owner) else null
+    }
+    fun isCurrent(membership: RoomCallMembership): Boolean {
+        verifyOwner()
+        return accountAuthority != null && !stopping && connected && session === membership.owner && admission?.memberId == membership.memberId &&
+            admission?.bootstrap?.snapshot?.epoch == membership.epoch
+    }
     fun isCurrent(membership: RoomWatchMembership): Boolean {
         verifyOwner()
         return !stopping && connected && session === membership.owner && admission?.memberId == membership.memberId &&
             admission?.bootstrap?.snapshot?.epoch == membership.epoch
     }
     // An admitted native scope survives metadata transport loss, but not an explicit replacement.
-    fun canContinuePlayback(membership: RoomWatchMembership): Boolean = !stopping && playbackSession === membership.owner && playbackEpoch == membership.epoch
+    fun canContinuePlayback(membership: RoomWatchMembership): Boolean = !stopping && currentAccount && playbackSession === membership.owner && playbackEpoch == membership.epoch
     companion object {
         fun isMetadataInterruption(error: Exception): Boolean {
             var reason: Throwable = error
@@ -133,6 +185,13 @@ internal class RoomController(private val scope: CoroutineScope) {
                 else -> false
             }
         }
+    }
+    suspend fun syncTicket(membership: RoomWatchMembership): RoomSyncTicket {
+        check(accountAuthority != null && isCurrent(membership))
+        val ticket = membership.owner.syncTicket()
+        currentCoroutineContext().ensureActive()
+        check(accountAuthority != null && isCurrent(membership))
+        return ticket
     }
     suspend fun beginWatch(): Pair<RoomWatchMembership, RoomWatchContext> {
         verifyOwner()
@@ -209,23 +268,35 @@ internal class RoomController(private val scope: CoroutineScope) {
     private fun recordWatch(bootstrap: RoomBootstrap) {
         if (bootstrap.snapshot.sequence >= (watchBootstrap?.snapshot?.sequence ?: 0)) watchBootstrap = bootstrap
     }
-    private suspend fun run(values: Map<String, String>, owner: Boolean) {
+    private suspend fun run(values: Map<String, String>, owner: Boolean, authority: RoomAccountAuthority?) {
         var current: RoomClient? = null; var admitted: RoomAdmission? = null
         var failed = false; var interrupted = false
+        var pending: AccountRoomAdmission? = null
+        var failureNotice = if (authority == null) "roomConnectionFailed" else "roomRequestUnavailable"
         try {
-            val next = RoomClient(RoomAddress(values.getValue("serviceAddress"))); current = next;
-            val identity = RoomIdentity("run-" + java.util.UUID.randomUUID().toString(), values.getValue("username"))
-            val value = if (owner) next.create(identity, RoomConnection(values.getValue("syncplayHost"), values.getValue("syncplayPort").toInt(), values.getValue("roomName")), RoomSecret.fromInput(values.getValue("creationKey")))
-                else next.join(values.getValue("roomID"), RoomSecret.fromInput(values.getValue("invitation")), identity)
-            admitted = value; admission = value; editor = editor.clearSecrets()
+            val next = authority?.let(::RoomClient) ?: RoomClient(RoomAddress(values.getValue("serviceAddress"))); current = next
+            val value: RoomAdmission
+            val identity: RoomIdentity
+            if (authority != null) {
+                val attempt = AccountRoomAdmission(next, owner, values); pending = attempt
+                value = attempt.perform { editor = editor.copy(state = "awaitingApproval") }
+                identity = value.bootstrap.snapshot.members.first { it.memberId == value.memberId }.identity
+            } else {
+                identity = RoomIdentity("run-" + java.util.UUID.randomUUID().toString(), values.getValue("username"))
+                value = if (owner) next.create(identity, RoomConnection(values.getValue("syncplayHost"), values.getValue("syncplayPort").toInt(), values.getValue("roomName")), RoomSecret.fromInput(values.getValue("creationKey")))
+                    else next.join(values.getValue("roomID"), RoomSecret.fromInput(values.getValue("invitation")), identity)
+            }
+            admitted = value; pending = null; currentCoroutineContext().ensureActive();
+            if (!currentAccount) throw RoomProtocolException("closed")
+            admission = value; editor = editor.clearSecrets()
             val ownerSession = RoomMembershipSession(next, value, identity)
             session = ownerSession; catalogMap = RoomLocalCatalog(); acknowledgedRevision = null; prepared = null; acknowledgedPrepared = null
-            RoomEventMonitor.run(next.address, ownerSession,
+            RoomEventMonitor.run(next.address, ownerSession, authority = authority,
                 reconnecting = { editor = editor.copy(state = "reconnecting") },
                 accepted = { view ->
                     playbackSession = ownerSession; playbackEpoch = value.bootstrap.snapshot.epoch
                     editor = editor.copy(state = "connected", roomId = value.roomId, owner = owner)
-                    accept(view); startPublisher()
+                    accept(view); startApprovals(ownerSession); startPublisher()
                 })
         } catch (error: CancellationException) {
             // A bounded receive/page timeout is an attempt failure; owner cancellation still propagates.
@@ -235,18 +306,24 @@ internal class RoomController(private val scope: CoroutineScope) {
             editor = editor.copy(state = "connecting")
         }
         catch (error: Exception) {
+            if (error is RoomAdmissionFailure) failureNotice = error.notice
             failed = true; interrupted = isMetadataInterruption(error) && playbackSession != null
             if (!interrupted) { playbackSession = null; playbackEpoch = null }
             editor = editor.copy(state = "connecting")
         }
         finally {
             withContext(NonCancellable) {
+                approvals?.close(); approvals = null
+                editor = editor.copy(pendingRequests = emptyList(), pendingStatus = "", deciding = false, pendingAvailable = false)
                 missingReport?.cancelAndJoin(); missingReport = null
                 publisher?.cancelAndJoin(); publisher = null; session = null; acknowledgedRevision = null; prepared = null; acknowledgedPrepared = null; catalogMap = RoomLocalCatalog()
                 watchBootstrap = null
-                current?.let { target -> admitted?.takeIf { !interrupted }?.let { value -> withTimeoutOrNull(3000) { runCatching { target.leave(value) } } }; target.close() }
+                current?.let { target ->
+                    if (!interrupted) withTimeoutOrNull(3000) { runCatching { admitted?.let { target.leave(it) } ?: pending?.cancel() } }
+                    target.close()
+                }
                 admission = null; catalogView = null; editor = editor.clearSecrets().copy(memberCount = 0, owner = false); work = null
-                if (failed) editor = editor.copy(state = "failed", status = "roomConnectionFailed")
+                if (failed) editor = editor.copy(state = "failed", status = failureNotice)
             }
         }
     }

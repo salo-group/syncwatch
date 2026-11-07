@@ -407,7 +407,9 @@ public struct DesignSurface: View {
                 Text(node.string("text")).lineLimit(node.props["lines"].flatMap(Int.init)).truncationMode(
                     node.string("truncate") == "middle" ? .middle : .tail
                 ).multilineTextAlignment(node.string("align") == "center" ? .center : .leading).minimumScaleFactor(
-                    node.props["minScale"] == nil ? 1 : node.number("minScale")))
+                    node.props["minScale"] == nil ? 1 : node.number("minScale")
+                )
+                .fixedSize(horizontal: false, vertical: node.props["lines"] == nil))
             if !node.string("moveAction").isEmpty {
                 text = AnyView(
                     text.contentShape(Rectangle()).gesture(

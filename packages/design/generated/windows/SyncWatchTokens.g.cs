@@ -638,6 +638,46 @@ public static class SyncWatchCopy
         ("en", "accountSignInRequired") => "Saved sign-in expired or was revoked. Sign in again.",
         ("en", "accountMemoryWithSaved") => "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
         ("en", "accountUnavailable") => "The account service is unavailable. Retrying…",
+        ("en", "roomAccountRequired") => "Sign in with Google to create a room or request admission. Local playback remains available without signing in.",
+        ("en", "roomAdmissionPending") => "Waiting for the room owner to approve your request.",
+        ("en", "roomAdmissionDenied") => "The owner declined this request. Ask for a new invitation to try again.",
+        ("en", "roomAdmissionExpired") => "This request expired or the room closed. Ask for a new invitation.",
+        ("en", "roomRequestUnavailable") => "The request could not complete. Check your account and connection, or ask the owner for a new invitation.",
+        ("en", "roomApprovalRequests") => "Admission requests",
+        ("en", "approveRoomAdmission") => "Approve",
+        ("en", "denyRoomAdmission") => "Deny",
+        ("en", "roomPendingUnavailable") => "Requests could not be refreshed. Approval is paused until the connection returns.",
+        ("en", "roomAdmissionChanged") => "This request changed or expired. The list is being refreshed.",
+        ("en", "roomCancelRequest") => "Cancel request",
+        ("en", "meetTitle") => "Google Meet",
+        ("en", "meetExternalOwnership") => "Meet opens in its own browser or app window. Choose devices and join there. Leaving SyncWatch does not stop that window’s microphone or camera.",
+        ("en", "meetAuthorize") => "Allow SyncWatch to create calls",
+        ("en", "meetConfirm") => "Allow calls for this account",
+        ("en", "meetCancelAuthorization") => "Cancel permission request",
+        ("en", "meetRoomRequired") => "Join a room to use its call.",
+        ("en", "meetIdle") => "No call in this room yet.",
+        ("en", "meetWorking") => "Connecting to Google Meet…",
+        ("en", "meetAuthorizing") => "Finish the permission request in your browser.",
+        ("en", "meetBrowserCode") => "Enter the SyncWatch confirmation code shown in your browser.",
+        ("en", "meetPermissionConfirmation") => "Check the account before allowing SyncWatch to create calls.",
+        ("en", "meetReady") => "The room’s call is ready. Join in Meet.",
+        ("en", "meetHandedOff") => "Meet was opened. Choose your devices and join there.",
+        ("en", "meetUnavailable") => "The call is unavailable. Your movie can continue.",
+        ("en", "meetUnknown") => "Google’s result could not be confirmed. The request will not be repeated automatically.",
+        ("en", "meetEnded") => "Meet confirmed the end request. Check the Meet window for local audio and camera.",
+        ("en", "meetFailed") => "The call action failed. You can keep watching.",
+        ("en", "meetEndForEveryone") => "End call for everyone",
+        ("en", "meetStart") => "Start room call",
+        ("en", "meetOpen") => "Open in Google Meet",
+        ("en", "meetRetry") => "Check again",
+        ("en", "meetInvalidConfirmation") => "The code could not be verified. Check it or cancel the permission request.",
+        ("en", "meetAccountMismatch") => "Use the Google account already signed in to SyncWatch.",
+        ("en", "meetPermissionUnavailable") => "Google did not grant permission to create calls. You can keep watching.",
+        ("en", "meetPermissionExpired") => "The permission request expired. Allow calls again to start a new request. You can keep watching.",
+        ("en", "meetBrowserUnavailable") => "Could not open your browser. Check the default browser setting and try again.",
+        ("en", "meetEndConfirmation") => "End this room’s call for everyone?",
+        ("en", "meetKeepCall") => "Keep call",
+        ("en", "meetEndConsequences") => "Meet will end the active conference for everyone. The movie can continue.",
         ("ru", "brand") => "SyncWatch",
         ("ru", "room") => "Смотрим вместе",
         ("ru", "library") => "Библиотека фильмов",
@@ -912,6 +952,46 @@ public static class SyncWatchCopy
         ("ru", "accountSignInRequired") => "Сохранённый вход истёк или отозван. Войдите снова.",
         ("ru", "accountMemoryWithSaved") => "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
         ("ru", "accountUnavailable") => "Сервис аккаунтов недоступен. Повторяем попытку…",
+        ("ru", "roomAccountRequired") => "Войдите через Google, чтобы создать комнату или запросить допуск. Локальный просмотр доступен без входа.",
+        ("ru", "roomAdmissionPending") => "Ожидание одобрения владельца комнаты.",
+        ("ru", "roomAdmissionDenied") => "Владелец отклонил запрос. Для повторной попытки попросите новое приглашение.",
+        ("ru", "roomAdmissionExpired") => "Срок запроса истёк или комната закрыта. Попросите новое приглашение.",
+        ("ru", "roomRequestUnavailable") => "Не удалось завершить запрос. Проверьте аккаунт и соединение или попросите владельца выдать новое приглашение.",
+        ("ru", "roomApprovalRequests") => "Запросы на допуск",
+        ("ru", "approveRoomAdmission") => "Разрешить",
+        ("ru", "denyRoomAdmission") => "Отказать",
+        ("ru", "roomPendingUnavailable") => "Не удалось обновить запросы. Одобрение приостановлено до восстановления связи.",
+        ("ru", "roomAdmissionChanged") => "Запрос изменился или истёк. Список обновляется.",
+        ("ru", "roomCancelRequest") => "Отменить запрос",
+        ("ru", "meetTitle") => "Google Meet",
+        ("ru", "meetExternalOwnership") => "Meet откроется в отдельном окне браузера или приложения. Выберите устройства и войдите там. Выход из SyncWatch не выключает микрофон или камеру в этом окне.",
+        ("ru", "meetAuthorize") => "Разрешить SyncWatch создавать звонки",
+        ("ru", "meetConfirm") => "Разрешить звонки для этого аккаунта",
+        ("ru", "meetCancelAuthorization") => "Отменить запрос разрешения",
+        ("ru", "meetRoomRequired") => "Войдите в комнату, чтобы использовать её звонок.",
+        ("ru", "meetIdle") => "В этой комнате пока нет звонка.",
+        ("ru", "meetWorking") => "Подключение к Google Meet…",
+        ("ru", "meetAuthorizing") => "Завершите запрос разрешения в браузере.",
+        ("ru", "meetBrowserCode") => "Введите код подтверждения SyncWatch из браузера.",
+        ("ru", "meetPermissionConfirmation") => "Проверьте аккаунт перед разрешением создавать звонки.",
+        ("ru", "meetReady") => "Звонок комнаты готов. Войдите в Meet.",
+        ("ru", "meetHandedOff") => "Meet открыт. Выберите устройства и войдите там.",
+        ("ru", "meetUnavailable") => "Звонок недоступен. Просмотр фильма можно продолжить.",
+        ("ru", "meetUnknown") => "Не удалось подтвердить результат Google. Запрос не будет повторён автоматически.",
+        ("ru", "meetEnded") => "Meet подтвердил запрос завершения. Проверьте звук и камеру в окне Meet.",
+        ("ru", "meetFailed") => "Действие со звонком не выполнено. Просмотр можно продолжить.",
+        ("ru", "meetEndForEveryone") => "Завершить звонок для всех",
+        ("ru", "meetStart") => "Начать звонок комнаты",
+        ("ru", "meetOpen") => "Открыть в Google Meet",
+        ("ru", "meetRetry") => "Проверить снова",
+        ("ru", "meetInvalidConfirmation") => "Не удалось проверить код. Проверьте его или отмените запрос разрешения.",
+        ("ru", "meetAccountMismatch") => "Используйте аккаунт Google, с которым вы вошли в SyncWatch.",
+        ("ru", "meetPermissionUnavailable") => "Google не предоставил разрешение создавать звонки. Просмотр можно продолжить.",
+        ("ru", "meetPermissionExpired") => "Запрос разрешения истёк. Снова разрешите звонки, чтобы начать новый запрос. Просмотр можно продолжить.",
+        ("ru", "meetBrowserUnavailable") => "Не удалось открыть браузер. Проверьте браузер по умолчанию и повторите попытку.",
+        ("ru", "meetEndConfirmation") => "Завершить звонок этой комнаты для всех?",
+        ("ru", "meetKeepCall") => "Оставить звонок",
+        ("ru", "meetEndConsequences") => "Meet завершит активную конференцию для всех. Просмотр фильма можно продолжить.",
         _ when language != "en" => Text(key, "en"),
         _ => key,
     };
@@ -963,7 +1043,20 @@ public sealed record SyncWatchRoomFormField(string Id, string Section, string Ki
 public static class SyncWatchRoomForm
 {
     public static string[] Sections => ["connection", "createRoom", "joinRoom"];
-    public static string[] States => ["disconnected", "connecting", "connected", "failed"];
+    public static string[] States => ["disconnected", "connecting", "connected", "failed", "reconnecting", "awaitingApproval"];
+    public const string DefaultFlow = "account";
+    public static System.Collections.Generic.IReadOnlyDictionary<string, string[]> Flows => new System.Collections.Generic.Dictionary<string, string[]>
+    {
+        ["legacy"] = ["serviceAddress", "username", "creationKey", "syncplayHost", "syncplayPort", "roomName", "roomID", "invitation"],
+        ["account"] = ["roomID", "invitation"],
+    };
+    public static string[] SignInFlows => ["account"];
+    public static System.Collections.Generic.IReadOnlyDictionary<string, string> StatusCopy => new System.Collections.Generic.Dictionary<string, string>
+    {
+        ["connecting"] = "roomConnecting",
+        ["reconnecting"] = "reconnecting",
+        ["awaitingApproval"] = "roomAdmissionPending",
+    };
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults => new System.Collections.Generic.Dictionary<string, string>
     {
         ["serviceAddress"] = "",
@@ -1143,7 +1236,7 @@ public static class SyncWatchSelectionMenu
 
 public static class SyncWatchLayouts
 {
-    public const string SourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1";
+    public const string SourceDigest = "d2a04f439b8a5ed83b9bc23da51ab977907383bf32605cd4cb2cea72d090b4e2";
     public const double CoordinateSize = 20;
     public static System.Collections.Generic.IReadOnlyDictionary<string, string> Defaults { get; } = new System.Collections.Generic.Dictionary<string, string>
     {
@@ -1344,6 +1437,7 @@ public static class SyncWatchLayouts
         ["Application"] = MakeApplication(),
         ["Room"] = MakeRoom(),
         ["Account"] = MakeAccount(),
+        ["Meet"] = MakeMeet(),
     };
     private static DesignNode MakeLibrary()
     {
@@ -6124,6 +6218,91 @@ public static class SyncWatchLayouts
             ["align"] = "leading",
             ["text"] = "~roomConnectionHint",
         }, []);
+        var roomAccountRequiredText = new DesignNode("roomAccountRequiredText", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~roomAccountRequired",
+        }, []);
+        var roomAccountSignInLabel = new DesignNode("roomAccountSignInLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountSignIn",
+        }, []);
+        var roomAccountSignIn = new DesignNode("roomAccountSignIn", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "openAccount",
+            ["automation"] = "{namespace}.openAccount",
+            ["enabled"] = "$can.openAccount",
+            ["label"] = "~accountSignIn",
+        }, [roomAccountSignInLabel]);
+        var roomAccountRequired = new DesignNode("roomAccountRequired", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["when"] = "$needsAccount",
+            ["gap"] = "@control.compactGap",
+        }, [roomAccountRequiredText, roomAccountSignIn]);
+        var roomAccountName = new DesignNode("roomAccountName", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{~openAccount}: {accountName}",
+        }, []);
+        var roomAccountService = new DesignNode("roomAccountService", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{~roomService}: {accountService}",
+        }, []);
+        var roomAccountIdentity = new DesignNode("roomAccountIdentity", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["when"] = "$showAccountIdentity",
+            ["gap"] = "@control.compactGap",
+        }, [roomAccountName, roomAccountService]);
         var roomCreateModeLabel = new DesignNode("roomCreateModeLabel", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6301,6 +6480,155 @@ public static class SyncWatchLayouts
             ["when"] = "$connected",
             ["gap"] = "@control.compactGap",
         }, [roomConnectedLabel, roomIdFact, roomMembersFact]);
+        var roomPendingHeading = new DesignNode("roomPendingHeading", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~roomApprovalRequests",
+        }, []);
+        var roomPendingName = new DesignNode("roomPendingName", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{name}",
+        }, []);
+        var roomPendingEmail = new DesignNode("roomPendingEmail", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{email}",
+        }, []);
+        var roomPendingPerson = new DesignNode("roomPendingPerson", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["width"] = "fill",
+            ["gap"] = "@control.compactGap",
+        }, [roomPendingName, roomPendingEmail]);
+        var roomApproveAdmissionLabel = new DesignNode("roomApproveAdmissionLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~approveRoomAdmission",
+        }, []);
+        var roomApproveAdmission = new DesignNode("roomApproveAdmission", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "approveRoomAdmission",
+            ["automation"] = "{namespace}.approveRoomAdmission.{requestID}",
+            ["enabled"] = "$can.decide",
+            ["label"] = "{~approveRoomAdmission}: {name}",
+            ["payload"] = "$requestID",
+        }, [roomApproveAdmissionLabel]);
+        var roomDenyAdmissionLabel = new DesignNode("roomDenyAdmissionLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~denyRoomAdmission",
+        }, []);
+        var roomDenyAdmission = new DesignNode("roomDenyAdmission", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "denyRoomAdmission",
+            ["automation"] = "{namespace}.denyRoomAdmission.{requestID}",
+            ["enabled"] = "$can.decide",
+            ["label"] = "{~denyRoomAdmission}: {name}",
+            ["payload"] = "$requestID",
+        }, [roomDenyAdmissionLabel]);
+        var roomPendingRow = new DesignNode("roomPendingRow", "row", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["gap"] = "@control.compactGap",
+            ["paddingY"] = "@control.compactGap",
+        }, [roomPendingPerson, roomApproveAdmission, roomDenyAdmission]);
+        var roomPendingRows = new DesignNode("roomPendingRows", "repeat", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["items"] = "pendingRequests",
+        }, [roomPendingRow]);
+        var roomPendingStatus = new DesignNode("roomPendingStatus", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~{pendingStatus}",
+        }, []);
+        var roomPendingRequests = new DesignNode("roomPendingRequests", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["when"] = "$showPendingRequests",
+            ["gap"] = "@control.compactGap",
+        }, [roomPendingHeading, roomPendingRows, roomPendingStatus]);
         var roomStatus = new DesignNode("roomStatus", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6321,7 +6649,7 @@ public static class SyncWatchLayouts
             ["align"] = "leading",
             ["padding"] = "@layout.settingsCardPadding",
             ["gap"] = "@layout.settingsCardPadding",
-        }, [roomHint, roomModeSelector, roomFields, roomConnectedFacts, roomStatus]);
+        }, [roomHint, roomAccountRequired, roomAccountIdentity, roomModeSelector, roomFields, roomConnectedFacts, roomPendingRequests, roomStatus]);
         var roomBody = new DesignNode("roomBody", "scroll", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6447,6 +6775,40 @@ public static class SyncWatchLayouts
             ["label"] = "~leaveRoom",
             ["when"] = "$can.leaveRoom",
         }, [roomLeaveLabel]);
+        var roomCancelAdmissionLabel = new DesignNode("roomCancelAdmissionLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~roomCancelRequest",
+        }, []);
+        var roomCancelAdmission = new DesignNode("roomCancelAdmission", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "leaveRoom",
+            ["automation"] = "{namespace}.leaveRoom",
+            ["enabled"] = "$can.cancelRequest",
+            ["label"] = "~roomCancelRequest",
+            ["when"] = "$can.cancelRequest",
+        }, [roomCancelAdmissionLabel]);
         var roomConnectLabel = new DesignNode("roomConnectLabel", "text", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -6491,7 +6853,7 @@ public static class SyncWatchLayouts
             ["focusWidth"] = "@control.borderWidth",
             ["padding"] = "@layout.settingsCardPadding",
             ["gap"] = "@control.compactGap",
-        }, [roomFooterSpace, roomPaste, roomCopy, roomLeave, roomConnect]);
+        }, [roomFooterSpace, roomPaste, roomCopy, roomLeave, roomCancelAdmission, roomConnect]);
         var roomDialog = new DesignNode("roomDialog", "column", new()
         {
             ["disabledOpacity"] = "0.4",
@@ -7052,5 +7414,639 @@ public static class SyncWatchLayouts
             ["cycleFocus"] = "true",
         }, [accountHeader, accountScroll, accountActions]);
         return accountDialog;
+    }
+    private static DesignNode MakeMeet()
+    {
+        var meetTitle = new DesignNode("meetTitle", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["fontSize"] = "@type.settingsTitleSize",
+            ["weight"] = "bold",
+            ["text"] = "~meetTitle",
+            ["width"] = "fill",
+        }, []);
+        var meetLabelclose = new DesignNode("meetLabelclose", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~close",
+        }, []);
+        var meetButtonclose = new DesignNode("meetButtonclose", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "close",
+            ["enabled"] = "$can.close",
+            ["automation"] = "meet.close",
+            ["label"] = "~close",
+        }, [meetLabelclose]);
+        var meetHeader = new DesignNode("meetHeader", "row", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["padding"] = "@layout.settingsCardPadding",
+            ["gap"] = "@control.compactGap",
+        }, [meetTitle, meetButtonclose]);
+        var meetStatus = new DesignNode("meetStatus", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~{status}",
+        }, []);
+        var meetOwnership = new DesignNode("meetOwnership", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetExternalOwnership",
+        }, []);
+        var meetEndConsequences = new DesignNode("meetEndConsequences", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetEndConsequences",
+            ["when"] = "$can.meetConfirmEnd",
+        }, []);
+        var meetLabelmeetOpenAuthorization = new DesignNode("meetLabelmeetOpenAuthorization", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountOpenBrowser",
+        }, []);
+        var meetButtonmeetOpenAuthorization = new DesignNode("meetButtonmeetOpenAuthorization", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetOpenAuthorization",
+            ["enabled"] = "$can.meetOpenAuthorization",
+            ["automation"] = "meet.meetOpenAuthorization",
+            ["label"] = "~accountOpenBrowser",
+            ["when"] = "$can.meetOpenAuthorization",
+        }, [meetLabelmeetOpenAuthorization]);
+        var meetPendingState = new DesignNode("meetPendingState", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["case"] = "pending",
+        }, [meetButtonmeetOpenAuthorization]);
+        var meetProofLabel = new DesignNode("meetProofLabel", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountBrowserProof",
+        }, []);
+        var meetProofInput = new DesignNode("meetProofInput", "input", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accent",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["placeholderFill"] = "theme.textSecondary",
+            ["height"] = "@control.fieldHeight",
+            ["paddingX"] = "@layout.panelPadding",
+            ["radius"] = "@control.fieldRadius",
+            ["background"] = "theme.inputFill",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["value"] = "$browserProof",
+            ["action"] = "editMeetBrowserProof",
+            ["enabled"] = "$can.editMeetBrowserProof",
+            ["automation"] = "meet.browserProof",
+            ["label"] = "~accountBrowserProof",
+        }, []);
+        var meetLabelmeetVerify = new DesignNode("meetLabelmeetVerify", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~accountVerifyBrowserProof",
+        }, []);
+        var meetButtonmeetVerify = new DesignNode("meetButtonmeetVerify", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetVerify",
+            ["enabled"] = "$can.meetVerify",
+            ["automation"] = "meet.meetVerify",
+            ["label"] = "~accountVerifyBrowserProof",
+            ["when"] = "$can.meetVerify",
+        }, [meetLabelmeetVerify]);
+        var meetProofState = new DesignNode("meetProofState", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["case"] = "browserConfirmationRequired",
+            ["gap"] = "@control.compactGap",
+        }, [meetProofLabel, meetProofInput, meetButtonmeetVerify]);
+        var meetAccountName = new DesignNode("meetAccountName", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{name}",
+        }, []);
+        var meetAccountEmail = new DesignNode("meetAccountEmail", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "{email}",
+        }, []);
+        var meetLabelmeetConfirm = new DesignNode("meetLabelmeetConfirm", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetConfirm",
+        }, []);
+        var meetButtonmeetConfirm = new DesignNode("meetButtonmeetConfirm", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetConfirm",
+            ["enabled"] = "$can.meetConfirm",
+            ["automation"] = "meet.meetConfirm",
+            ["label"] = "~meetConfirm",
+            ["when"] = "$can.meetConfirm",
+        }, [meetLabelmeetConfirm]);
+        var meetConfirmState = new DesignNode("meetConfirmState", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["case"] = "confirmAuthorization",
+            ["gap"] = "@control.compactGap",
+        }, [meetAccountName, meetAccountEmail, meetButtonmeetConfirm]);
+        var meetAuthorization = new DesignNode("meetAuthorization", "switch", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["value"] = "$authorizationState",
+        }, [meetPendingState, meetProofState, meetConfirmState]);
+        var meetLabelopenRoom = new DesignNode("meetLabelopenRoom", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~openRoom",
+        }, []);
+        var meetButtonopenRoom = new DesignNode("meetButtonopenRoom", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "openRoom",
+            ["enabled"] = "$can.openRoom",
+            ["automation"] = "meet.openRoom",
+            ["label"] = "~openRoom",
+            ["when"] = "$can.openRoom",
+        }, [meetLabelopenRoom]);
+        var meetLabelmeetAuthorize = new DesignNode("meetLabelmeetAuthorize", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetAuthorize",
+        }, []);
+        var meetButtonmeetAuthorize = new DesignNode("meetButtonmeetAuthorize", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetAuthorize",
+            ["enabled"] = "$can.meetAuthorize",
+            ["automation"] = "meet.meetAuthorize",
+            ["label"] = "~meetAuthorize",
+            ["when"] = "$can.meetAuthorize",
+        }, [meetLabelmeetAuthorize]);
+        var meetLabelmeetCancelAuthorization = new DesignNode("meetLabelmeetCancelAuthorization", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetCancelAuthorization",
+        }, []);
+        var meetButtonmeetCancelAuthorization = new DesignNode("meetButtonmeetCancelAuthorization", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetCancelAuthorization",
+            ["enabled"] = "$can.meetCancelAuthorization",
+            ["automation"] = "meet.meetCancelAuthorization",
+            ["label"] = "~meetCancelAuthorization",
+            ["when"] = "$can.meetCancelAuthorization",
+        }, [meetLabelmeetCancelAuthorization]);
+        var meetLabelmeetStart = new DesignNode("meetLabelmeetStart", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetStart",
+        }, []);
+        var meetButtonmeetStart = new DesignNode("meetButtonmeetStart", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetStart",
+            ["enabled"] = "$can.meetStart",
+            ["automation"] = "meet.meetStart",
+            ["label"] = "~meetStart",
+            ["when"] = "$can.meetStart",
+        }, [meetLabelmeetStart]);
+        var meetLabelmeetOpen = new DesignNode("meetLabelmeetOpen", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetOpen",
+        }, []);
+        var meetButtonmeetOpen = new DesignNode("meetButtonmeetOpen", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetOpen",
+            ["enabled"] = "$can.meetOpen",
+            ["automation"] = "meet.meetOpen",
+            ["label"] = "~meetOpen",
+            ["when"] = "$can.meetOpen",
+        }, [meetLabelmeetOpen]);
+        var meetLabelmeetEnd = new DesignNode("meetLabelmeetEnd", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetEndForEveryone",
+        }, []);
+        var meetButtonmeetEnd = new DesignNode("meetButtonmeetEnd", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetEnd",
+            ["enabled"] = "$can.meetEnd",
+            ["automation"] = "meet.meetEnd",
+            ["label"] = "~meetEndForEveryone",
+            ["when"] = "$can.meetEnd",
+        }, [meetLabelmeetEnd]);
+        var meetLabelmeetRetry = new DesignNode("meetLabelmeetRetry", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetRetry",
+        }, []);
+        var meetButtonmeetRetry = new DesignNode("meetButtonmeetRetry", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetRetry",
+            ["enabled"] = "$can.meetRetry",
+            ["automation"] = "meet.meetRetry",
+            ["label"] = "~meetRetry",
+            ["when"] = "$can.meetRetry",
+        }, [meetLabelmeetRetry]);
+        var meetLabelmeetCancelEnd = new DesignNode("meetLabelmeetCancelEnd", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetKeepCall",
+        }, []);
+        var meetButtonmeetCancelEnd = new DesignNode("meetButtonmeetCancelEnd", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetCancelEnd",
+            ["enabled"] = "$can.meetCancelEnd",
+            ["when"] = "$can.meetCancelEnd",
+            ["automation"] = "meet.meetCancelEnd",
+            ["label"] = "~meetKeepCall",
+        }, [meetLabelmeetCancelEnd]);
+        var meetLabelmeetConfirmEnd = new DesignNode("meetLabelmeetConfirmEnd", "text", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["text"] = "~meetEndForEveryone",
+        }, []);
+        var meetButtonmeetConfirmEnd = new DesignNode("meetButtonmeetConfirmEnd", "button", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["paddingX"] = "@layout.settingsCardPadding",
+            ["minHeight"] = "0",
+            ["radius"] = "@control.buttonRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["background"] = "theme.surfaceRaised",
+            ["foreground"] = "theme.text",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["weight"] = "normal",
+            ["contentAlign"] = "center",
+            ["height"] = "@layout.settingsControlHeight",
+            ["action"] = "meetConfirmEnd",
+            ["enabled"] = "$can.meetConfirmEnd",
+            ["when"] = "$can.meetConfirmEnd",
+            ["automation"] = "meet.meetConfirmEnd",
+            ["label"] = "~meetEndForEveryone",
+        }, [meetLabelmeetConfirmEnd]);
+        var meetBody = new DesignNode("meetBody", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["gap"] = "@layout.settingsCardPadding",
+            ["padding"] = "@layout.settingsCardPadding",
+        }, [meetStatus, meetOwnership, meetEndConsequences, meetAuthorization, meetButtonopenRoom, meetButtonmeetAuthorize, meetButtonmeetCancelAuthorization, meetButtonmeetStart, meetButtonmeetOpen, meetButtonmeetEnd, meetButtonmeetRetry, meetButtonmeetCancelEnd, meetButtonmeetConfirmEnd]);
+        var meetScroll = new DesignNode("meetScroll", "scroll", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["barWidth"] = "@control.compactGap",
+            ["thumbMinimum"] = "@control.iconSize",
+            ["thumbRadius"] = "@control.buttonRadius",
+            ["thumbFill"] = "theme.border",
+            ["height"] = "fill",
+            ["minHeight"] = "0",
+        }, [meetBody]);
+        var meetDialog = new DesignNode("meetDialog", "column", new()
+        {
+            ["disabledOpacity"] = "0.4",
+            ["pressedOpacity"] = "0.75",
+            ["focusBorder"] = "theme.accentSoft",
+            ["hoverBorder"] = "theme.accent",
+            ["focusWidth"] = "@control.borderWidth",
+            ["align"] = "leading",
+            ["width"] = "@layout.settingsWidth",
+            ["height"] = "@layout.settingsHeight",
+            ["fontSize"] = "@type.settingsBodySize",
+            ["foreground"] = "theme.text",
+            ["background"] = "theme.surface",
+            ["radius"] = "@control.compactDialogRadius",
+            ["border"] = "theme.border",
+            ["borderWidth"] = "@control.borderWidth",
+            ["clip"] = "true",
+            ["cycleFocus"] = "true",
+        }, [meetHeader, meetScroll]);
+        return meetDialog;
     }
 }

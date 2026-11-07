@@ -6,7 +6,7 @@ Google Meet remains the call provider. SyncWatch owns Google sign-in, room membe
 
 Google documents the Meet PWA for macOS, Windows, and Linux. It requires Chrome and has the same Meet features as the web client. Opening a meeting in the PWA may require the browser's **Open app** action. Do not assume an undocumented launch flag or a universal PWA deep-link API. [Meet PWA](https://support.google.com/meet/answer/10708569?hl=en).
 
-This is the selected target, not a delivered call implementation. The current native clients have no working room-to-browser call handoff or account/Meet provisioning. See the [account and room architecture](accounts-and-rooms.md) and [Google setup](../google-meet-setup.md).
+This is the selected target, not a delivered call implementation. Authenticated permission/provisioning APIs, their three native ports, common-Design Library/Player entry and server-owned room closure cleanup are implemented. Real calling and complete user lifecycle acceptance remain incomplete. See the [Meet service](../meet-service.md), [account and room architecture](accounts-and-rooms.md) and [Google setup](../google-meet-setup.md).
 
 ## User experience
 
@@ -14,7 +14,7 @@ This is the selected target, not a delivered call implementation. The current na
 2. The organizer requests a call and grants the narrow Meet permission when needed. The server creates one associated space and publishes its URI to admitted members.
 3. **Open call** in Library or Player opens that room's canonical URI through the supported HTTPS handler. Confirm the account, devices, permissions, and **Join** in Meet.
 4. Movie playback continues in SyncWatch. Camera/microphone, local preview, device selection, and local hangup are controlled in Meet. A call failure does not stop the movie.
-5. An organizer-only **End call for everyone** can use the backend's authorized REST operation once implemented. It is never a substitute for a participant's local hangup.
+5. The organizer confirms **End call for everyone** before the backend dispatches its authorized REST operation. It is never a substitute for a participant's local hangup.
 
 Keep the application design and add account/call-entry state through the common Apache-2.0 Design library. Google's meeting surface and window chrome belong to Google. Do not duplicate their controls unless a reliable integration can perform and observe the corresponding operation.
 

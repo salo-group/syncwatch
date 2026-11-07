@@ -5,4 +5,5 @@
     <ItemGroup>
         <ProjectReference Include="../../windows-domain/SyncWatch.Domain/SyncWatch.Domain.csproj" />
     </ItemGroup>
+    <ItemGroup><InternalsVisibleTo Include="SyncWatch.Room.Tests" /></ItemGroup>
 </Project>

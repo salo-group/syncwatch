@@ -10,6 +10,20 @@ internal data class RoomWatchContext(val bootstrap: RoomBootstrap, val definitio
 
 /** One application-owned membership serializes bootstrap walks and command numbering. */
 internal class RoomMembershipSession(private val client: RoomClient, private val admission: RoomAdmission, private val identity: RoomIdentity) {
+    suspend fun invitation(): RoomInvitation = client.invite(admission)
+    suspend fun pendingAdmissions(): List<RoomAdmissionRequest> = client.pending(admission)
+    suspend fun decideAdmission(id: String, approve: Boolean) { client.decide(admission, id, approve) }
+    suspend fun syncTicket(): RoomSyncTicket = client.syncTicket(admission)
+    // Calls are independent of ordered catalog/watch work.
+    suspend fun callStatus(): RoomCallStatus = client.callStatus(admission)
+    fun callStartOperation(): RoomCallOperation = client.callStartOperation(admission)
+    fun callEndOperation(status: RoomCallStatus): RoomCallOperation = client.callEndOperation(admission, status)
+    suspend fun requestCall(operation: RoomCallOperation): RoomCallStatus = client.requestCall(operation, admission)
+    suspend fun beginMeetAuthorization(): RoomMeetAuthorization = client.beginMeetAuthorization(admission)
+    suspend fun meetAuthorizationStatus(flow: RoomMeetAuthorization): RoomMeetAuthorizationStatus = client.meetAuthorizationStatus(flow, admission)
+    suspend fun verifyMeetAuthorization(flow: RoomMeetAuthorization, code: String): RoomMeetAuthorizationStatus = client.verifyMeetAuthorization(flow, admission, code)
+    suspend fun confirmMeetAuthorization(flow: RoomMeetAuthorization, code: String): RoomMeetAuthorizationStatus = client.confirmMeetAuthorization(flow, admission, code)
+    suspend fun cancelMeetAuthorization(flow: RoomMeetAuthorization): RoomMeetAuthorizationStatus = client.cancelMeetAuthorization(flow, admission)
     private val gate = Mutex()
     private var minimumSequence = admission.bootstrap.snapshot.sequence
     private var number = 0L

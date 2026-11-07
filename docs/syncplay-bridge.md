@@ -54,3 +54,15 @@ Run Swift only on macOS, C# only on Windows and Kotlin only on Linux. Use the co
 Build inputs come from the existing runtime receipt and pinned fastjsonschema Git submodule. No package installation or application dependency download occurs inside the helper builder. Its receipt retains every payload digest and original validator grant.
 
 This is a development helper. Authenticated immutable installation/signing, physical media/device acceptance and normal room admission remain separate requirements. Compiled Kotlin command and application consumers exercise the owned source-built JVM/UI payload. Packaged application/runtime qualification and visible physical/provider acceptance remain separate. Process probes do not establish media agreement, room admission or six-direction playback acceptance.
+
+## Account transport admission
+
+Matching native adapters and helper packages extend v1 with an explicit capability. `bridge.ready` advertises `admissionVersion: 1`. A native account session requires that value before sending `sync.connect` with `accountAdmission: true`; legacy validation omits the flag. Missing support fails closed rather than opening a stock listener or transferring an account credential.
+
+After verifying the server certificate, each transport requests a fresh nonce through `sync.admissionRequired`. The native owner rereads the current watch generation and media agreement, obtains a one-use room ticket, rechecks scope, and returns `sync.admit` with that nonce, ticket and the room member's actual client-run ID. The helper sends the ticket only over the verified TLS channel and waits for the bound admission acknowledgement before upstream `Hello`. The private IPC run remains distinct from the room run. Google and SyncWatch account access/refresh tokens never enter the helper.
+
+Native writers queue the challenge until the current command acknowledgement completes; an event arriving before the connect acknowledgement cannot create nested writes. A bounded credential wait is canceled and joined on close. Noncanonical or replayed nonces, stale rooms/generations, unavailable account authority and late callbacks fail without sending a credential to a replacement transport. Reconnection requests another ticket; no credential is reused or persisted. The typed admission DTO has redacted diagnostic descriptions.
+
+An already admitted native transport can retain its frozen media under the existing continuation policy. Opening a new transport requires current connected metadata and the active generation, independently of that continuation permission. The enforcing server accepts both empty upstream list forms (`null` and `{}`), keeps room isolation, and rejects nonempty filters and invalid types.
+
+Shared native command/reply fixtures and scripted peers verify correlation, capability, fresh reconnect authority and canceled credential waits. Real TLS checks run the pinned client against the private enforcing server, including revocation and shutdown. These checks use synthetic authority and a simulated player; they do not qualify packaged VLC windows, Google sign-in, or cross-desktop watch acceptance.

@@ -1,0 +1,443 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v2/room-call-response.schema.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 2,
+      "type": "integer"
+    },
+    "result": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "idle"
+            },
+            "callId": {
+              "type": "null"
+            },
+            "generation": {
+              "const": 0,
+              "type": "integer"
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "null"
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "creating"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "null"
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "ready"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "string",
+              "pattern": "^https://meet\\.google\\.com/[a-z]{3}-[a-z]{4}-[a-z]{3}$"
+            },
+            "reason": {
+              "type": "null"
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "creationFailed"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "enum": [
+                "permissionRequired",
+                "providerBusy",
+                "providerUnavailable",
+                "providerResponseInvalid",
+                "providerPolicyInvalid",
+                "roomChanged"
+              ]
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "creationUnknown"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "const": "providerOutcomeUnknown"
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "ending"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "null"
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "ended"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "null"
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "endFailed"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "enum": [
+                "permissionRequired",
+                "providerBusy",
+                "providerUnavailable",
+                "providerResponseInvalid",
+                "providerPolicyInvalid",
+                "roomChanged"
+              ]
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "endUnknown"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "const": "providerOutcomeUnknown"
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "unavailable"
+            },
+            "callId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "meetUri": {
+              "type": "null"
+            },
+            "reason": {
+              "const": "roomChanged"
+            },
+            "authorizationRequired": {
+              "type": "boolean"
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "status",
+            "callId",
+            "generation",
+            "meetUri",
+            "reason",
+            "authorizationRequired",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": [
+    "v",
+    "result"
+  ],
+  "additionalProperties": false
+}

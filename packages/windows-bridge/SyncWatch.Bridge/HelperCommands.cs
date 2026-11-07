@@ -11,11 +11,18 @@ public sealed class HelperCommands(PlaybackScope wireScope)
     public byte[] Shutdown(ulong id) => Frame(id, "bridge.shutdown", new { });
     public byte[] Disconnect(ulong id) => Frame(id, "sync.disconnect", new { });
     public byte[] Ready(ulong id, bool value) => Frame(id, "sync.setReady", new { ready = value });
-    public byte[] Connect(ulong id, string host, int port, string room, string username)
+    public byte[] Connect(ulong id, string host, int port, string room, string username, bool accountAdmission = false)
     {
         if (host.Length is < 1 or > 253 || !Regex.IsMatch(host, "\\A[A-Za-z0-9.:_-]+\\z", RegexOptions.CultureInvariant) || port is < 1 or > 65535) throw Bad();
         Text(room, 256); Text(username, 64);
-        return Frame(id, "sync.connect", new { host, port, room, username, tls = true });
+        var payload = new Dictionary<string, object> { ["host"] = host, ["port"] = port, ["room"] = room, ["username"] = username, ["tls"] = true };
+        if (accountAdmission) payload["accountAdmission"] = true;
+        return Frame(id, "sync.connect", payload);
+    }
+    public byte[] Admit(ulong id, string nonce, SyncplayAdmission authority)
+    {
+        if (!Regex.IsMatch(nonce, "\\A[0-9a-f]{32}\\z", RegexOptions.CultureInvariant)) throw Bad();
+        return Frame(id, "sync.admit", new { nonce, ticket = authority.Credential, clientRunId = authority.ClientRunId });
     }
     public byte[] Loaded(ulong id, string handle, string name, long durationMs, ulong fileSizeBytes)
     {

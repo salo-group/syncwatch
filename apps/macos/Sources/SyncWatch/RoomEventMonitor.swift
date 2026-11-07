@@ -8,7 +8,7 @@ import SyncWatchRoom
         let view: RoomCatalogView
     }
     static func run(
-        address: RoomAddress, membership: RoomMembershipSession,
+        address: RoomAddress, membership: RoomMembershipSession, authority: RoomAccountAuthority? = nil,
         reconnecting: () -> Void, accepted: (RoomCatalogView) throws -> Void
     ) async throws {
         var failures = 0
@@ -16,7 +16,7 @@ import SyncWatchRoom
         let delays: [Duration] = [.milliseconds(500), .seconds(1), .seconds(2), .seconds(4), .seconds(8)]
         while true {
             try Task.checkCancellation()
-            let client = RoomClient(address: address)
+            let client = authority.map { RoomClient(authority: $0) } ?? RoomClient(address: address)
             do {
                 let allowance = deadline.map { min(.seconds(20), ContinuousClock.now.duration(to: $0)) } ?? .seconds(20)
                 guard allowance > .zero else { throw RoomProtocolFailure.transport }

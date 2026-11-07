@@ -10,7 +10,7 @@ public enum HelperReplyKind { Ready, Applied, Stopped }
 public sealed record HelperReply(HelperReplyKind? Kind, string? ErrorCode = null, bool Retryable = false, string? Revision = null)
 {
     public static HelperReply Decode(ReadOnlyMemory<byte> frame, PlaybackScope wireScope, ulong commandId,
-        HelperReplyKind expected, string? expectedRevision = null)
+        HelperReplyKind expected, string? expectedRevision = null, bool requireAdmission = false)
     {
         if (commandId is 0 or > PlaybackScope.MaximumGeneration || !Enum.IsDefined(expected)) throw Bad();
         using var document = PlayerCorrection.DecodeFrame(frame);
@@ -32,7 +32,9 @@ public sealed record HelperReply(HelperReplyKind? Kind, string? ErrorCode = null
         switch (expected)
         {
             case HelperReplyKind.Ready:
-                PlayerCorrection.Keys(payload, ["syncplayRevision"]);
+                PlayerCorrection.Keys(payload, ["syncplayRevision"], ["admissionVersion"]);
+                if (payload.TryGetProperty("admissionVersion", out var capability)) { if (PlayerCorrection.Integer(capability, 1) != 1) throw Bad(); }
+                else if (requireAdmission) throw Bad();
                 if (kind != "bridge.ready" || expectedRevision is null || !Regex.IsMatch(expectedRevision, "\\A[0-9a-f]{40}\\z", RegexOptions.CultureInvariant)
                     || PlayerCorrection.Text(payload, "syncplayRevision") != expectedRevision) throw Bad();
                 break;

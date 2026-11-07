@@ -9,7 +9,7 @@ import syncwatch.ipc.Json
 
 internal fun helperCommandChecks(path: Path) {
     val cases = Json.`object`(Json.parse(Files.readString(path)))["cases"] as List<*>
-    check(cases.size == 26)
+    check(cases.size == 31)
     val encoder = HelperCommands(PlaybackScope("helper-run", 7))
     val native = PlaybackScope("native-owner", 2)
     for (raw in cases) {
@@ -26,7 +26,8 @@ internal fun helperCommandChecks(path: Path) {
             val frame = when (fixture["op"]) {
                 "hello" -> encoder.hello(id); "shutdown" -> encoder.shutdown(id); "disconnect" -> encoder.disconnect(id); "ready" -> encoder.ready(id, true)
                 "loaded" -> encoder.loaded(id, text("handle", "media-1"), text("name", "Кино 🎬.mkv"), number("durationMs", 4000), number("fileSizeBytes", 4096))
-                "connect" -> encoder.connect(id, text("host", "127.0.0.1"), number("port", 8999).toInt(), text("room", "room"), text("username", "Viewer"))
+                "connect" -> encoder.connect(id, text("host", "127.0.0.1"), number("port", 8999).toInt(), text("room", "room"), text("username", "Viewer"), accountAdmission = args["accountAdmission"] == true)
+                "admit" -> encoder.admit(id, text("nonce", "a".repeat(32)), SyncplayAdmission(text("ticket", "A".repeat(64)), text("clientRunId", "room-run")))
                 "observation" -> encoder.observation(id, actual, native); "user" -> encoder.userObservation(id, number("sequence", 3), actual, native)
                 else -> error("unknown command fixture")
             }
@@ -35,7 +36,7 @@ internal fun helperCommandChecks(path: Path) {
         } catch (_: IllegalArgumentException) { }
         check(equivalent(encoded, fixture["expected"])) { fixture["name"].toString() }
     }
-    println("SYNCWATCH_HELPER_COMMANDS_OK 26 golden command and observation authority cases")
+    println("SYNCWATCH_HELPER_COMMANDS_OK 31 golden command and observation authority cases")
 }
 
 private fun equivalent(left: Any?, right: Any?): Boolean = when {

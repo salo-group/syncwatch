@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v2/room-access-request.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "clientRunId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        },
+        "requestId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        }
+      },
+      "required": [
+        "v",
+        "clientRunId",
+        "requestId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "clientRunId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        },
+        "requestId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        },
+        "invitation": {
+          "type": "string",
+          "pattern": "^[0-9A-F]{64}$"
+        }
+      },
+      "required": [
+        "v",
+        "clientRunId",
+        "requestId",
+        "invitation"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "clientRunId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        }
+      },
+      "required": [
+        "v",
+        "clientRunId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "approvalId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        },
+        "approve": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "v",
+        "approvalId",
+        "approve"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "memberId": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        }
+      },
+      "required": [
+        "v",
+        "memberId"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

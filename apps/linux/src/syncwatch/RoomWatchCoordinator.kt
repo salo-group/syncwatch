@@ -3,6 +3,8 @@ package syncwatch
 import androidx.compose.runtime.*
 import java.util.UUID
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import syncwatch.bridge.*
 import syncwatch.design.*
 import syncwatch.library.LocalMediaFile
@@ -131,7 +133,15 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                 val connection = current.bootstrap.connection; val remote = checkNotNull(current.definition.selection).media
                 player.connectShared(checkNotNull(transport), SyncplayEndpoint(connection.host, connection.port, connection.room, ticket.identity.syncplayUsername),
                     SharedMedia("loaded-" + UUID.randomUUID(), remote.title, checkNotNull(local.durationMs), local.fileSizeBytes),
-                    runtime.revision, requireDeclaredIdentity = true, authority = ::authorized)
+                    runtime.revision, requireDeclaredIdentity = true, authority = ::authorized,
+                    admissionProvider = if (room.accountAuthority == null) null else suspend {
+                        waitForTransportAdmission()
+                        val fresh = room.watchContext(ticket)
+                        requireSameGeneration(current, fresh); requireMatch(local, fresh)
+                        val admission = room.syncTicket(ticket)
+                        check(canAdmitTransport()) { "watch-revoked" }
+                        SyncplayAdmission(admission.admissionCredential(), ticket.identity.clientRunId)
+                    })
                 transport = null
             } finally { withContext(NonCancellable + Dispatchers.IO) { transport?.close() } }
             val readyDeadline = System.nanoTime() + 20_000_000_000L
@@ -299,11 +309,42 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
         }
         watch.end(); status = ""
     }
+    private var accountBinding = 0L
+    private val accountBindingLock = Mutex()
+    suspend fun bindAccount(authority: RoomAccountAuthority?, name: String) {
+        if (closing) return
+        val revision = ++accountBinding
+        // Compose may cancel the caller when its account key changes. Finish owned revocation first.
+        withContext(NonCancellable) {
+            accountBindingLock.withLock {
+                if (closing || accountBinding != revision) return@withLock
+                if (room.accountAuthority !== authority && room.hasRoomScope) leave()
+                if (!closing && accountBinding == revision) room.bindAccount(authority, name)
+            }
+        }
+    }
     suspend fun leave() {
         stop(); room.close(); watch.player?.revokeShared(releaseAdmission = true)
         status = ""; seenMembership = false
     }
-    suspend fun close() = withContext(NonCancellable) { closing = true; stop() }
+    suspend fun close() = withContext(NonCancellable) {
+        closing = true; accountBinding++
+        accountBindingLock.withLock { stop() }
+    }
+    private fun canAdmitTransport(): Boolean {
+        val current = active ?: return false; val latest = room.watchBootstrap ?: return false
+        return authorized() && room.isCurrent(current.membership) && latest.snapshot.epoch == current.context.bootstrap.snapshot.epoch &&
+            latest.snapshot.watchGeneration == current.context.bootstrap.snapshot.watchGeneration && latest.snapshot.watchStatus == "active" &&
+            latest.snapshot.mediaId == current.context.bootstrap.snapshot.mediaId
+    }
+    private suspend fun waitForTransportAdmission() {
+        // The helper bounds this wait. Only an established scope may await metadata recovery.
+        while (!canAdmitTransport()) {
+            currentCoroutineContext().ensureActive()
+            check(admitted && authorized() && room.editor.state == "reconnecting") { "watch-revoked" }
+            delay(100)
+        }
+    }
     companion object {
         fun completedPlaylistAvailable(expected: RoomSnapshot, latest: RoomSnapshot): Boolean {
             if (expected.epoch != latest.epoch || expected.watchStatus != "active" || expected.mediaId == null || expected.mediaId != latest.mediaId) return false

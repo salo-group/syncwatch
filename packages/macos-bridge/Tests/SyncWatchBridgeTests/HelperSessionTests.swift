@@ -19,6 +19,8 @@ private actor SessionPeer: HelperTransport {
     private var holdUser = false
     private var stationaryHandshake = false
     private var samples = 0
+    private var ticketMode = false
+    private var advertiseAdmission = true
     private var automaticReady = true
     private var pulseBeforeAck: Bool?
     private(set) var userWriteHeld = false
@@ -65,16 +67,25 @@ private actor SessionPeer: HelperTransport {
             }
             return
         }
+        var hello: [String: Any] = ["syncplayRevision": sessionRevision]
+        if advertiseAdmission { hello["admissionVersion"] = 1 }
         var reply = base(
             kind == "bridge.hello" ? "bridge.ready" : "bridge.result",
-            kind == "bridge.hello" ? ["syncplayRevision": sessionRevision] : ["status": "applied"])
+            kind == "bridge.hello" ? hello : ["status": "applied"])
+        if kind == "sync.connect", ticketMode {
+            guard let payload = value["payload"] as? [String: Any], payload["accountAdmission"] as? Bool == true else {
+                throw HelperSessionFailure.malformed
+            }
+            // Intentionally precedes connect acknowledgement: the native writer must not nest requests.
+            try emit("sync.admissionRequired", ["nonce": String(repeating: "a", count: 32)])
+        }
         if kind == "sync.setReady", pulseBeforeAck == true {
             try emit("sync.readiness", ["ready": true])
             try emit("sync.readiness", ["ready": false])
         }
         reply["replyTo"] = id
         try push(reply)
-        if kind == "sync.connect", !stationaryHandshake {
+        if (kind == "sync.connect" && !ticketMode && !stationaryHandshake) || kind == "sync.admit" {
             try emit("sync.identity", ["username": "Viewer_2"])
             try emit("sync.connection", ["state": "connected"])
         }
@@ -94,6 +105,22 @@ private actor SessionPeer: HelperTransport {
         reading = nil
         writing?.resume()
         writing = nil
+    }
+    func configureAdmission(advertise: Bool = true) {
+        ticketMode = true
+        advertiseAdmission = advertise
+    }
+    func requestAdmission(_ nonce: String) throws { try emit("sync.admissionRequired", ["nonce": nonce]) }
+    func admissionCount() throws -> Int {
+        try sent.filter { try HelperJSON.object($0)["type"] as? String == "sync.admit" }.count
+    }
+    func admissionMatches(_ index: Int, ticket: String, nonce: String) throws -> Bool {
+        let frames = try sent.map { try HelperJSON.object($0) }.filter { $0["type"] as? String == "sync.admit" }
+        guard frames.indices.contains(index), let payload = frames[index]["payload"] as? [String: Any] else {
+            return false
+        }
+        return payload["nonce"] as? String == nonce && payload["ticket"] as? String == ticket
+            && payload["clientRunId"] as? String == "member-run"
     }
     func readiness(_ value: Bool) throws { try emit("sync.readiness", ["ready": value]) }
     func connection(_ value: String) throws { try emit("sync.connection", ["state": value]) }
@@ -445,4 +472,86 @@ private actor SessionPlayer: PlaybackPort {
     }
     await session.close()
     #expect(await player.closes == 0)
+}
+
+@MainActor private final class AdmissionSource {
+    var calls = 0
+    var slow = false
+    var cancelled = false
+    func provide() async throws -> SyncplayAdmission {
+        calls += 1
+        if slow {
+            do { try await Task.sleep(for: .seconds(20)) } catch {
+                cancelled = true
+                throw error
+            }
+        }
+        return try SyncplayAdmission(
+            credential: String(repeating: calls == 1 ? "A" : "B", count: 64), clientRunID: "member-run")
+    }
+}
+
+@Test @MainActor func helperAdmissionUsesFreshChallengesAndRejectsReplay() async throws {
+    let native = try PlaybackScope.fresh().replacingMedia()
+    let source = AdmissionSource()
+    let peer = SessionPeer()
+    await peer.configureAdmission()
+    let session = try HelperSession(
+        transport: peer, player: SessionPlayer(native), nativeScope: native,
+        endpoint: SyncplayEndpoint(host: "localhost", port: 8999, room: "room", username: "Viewer_2"),
+        media: SharedMedia(handle: "media-1", name: "Movie.mkv", durationMs: 60000, fileSizeBytes: 1234),
+        revision: sessionRevision, requireDeclaredIdentity: true, admissionProvider: source.provide)
+    do {
+        try session.start()
+        try await eventually { session.state.playbackReady }
+        #expect(source.calls == 1)
+        #expect(
+            try await peer.admissionMatches(
+                0, ticket: String(repeating: "A", count: 64), nonce: String(repeating: "a", count: 32)))
+        try await peer.connection("connecting")
+        try await peer.requestAdmission(String(repeating: "b", count: 32))
+        try await eventually { source.calls == 2 && session.state.playbackReady }
+        #expect(
+            try await peer.admissionMatches(
+                1, ticket: String(repeating: "B", count: 64), nonce: String(repeating: "b", count: 32)))
+        try await peer.connection("connecting")
+        try await peer.requestAdmission(String(repeating: "a", count: 32))
+        try await eventually { session.state.connection == .failed }
+        #expect(source.calls == 2)
+    } catch {
+        await session.close()
+        throw error
+    }
+    await session.close()
+}
+
+@Test @MainActor func helperAdmissionCloseJoinsCredentialWaitAndRequiresCapability() async throws {
+    for missingCapability in [false, true] {
+        let native = try PlaybackScope.fresh().replacingMedia()
+        let source = AdmissionSource()
+        source.slow = true
+        let peer = SessionPeer()
+        await peer.configureAdmission(advertise: !missingCapability)
+        let session = try HelperSession(
+            transport: peer, player: SessionPlayer(native), nativeScope: native,
+            endpoint: SyncplayEndpoint(host: "localhost", port: 8999, room: "room", username: "Viewer_2"),
+            media: SharedMedia(handle: "media-1", name: "Movie.mkv", durationMs: 60000, fileSizeBytes: 1234),
+            revision: sessionRevision, admissionProvider: source.provide)
+        do {
+            try session.start()
+            try await eventually { missingCapability ? session.state.connection == .failed : source.calls == 1 }
+            await session.close()
+            await session.close()
+            #expect(source.calls == (missingCapability ? 0 : 1))
+            #expect(missingCapability || source.cancelled)
+            #expect(try await peer.admissionCount() == 0)
+        } catch {
+            await session.close()
+            throw error
+        }
+    }
+    #expect(
+        String(
+            describing: try SyncplayAdmission(credential: String(repeating: "A", count: 64), clientRunID: "member-run"))
+            == "[redacted]")
 }

@@ -1,6 +1,6 @@
 # Room metadata service
 
-The ASP.NET Core executable in `services/room-metadata/RoomMetadata` manages ephemeral room metadata using only platform SDK libraries. It does not connect to Syncplay, play media, transport movie bytes, or participate in Meet. The native room modules provide bounded HTTP and event-stream transport on their respective operating systems. Normal desktop workspace integration is in progress. See [running the service](../room-service.md).
+The ASP.NET Core executable in `services/room-metadata/RoomMetadata` manages ephemeral room metadata using only platform SDK libraries. The legacy mode documented here does not connect to Syncplay. The optional [authenticated v2 mode](../authenticated-room-service.md) owns an enforcing TLS Syncplay helper and disables the legacy routes. Neither mode plays media, transports movie bytes or participates in Meet. The native room modules provide bounded HTTP and event-stream transport on their respective operating systems. Normal desktop workspace integration is in progress. See [running the service](../room-service.md).
 
 The [Google account and room architecture](accounts-and-rooms.md) describes the target authenticated service, approved invitations, enforced Syncplay admission, and associated Meet calls. These require a versioned API and durable identity/provider state; they are not features of the v1 API documented below.
 

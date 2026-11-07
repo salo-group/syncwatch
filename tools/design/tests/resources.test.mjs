@@ -8,12 +8,27 @@ import {fileURLToPath} from 'node:url';
 import {after, test} from 'node:test';
 import {validSelection, selectionRequest, validateSelectionMenu} from '../selection-menu-formats.mjs';
 import {validPlayerSetting} from '../player-settings-formats.mjs';
+import {validateSettings} from '../settings-formats.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const platform = {'darwin': 'macos-arm64', 'linux': 'linux-x64', 'win32': 'windows-x64'}[process.platform];
 const runtime = process.env.SYNCWATCH_DESIGN_RUNTIME ?? join(root, 'artifacts/dependencies/design-generator', platform, 'payload/runtime');
 const temporary = mkdtempSync(join(tmpdir(), 'syncwatch-native-design-'));
 after(() => rmSync(temporary, {recursive: true, force: true}));
+
+test('account room fields are selected by the common form policy', () => {
+    const room = JSON.parse(readFileSync(join(root, 'packages/design/room.json')));
+    const component = JSON.parse(readFileSync(join(root, 'packages/design/components.json'))).components.RoomDialog;
+    const copy = JSON.parse(readFileSync(join(root, 'packages/design/copy.json')));
+    validateSettings(room, {components: {SettingsDialog: component}}, copy);
+    assert.equal(room.defaultFlow, 'account');
+    assert.deepEqual(room.flows.account, ['roomID', 'invitation']);
+    for (const change of [s => delete s.defaultFlow, s => s.defaultFlow = 'unknown',
+        s => s.flows.account.push('creationSecretFromPlatform'), s => s.flows.account.push('roomID')]) {
+        const invalid = structuredClone(room); change(invalid);
+        assert.throws(() => validateSettings(invalid, {components: {SettingsDialog: component}}, copy), /form flow/);
+    }
+});
 
 test('library companion labels remain declared and validated by the common design', () => {
     const policy = JSON.parse(readFileSync(join(root, 'packages/design/selection-menu.json')));

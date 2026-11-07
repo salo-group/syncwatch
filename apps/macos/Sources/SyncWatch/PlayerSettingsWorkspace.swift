@@ -7,6 +7,7 @@ struct ConfiguredPlaybackPane: View {
     @ObservedObject var preferences: AppearancePreferences
     var roomNotice = ""
     var onSaved: () -> Void = {}
+    var onOpenCall: (() -> Void)? = nil
     @State private var open = false
     @State private var editor = PlayerSettingsEditor()
 
@@ -17,7 +18,7 @@ struct ConfiguredPlaybackPane: View {
             onOpenSettings: {
                 editor = preferences.playerSettingsEditor
                 open = true
-            }
+            }, onOpenCall: onOpenCall
         ).sheet(isPresented: $open) {
             PlayerSettingsDialog(
                 editor: $editor, language: preferences.state.preferences.language,
