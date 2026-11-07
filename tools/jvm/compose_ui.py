@@ -193,7 +193,12 @@ def probe(payload, profile, home, compiler):
     source = ROOT / "tools/consumers/linux_application.py"
     specification = importlib.util.spec_from_file_location("syncwatch_linux_application", source)
     consumer = importlib.util.module_from_spec(specification)
-    specification.loader.exec_module(consumer)
+    previous_path = sys.path[:]
+    try:
+        sys.path.insert(0, str(source.parent))
+        specification.loader.exec_module(consumer)
+    finally:
+        sys.path[:] = previous_path
     consumer.check(ROOT, paths(payload.resolve(), profile), home, compiler)
 
 
