@@ -6,6 +6,7 @@ import syncwatch.domain.MediaDescriptor
 import syncwatch.room.*
 
 internal suspend fun roomWatchContextChecks() {
+    admissionIsolationChecks()
     check(RoomWatchCoordinator.failureKey(SharedMediaUnavailable(), false) == "sharedWatchMediaMissing")
     check(RoomWatchCoordinator.failureKey(SharedMediaUnavailable(), true) == "sharedWatchIdentityRejected")
     check(RoomController.isMetadataInterruption(java.io.IOException()))

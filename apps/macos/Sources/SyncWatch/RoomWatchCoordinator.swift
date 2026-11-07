@@ -359,7 +359,7 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
             try Task.checkCancellation()
             guard canAdmitTransport() else { throw HelperSessionFailure.unavailable }
             do {
-                let ticket = try await room.syncAdmission(membership) { fresh in
+                let ticket = try await room.syncAdmission(membership, expected: expected) { fresh in
                     try Self.requireSameGeneration(expected, fresh)
                     try Self.requireMatch(local, fresh)
                 }

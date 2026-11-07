@@ -31,6 +31,21 @@ struct RoomWatchContext: Sendable {
         try await client.decide(admission, approvalID: id, approve: approve)
     }
     func syncTicket() async throws -> RoomSyncTicket { try await client.syncTicket(admission) }
+    func admissionContext(_ expected: RoomBootstrap) async throws -> RoomWatchContext {
+        try validateBinding(expected)
+        guard expected.snapshot.watchStatus == "active", expected.snapshot.mediaID != nil else {
+            throw RoomProtocolFailure.malformed
+        }
+        // Selection reauthorizes this generation without replacing a catalog cursor or taking its gate.
+        for _ in 0..<2 {
+            let definition = try await client.selection(admission, bootstrap: expected)
+            try Task.checkCancellation()
+            if definition.sequence >= minimumSequence {
+                return RoomWatchContext(bootstrap: expected, definition: definition)
+            }
+        }
+        throw RoomProtocolFailure.malformed
+    }
     // Calls have their own aggregate and do not acquire the ordered catalog/watch lock.
     func callStatus() async throws -> RoomCallStatus { try await client.callStatus(admission) }
     func callStartOperation() async throws -> RoomCallOperation { try await client.callStartOperation(admission) }
@@ -174,11 +189,16 @@ struct RoomWatchContext: Sendable {
     private func validatedSnapshot(_ initial: RoomBootstrap? = nil) async throws -> RoomBootstrap {
         let value: RoomBootstrap
         if let initial { value = initial } else { value = try await client.snapshot(admission) }
+        try validateBinding(value)
+        guard value.snapshot.sequence >= minimumSequence else { throw RoomProtocolFailure.malformed }
+        return value
+    }
+
+    private func validateBinding(_ value: RoomBootstrap) throws {
         guard value.snapshot.epoch == admission.bootstrap.snapshot.epoch,
-            value.snapshot.sequence >= minimumSequence, value.connection == admission.bootstrap.connection,
+            value.connection == admission.bootstrap.connection,
             value.snapshot.members.contains(where: { $0.memberID == admission.memberID && $0.identity == identity })
         else { throw RoomProtocolFailure.malformed }
-        return value
     }
 
     private func read(_ initial: RoomBootstrap?) async throws -> RoomCatalogView {

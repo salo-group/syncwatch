@@ -209,24 +209,22 @@ internal sealed class RoomController
     internal bool CanRenewWatchAdmission(RoomWatchMembership membership) => IsCurrent(membership)
         || Editor.State == "reconnecting" && CanContinuePlayback(membership) && ReferenceEquals(session, membership.Owner)
             && admission?.MemberId == membership.MemberId && admission?.Bootstrap.Snapshot.Epoch == membership.Epoch;
-    internal async Task<RoomSyncTicket> SyncAdmissionAsync(RoomWatchMembership membership, Action<RoomWatchContext> validate, CancellationToken cancellation = default)
+    internal async Task<RoomSyncTicket> SyncAdmissionAsync(RoomWatchMembership membership, RoomWatchContext expected, Action<RoomWatchContext> validate, CancellationToken cancellation = default)
     {
         if (AccountAuthority is null || !CanRenewWatchAdmission(membership)) throw new RoomProtocolException("closed");
         // Fresh server state authorizes the transport; event-stream backoff does not.
-        var context = await membership.Owner.WatchContextAsync(cancellation);
+        var context = await membership.Owner.AdmissionContextAsync(expected.Bootstrap, cancellation);
         cancellation.ThrowIfCancellationRequested();
         if (AccountAuthority is null || !CanRenewWatchAdmission(membership)) throw new RoomProtocolException("closed");
         validate(context);
-        RecordWatch(context.Bootstrap);
         var ticket = await membership.Owner.SyncTicketAsync(cancellation);
         cancellation.ThrowIfCancellationRequested();
         if (AccountAuthority is null || !CanRenewWatchAdmission(membership)) throw new RoomProtocolException("closed");
         // Events can still be absent when ticket issuance races a generation change.
-        var confirmed = await membership.Owner.WatchContextAsync(cancellation);
+        var confirmed = await membership.Owner.AdmissionContextAsync(expected.Bootstrap, cancellation);
         cancellation.ThrowIfCancellationRequested();
         if (AccountAuthority is null || !CanRenewWatchAdmission(membership)) throw new RoomProtocolException("closed");
         validate(confirmed);
-        RecordWatch(confirmed.Bootstrap);
         return ticket;
     }
     internal async Task<(RoomWatchMembership Membership, RoomWatchContext Context)> BeginWatchAsync(CancellationToken cancellation = default)

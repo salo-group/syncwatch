@@ -276,7 +276,7 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
             if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
             try
             {
-                var ticket = await room.SyncAdmissionAsync(membership, fresh => { RequireSameGeneration(expected, fresh); RequireMatch(local, fresh); }, token);
+                var ticket = await room.SyncAdmissionAsync(membership, expected, fresh => { RequireSameGeneration(expected, fresh); RequireMatch(local, fresh); }, token);
                 if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
                 return new(ticket.AdmissionCredential(), membership.Identity.ClientRunId);
             }

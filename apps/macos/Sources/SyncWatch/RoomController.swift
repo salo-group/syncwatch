@@ -282,25 +282,25 @@ struct RoomPreparedPublication {
                 && admission?.memberID == membership.memberID
                 && admission?.bootstrap.snapshot.epoch == membership.epoch)
     }
-    func syncAdmission(_ membership: RoomWatchMembership, validate: (RoomWatchContext) throws -> Void) async throws
+    func syncAdmission(
+        _ membership: RoomWatchMembership, expected: RoomWatchContext, validate: (RoomWatchContext) throws -> Void
+    ) async throws
         -> RoomSyncTicket
     {
         guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
         // Fresh server state authorizes the transport; event-stream backoff does not.
-        let context = try await membership.owner.watchContext()
+        let context = try await membership.owner.admissionContext(expected.bootstrap)
         try Task.checkCancellation()
         guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
         try validate(context)
-        recordWatch(context.bootstrap)
         let ticket = try await membership.owner.syncTicket()
         try Task.checkCancellation()
         guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
         // Events can still be absent when ticket issuance races a generation change.
-        let confirmed = try await membership.owner.watchContext()
+        let confirmed = try await membership.owner.admissionContext(expected.bootstrap)
         try Task.checkCancellation()
         guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
         try validate(confirmed)
-        recordWatch(confirmed.bootstrap)
         return ticket
     }
     func beginWatch() async throws -> (membership: RoomWatchMembership, context: RoomWatchContext) {

@@ -338,7 +338,7 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
             currentCoroutineContext().ensureActive()
             check(canAdmitTransport()) { "watch-revoked" }
             try {
-                val ticket = room.syncAdmission(membership) { fresh -> requireSameGeneration(expected, fresh); requireMatch(local, fresh) }
+                val ticket = room.syncAdmission(membership, expected) { fresh -> requireSameGeneration(expected, fresh); requireMatch(local, fresh) }
                 check(canAdmitTransport()) { "watch-revoked" }
                 return SyncplayAdmission(ticket.admissionCredential(), membership.identity.clientRunId)
             } catch (cancelled: CancellationException) { throw cancelled }

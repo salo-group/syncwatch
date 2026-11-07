@@ -65,10 +65,13 @@ Native writers queue the challenge until the current command acknowledgement com
 
 Credential preparation uses the authenticated transport's ten-second admission window.
 Metadata event recovery can outlast an ordinary IPC acknowledgement while the established membership remains valid.
-Replacement admission reads fresh server context through the retained membership owner.
-It validates the original generation and media before requesting a new ticket.
+Replacement admission reads the current frozen selection through the retained membership owner.
+That read reauthorizes the account and member, checks the original active generation, and leaves catalog cursors unchanged.
+It validates the media before requesting a new ticket.
 It repeats that read and validation after issuance, before transferring the ticket to the helper.
 An established scope can retry transport errors while its event stream reconnects.
+The admission read uses no event or command gate and changes no counters or sequence floors.
+Its original bootstrap remains an immutable anchor; it is never published as a new snapshot.
 New starts still require connected metadata.
 Account loss, member replacement, changed generation, and media disagreement remain terminal.
 The native bridge must not end that credential wait after five seconds.
