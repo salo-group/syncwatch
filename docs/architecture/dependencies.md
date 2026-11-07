@@ -68,6 +68,19 @@ The contract checker imports fastjsonschema directly from its submodule and veri
 
 The same pinned validator is registered as a dependency-free Python source-package build in the [component registry](../../tools/dependencies/components.json). It provides a real Linux/macOS/Windows exercise for the shared source/cache infrastructure. It copies runtime Python sources and the BSD notice without invoking upstream packaging tools or development extras. See [source builds](../building.md#source-dependencies); this registration does not resolve the pending product-engine graphs below.
 
+## Immutable third-party sources
+
+Change only SyncWatch-owned code during application development.
+Do not edit dependency sources or apply local patches under `3rdparty/`.
+Do not bypass this rule through modified copies, build snapshots or generated source rewrites.
+Use public dependency APIs and supported settings from first-party adapters and build configuration.
+Preserve current submodule pins, dependency membership and `.gitmodules`.
+Changes to these inputs require an explicit owner instruction.
+
+Before each commit, verify that dependency sources and gitlinks remain unchanged.
+Record unsupported capabilities as limitations instead of patching a dependency.
+Source correspondence, security and license requirements still apply.
+
 ## Complete source graph
 
 Every external library, including transitive dependencies, must have its source in a pinned submodule under `3rdparty/`. A top-level source checkout does not satisfy this rule for all of its dependencies. Registry packages and local caches do not replace source pins.
@@ -82,7 +95,8 @@ Before building a component:
 
 1. Resolve its complete runtime and build dependency graph for the selected configuration.
 2. Record upstream URLs, exact revisions, licenses, and scope.
-3. Add the corresponding source submodules and configure builds to use local sources.
+3. Verify the corresponding source submodules and configure builds to use local sources.
+   If a source is missing, obtain an explicit owner instruction before changing dependency declarations.
 4. Associate distributed binaries with their source revisions, build flags, toolchain, and SHA-256 digests.
 5. Disable implicit dependency downloads and verify the notices for the resulting binary module set.
 

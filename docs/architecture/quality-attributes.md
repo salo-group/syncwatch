@@ -24,6 +24,8 @@ Absolute security or optimal performance must never be claimed without evidence.
 6. Pin complete dependency sources and verify artifact identity, correspondence and notices.
    Assess applicable vulnerabilities and maintain a secure update path.
    Block the affected delivery when a critical security defect remains unresolved.
+   Keep third-party sources immutable; implement integration changes in SyncWatch-owned code.
+   See the [source immutability rule](dependencies.md#immutable-third-party-sources).
 7. Maintain a threat model for connected features and their trust boundaries.
    Verify negative authorization paths and recovery after rejected input.
    Record residual risks and the evidence supporting each security claim.
