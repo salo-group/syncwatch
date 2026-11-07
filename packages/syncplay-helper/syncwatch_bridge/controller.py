@@ -110,7 +110,7 @@ class Controller:
                 if self.engine is not None:
                     raise ContractError("invalidState")
                 self.engine = self.engine_factory(self)
-                self.reply(value, "bridge.ready", {"syncplayRevision": self.revision})
+                self.reply(value, "bridge.ready", {"syncplayRevision": self.revision, "admissionVersion": 1})
             elif kind == "bridge.shutdown":
                 self.closing = True
                 self.close_deadline = self.clock() + self.timeout
@@ -119,6 +119,9 @@ class Controller:
                 if "secretHandle" in payload:
                     raise ContractError("unavailable")
                 self.engine.connect(payload)
+                self.reply(value)
+            elif kind == "sync.admit":
+                self.engine.admit(payload)
                 self.reply(value)
             elif kind == "sync.disconnect":
                 self.engine.disconnect(lambda: self.reply(value))

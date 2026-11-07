@@ -6,6 +6,7 @@ import syncwatch.domain.MediaDescriptor
 import syncwatch.room.*
 
 internal suspend fun roomWatchContextChecks() {
+    admissionIsolationChecks()
     check(RoomWatchCoordinator.failureKey(SharedMediaUnavailable(), false) == "sharedWatchMediaMissing")
     check(RoomWatchCoordinator.failureKey(SharedMediaUnavailable(), true) == "sharedWatchIdentityRejected")
     check(RoomController.isMetadataInterruption(java.io.IOException()))
@@ -69,7 +70,7 @@ internal suspend fun roomWatchContextChecks() {
 }
 
 private suspend fun preparedPublication(address: String, key: String) = coroutineScope {
-    val controller = RoomController(this)
+    val controller = RoomController(this, legacyValidation = true)
     for ((field, value) in mapOf("serviceAddress" to address, "username" to "Linux prepared publisher", "creationKey" to key,
         "syncplayHost" to "syncplay.example.com", "roomName" to "Prepared publication lifecycle")) controller.editor = controller.editor.edit(field, value)
     try {
@@ -82,7 +83,7 @@ private suspend fun preparedPublication(address: String, key: String) = coroutin
         check(controller.canContinuePlayback(ticket))
         var context = controller.performWatch(RoomCommandAction.Select(first.media.mediaId), ticket, intent)
         context = controller.performWatch(RoomCommandAction.Start(first.media.mediaId), ticket, context)
-        val empty = RoomController(this)
+        val empty = RoomController(this, legacyValidation = true)
         try {
             empty.editor = empty.editor.selectMode("joinRoom").edit("serviceAddress", address).edit("username", "Linux empty library")
             empty.pasteInvitation(checkNotNull(controller.invitationToCopy())); empty.connect()

@@ -118,14 +118,14 @@ internal class PlaybackController(
         if (!closing) { sharedMediaPreparation = SharedMediaPreparation(work); requiresSharedAdmission = !releaseAdmission }
     }
     /** The room coordinator admits local media before transferring this transport. */
-    suspend fun connectShared(transport: HelperTransport, endpoint: SyncplayEndpoint, media: SharedMedia, revision: String, requireDeclaredIdentity: Boolean = false, authority: (() -> Boolean)? = null) {
+    suspend fun connectShared(transport: HelperTransport, endpoint: SyncplayEndpoint, media: SharedMedia, revision: String, requireDeclaredIdentity: Boolean = false, authority: (() -> Boolean)? = null, admissionProvider: (suspend () -> SyncplayAdmission)? = null) {
         check(EventQueue.isDispatchThread())
         try {
             check(!closing && started && sharedSession == null && authority?.invoke() != false)
             sharedAuthority = authority
             sharedMediaPreparation.validate(player, scope)
             check(!closing && started && sharedSession == null && authority?.invoke() != false)
-            val session = HelperSession(transport, player, scope, endpoint, media, revision, work, requiresSharedAdmission || requireDeclaredIdentity) { state ->
+            val session = HelperSession(transport, player, scope, endpoint, media, revision, work, requiresSharedAdmission || requireDeclaredIdentity, admissionProvider = admissionProvider) { state ->
                 if (state.connection == HelperConnection.reconnecting) checkpoint.interrupt()
                 sharedState = state; gateSharedActions()
             }
@@ -338,11 +338,12 @@ internal class PlaybackController(
 
 @Composable internal fun PlaybackPane(controller: PlaybackController, language: String, theme: SyncWatchTheme,
     onClose: () -> Unit, onFullscreen: () -> Unit, roomNotice: String = "", skipSeconds: Int? = null,
-    onOpenSettings: (() -> Unit)? = null) {
+    onOpenSettings: (() -> Unit)? = null, onOpenCall: (() -> Unit)? = null) {
     LaunchedEffect(controller) { controller.start() }
     val observed = controller.playlist.presentation(controller.presentation)
     val configured = observed.copy(roomNotice = roomNotice, skipSeconds = skipSeconds ?: observed.skipSeconds,
-        enabledActions = observed.enabledActions + if (onOpenSettings != null) setOf("openPlayerSettings") else emptySet())
+        enabledActions = observed.enabledActions + (if (onOpenSettings != null) setOf("openPlayerSettings") else emptySet())
+            + (if (onOpenCall != null) setOf("openCall") else emptySet()))
     PlayerChrome(configured, language, theme,
         videoSurface = { NativePlayerSurface(controller.canvas) },
         selectionMenu = controller.playlist.menu ?: controller.tracks.menu, onSelection = controller::selectMenu,
@@ -350,6 +351,7 @@ internal class PlaybackController(
         onAction = { action, value ->
             controller.language = language
             if (action == "openPlayerSettings" && onOpenSettings != null) { controller.dismissMenu(); onOpenSettings() }
+            else if (action == "openCall" && onOpenCall != null) { controller.dismissMenu(); onOpenCall() }
             else controller.action(action, value, onClose, onFullscreen)
         })
 }

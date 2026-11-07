@@ -5,7 +5,7 @@ internal static class RoomPlaybackGateChecks
 {
     internal static async Task RunAsync()
     {
-        var controller = new RoomController();
+        var controller = new RoomController(legacyValidation: true);
         controller.Editor.SelectMode("joinRoom"); controller.Editor.Edit("serviceAddress", "https://rooms.example.com"); controller.Editor.Edit("username", "Peer");
         string credential = new('A', 64);
         controller.PasteInvitation("room-paste\r\n" + credential);
@@ -37,7 +37,7 @@ internal static class RoomPlaybackGateChecks
     {
         string? address = Environment.GetEnvironmentVariable("SYNCWATCH_ROOM_SERVICE"), room = Environment.GetEnvironmentVariable("SYNCWATCH_CATALOG_ROOM"), invitation = Environment.GetEnvironmentVariable("SYNCWATCH_CATALOG_INVITATION");
         if (address is null || room is null || invitation is null) return;
-        var controller = new RoomController(); controller.Editor.SelectMode("joinRoom");
+        var controller = new RoomController(legacyValidation: true); controller.Editor.SelectMode("joinRoom");
         foreach (var (field, value) in new[] { ("serviceAddress", address), ("username", "Windows workspace catalog"), ("roomID", room), ("invitation", invitation) }) controller.Editor.Edit(field, value);
         try
         {

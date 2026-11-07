@@ -246,7 +246,9 @@
         "disconnected",
         "connecting",
         "connected",
-        "failed"
+        "failed",
+        "reconnecting",
+        "awaitingApproval"
       ],
       "actions": [
         "chooseRoomMode",
@@ -254,7 +256,11 @@
         "connectRoom",
         "leaveRoom",
         "copyInvitation",
-        "close"
+        "close",
+        "pasteInvitation",
+        "openAccount",
+        "approveRoomAdmission",
+        "denyRoomAdmission"
       ]
     },
     "Account": {
@@ -282,6 +288,39 @@
         "accountRetryStorage",
         "accountForgetStorage",
         "accountUseMemory"
+      ]
+    },
+    "Meet": {
+      "tokens": [],
+      "states": [
+        "unavailable",
+        "idle",
+        "working",
+        "pending",
+        "authorizing",
+        "browserConfirmationRequired",
+        "confirmAuthorization",
+        "ready",
+        "handedOff",
+        "failed",
+        "unknown",
+        "ended"
+      ],
+      "actions": [
+        "close",
+        "openRoom",
+        "meetAuthorize",
+        "meetOpenAuthorization",
+        "editMeetBrowserProof",
+        "meetVerify",
+        "meetConfirm",
+        "meetCancelAuthorization",
+        "meetStart",
+        "meetOpen",
+        "meetEnd",
+        "meetRetry",
+        "meetConfirmEnd",
+        "meetCancelEnd"
       ]
     }
   }

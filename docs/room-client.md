@@ -18,9 +18,21 @@ Each native workspace owns its membership controller independently of the connec
 
 Create and join drafts remain in memory. Switching modes or closing the form clears secret fields. Dismissing an established connection's form retains membership. Leave and application close cancel the attempt, attempt a bounded departure and release owned network work. Event messages are ordering hints: controllers validate their envelope and fetch an authoritative snapshot before updating presence.
 
-Copy invitation produces two lines: the room ID and its credential. Join exposes Paste invitation, which reads plain text through the platform clipboard adapter and validates the complete value in the room module. LF and CRLF are accepted; extra lines, whitespace, invalid identifiers and invalid credential bounds are rejected. Invalid input clears stale invitation fields. Pasting keeps the service address and display name explicit and starts no network work. Diagnostic descriptions of invitation objects remain redacted.
+Copy invitation produces two lines: the room ID and its credential. Join exposes Paste invitation, which reads plain text through the platform clipboard adapter and validates the complete value in the room module. LF and CRLF are accepted; extra lines, whitespace, invalid identifiers and invalid credential bounds are rejected. Invalid input clears stale invitation fields. Pasting retains the current account/service binding and starts no network work. Diagnostic descriptions of invitation objects remain redacted.
 
 An unavailable system clipboard is a recoverable copy failure. Native adapters report the write result to the room controller, which shows shared localized feedback without changing membership or displaying exception details. The user can retry Copy invitation or leave the room.
+
+## Account-backed room entry
+
+The normal Room dialog borrows the signed-in account authority. Its account-required prompt, visible fields, status copy, owner approval rows and actions are declared in the common Design package. The account flow exposes the room ID and invitation for joining; the service, display identity and Syncplay endpoint come from authenticated server state. The legacy form is restricted to explicit validation mode and is not an account fallback.
+
+One attempt retains its process-run and request identifiers across a bounded transport retry. Guests see a cancellable approval state. The owner reviews provider-derived name/email and approves or denies the opaque request ID. Owner-list polling has a separate lifetime from watch ordering: its failure disables decisions and shows retry feedback without ending playback. Denied and expired requests require an explicit new attempt. Leaving while acceptance is unresolved cancels the original correlated request; known membership uses bounded departure.
+
+Copy invitation rotates the account room invitation before the explicit clipboard action. Copy requests are single-flight. Each transfer is bound to its membership and copy revision, so a superseded result or an account/room change cannot write a stale invitation or acknowledge it as current. Credentials stay in memory and are never written to diagnostics.
+
+Account-source identity is checked before connection, watch commands, continued playback authority and invitation transfer. A change invalidates those capabilities immediately. The application then joins old shared-watch and room cleanup before binding the replacement account. Refresh retains the same borrowed authority; signing out does not create an anonymous room. View-task cancellation cannot interrupt owned account-change revocation, and application shutdown joins that work before closing the account owner.
+
+Opt-in native application checks use `SYNCWATCH_ROOM_ACCOUNT_APP_FIXTURE` for an owned service with synthetic device records. They exercise unsigned entry, creation, cancellation, denial, approval, provider identity, invitation replacement, account-source loss and repeated close through the ordinary controllers. These are software integration checks; window, helper transport and cross-desktop acceptance remain separate.
 
 ## Local catalog publication
 

@@ -37,8 +37,10 @@ class RoomBootstrap(val snapshot: RoomSnapshot, val connection: RoomConnection, 
         }
     }
 }
-class RoomAdmission(val roomId: String, val memberId: String, val token: RoomSecret, val invitation: RoomSecret?,
+class RoomAdmission(val roomId: String, val memberId: String, val token: RoomSecret?, val invitation: RoomSecret?,
     val expiresAt: OffsetDateTime, val bootstrap: RoomBootstrap) {
+    internal var accountScope: java.util.UUID? = null
+    val isAccountBacked: Boolean get() = accountScope != null
     companion object {
         fun decode(bytes: ByteArray, identity: RoomIdentity, owner: Boolean): RoomAdmission {
             val value = RoomWire.parse(bytes)
@@ -106,14 +108,15 @@ internal object RoomWire {
         validateMeetUri(meet)
         return RoomSnapshot(epoch, integer(value["sequence"]), integer(value["watchGeneration"]), status, media, bindings, meet)
     }
-    fun encode(value: Map<String, Any?>): ByteArray = Json.write(value).toByteArray(StandardCharsets.UTF_8).also {
+    fun encode(value: Any?): ByteArray = Json.write(value).toByteArray(StandardCharsets.UTF_8).also {
         if (it.size > maximumBytes) throw RoomProtocolException("frameTooLarge")
     }
-    fun parse(bytes: ByteArray): Map<String, Any?> {
+    fun parse(bytes: ByteArray): Map<String, Any?> = obj(value(bytes))
+    fun value(bytes: ByteArray): Any? {
         if (bytes.size > maximumBytes) throw RoomProtocolException("frameTooLarge")
         try {
             val string = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()
-            val value = Json.parse(string); checkTree(value); return obj(value)
+            val value = Json.parse(string); checkTree(value); return value
         } catch (error: RoomProtocolException) { throw error } catch (_: Exception) { throw bad() }
     }
     private fun checkTree(value: Any?) {

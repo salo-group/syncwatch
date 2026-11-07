@@ -52,3 +52,36 @@ and interactive control checks are separate evidence. Observation files are
 replaced atomically; Windows readers must share deletion while reading them so
 they cannot prevent replacement. Keep test trust-store derivatives separate from
 the immutable runtime and retain their original receipts and changed-file hashes.
+
+## Authenticated recovery regression
+
+The opt-in macOS test `authenticatedPlaybackSurvivesShortNetworkOutage` drives the normal room, VLC and helper owners.
+It preserves membership and watch generation, then checks the next metadata command.
+Use synthetic accounts from the Windows `RoomMetadata.Tests --native-account-room-fixture` host.
+That host requires an owned admission runtime through `SYNCWATCH_ADMISSION_RUNTIME`.
+Keep its test CA in a separate, inventoried helper derivative.
+
+Set `SYNCWATCH_RECOVERY_PROBE` to a private JSON file with these fields:
+
+| Field | Value |
+| --- | --- |
+| `owner` | Saved-session object from the fixture's `macos.json` file |
+| `state` | Absolute path for disposable local preferences |
+| `media` | Absolute path to the qualified Media package |
+| `helper` | Absolute path to the test helper package |
+| `folder` | Absolute folder containing the authored `SyncWatch Shared Watch.avi` fixture |
+| `drop` | Absolute path where the test requests an interruption |
+| `restored` | Absolute path for the harness restoration receipt |
+
+The harness monitors `drop` and interrupts only its owned API and Syncplay forwards for five seconds.
+After restoration, it writes `restored` with numeric `actualOutageSeconds`, measured with a monotonic clock.
+The regression requires an elapsed interruption from five seconds to less than ten seconds.
+
+Run this command on macOS:
+
+```sh
+swift test --package-path apps/macos --filter authenticatedPlaybackSurvivesShortNetworkOutage
+```
+
+The harness must close its backend, forwards and helper derivatives after success, failure or timeout.
+Visible application checks on all three systems and six directed controls remain separate acceptance requirements.

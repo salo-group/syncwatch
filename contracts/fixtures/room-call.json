@@ -1,0 +1,139 @@
+{
+  "statuses": [
+    {
+      "name": "idle",
+      "valid": true,
+      "wire": "{\"status\":\"idle\",\"callId\":null,\"generation\":0,\"meetUri\":null,\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "creating",
+      "valid": true,
+      "wire": "{\"status\":\"creating\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "ready",
+      "valid": true,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "creationFailed",
+      "valid": true,
+      "wire": "{\"status\":\"creationFailed\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":\"providerUnavailable\",\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "creationUnknown",
+      "valid": true,
+      "wire": "{\"status\":\"creationUnknown\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":\"providerOutcomeUnknown\",\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "ending",
+      "valid": true,
+      "wire": "{\"status\":\"ending\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "ended",
+      "valid": true,
+      "wire": "{\"status\":\"ended\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "endFailed",
+      "valid": true,
+      "wire": "{\"status\":\"endFailed\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":\"providerUnavailable\",\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "endUnknown",
+      "valid": true,
+      "wire": "{\"status\":\"endUnknown\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":\"providerOutcomeUnknown\",\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "unavailable",
+      "valid": true,
+      "wire": "{\"status\":\"unavailable\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":\"roomChanged\",\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "unknown-state",
+      "valid": false,
+      "wire": "{\"status\":\"joined\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "foreign-uri",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://example.invalid/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "query-uri",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij?x=1\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "missing-id",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":null,\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "bad-id",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"short\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "zero-generation",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":0,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "fractional-generation",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1.5,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "boolean-generation",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":true,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "overflow-generation",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":9007199254740992,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "bad-permission",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":\"false\",\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "bad-poll",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":0}"
+    },
+    {
+      "name": "ready-reason",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":\"providerOutcomeUnknown\",\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "unexpected-credential",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000,\"googleToken\":\"forbidden\"}"
+    },
+    {
+      "name": "unknown-with-uri",
+      "valid": false,
+      "wire": "{\"status\":\"creationUnknown\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":\"https://meet.google.com/abc-defg-hij\",\"reason\":\"providerOutcomeUnknown\",\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "idle-with-id",
+      "valid": false,
+      "wire": "{\"status\":\"idle\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "missing-uri",
+      "valid": false,
+      "wire": "{\"status\":\"ready\",\"callId\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"generation\":1,\"meetUri\":null,\"reason\":null,\"authorizationRequired\":false,\"pollAfterMs\":5000}"
+    },
+    {
+      "name": "duplicate-status",
+      "valid": false,
+      "wire": "{\"status\": \"ready\", \"callId\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\", \"generation\": 1, \"meetUri\": \"https://meet.google.com/abc-defg-hij\", \"reason\": null, \"authorizationRequired\": false, \"pollAfterMs\": 5000,\"status\":\"ready\"}"
+    }
+  ]
+}

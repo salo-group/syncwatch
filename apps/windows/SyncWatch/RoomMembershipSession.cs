@@ -8,6 +8,33 @@ internal sealed record RoomWatchContext(RoomBootstrap Bootstrap, RoomSelectionDe
 /// <summary>One application-owned membership serializes bootstrap walks and command numbering.</summary>
 internal sealed class RoomMembershipSession(RoomClient client, RoomAdmission admission, RoomIdentity identity)
 {
+    internal Task<RoomInvitation> InvitationAsync(CancellationToken cancellation = default) => client.InviteAsync(admission, cancellation);
+    internal Task<IReadOnlyList<RoomAdmissionRequest>> PendingAdmissionsAsync(CancellationToken cancellation = default) => client.PendingAsync(admission, cancellation);
+    internal Task DecideAdmissionAsync(string id, bool approve, CancellationToken cancellation = default) => client.DecideAsync(admission, id, approve, cancellation);
+    internal Task<RoomSyncTicket> SyncTicketAsync(CancellationToken cancellation = default) => client.SyncTicketAsync(admission, cancellation);
+    internal async Task<RoomWatchContext> AdmissionContextAsync(RoomBootstrap expected, CancellationToken cancellation = default)
+    {
+        ValidateBinding(expected);
+        if (expected.Snapshot.WatchStatus != "active" || expected.Snapshot.MediaId is null) throw new RoomProtocolException("malformed");
+        // Selection reauthorizes this generation without replacing a catalog cursor or taking its gate.
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            var definition = await client.SelectionAsync(admission, expected, cancellation);
+            cancellation.ThrowIfCancellationRequested();
+            if (definition.Sequence >= minimumSequence) return new(expected, definition);
+        }
+        throw new RoomProtocolException("malformed");
+    }
+    // Calls are independent of ordered catalog/watch work.
+    internal Task<RoomCallStatus> CallStatusAsync(CancellationToken cancellation = default) => client.CallStatusAsync(admission, cancellation);
+    internal RoomCallOperation CallStartOperation() => client.CallStartOperation(admission);
+    internal RoomCallOperation CallEndOperation(RoomCallStatus status) => client.CallEndOperation(admission, status);
+    internal Task<RoomCallStatus> RequestCallAsync(RoomCallOperation operation, CancellationToken cancellation = default) => client.RequestCallAsync(operation, admission, cancellation);
+    internal Task<RoomMeetAuthorization> BeginMeetAuthorizationAsync(CancellationToken cancellation = default) => client.BeginMeetAuthorizationAsync(admission, cancellation);
+    internal Task<RoomMeetAuthorizationStatus> MeetAuthorizationStatusAsync(RoomMeetAuthorization flow, CancellationToken cancellation = default) => client.MeetAuthorizationStatusAsync(flow, admission, cancellation);
+    internal Task<RoomMeetAuthorizationStatus> VerifyMeetAuthorizationAsync(RoomMeetAuthorization flow, string code, CancellationToken cancellation = default) => client.VerifyMeetAuthorizationAsync(flow, admission, code, cancellation);
+    internal Task<RoomMeetAuthorizationStatus> ConfirmMeetAuthorizationAsync(RoomMeetAuthorization flow, string code, CancellationToken cancellation = default) => client.ConfirmMeetAuthorizationAsync(flow, admission, code, cancellation);
+    internal Task<RoomMeetAuthorizationStatus> CancelMeetAuthorizationAsync(RoomMeetAuthorization flow, CancellationToken cancellation = default) => client.CancelMeetAuthorizationAsync(flow, admission, cancellation);
     private readonly SemaphoreSlim gate = new(1, 1);
     private long minimumSequence = admission.Bootstrap.Snapshot.Sequence;
     private long number;
@@ -122,9 +149,14 @@ internal sealed class RoomMembershipSession(RoomClient client, RoomAdmission adm
     private async Task<RoomBootstrap> ValidatedSnapshotAsync(RoomBootstrap? initial, CancellationToken cancellation)
     {
         var value = initial ?? await client.SnapshotAsync(admission, cancellation);
-        if (value.Snapshot.Epoch != admission.Bootstrap.Snapshot.Epoch || value.Snapshot.Sequence < minimumSequence || value.Connection != admission.Bootstrap.Connection
-            || !value.Snapshot.Members.Any(p => p.MemberId == admission.MemberId && p.Identity == identity)) throw new RoomProtocolException("malformed");
+        ValidateBinding(value);
+        if (value.Snapshot.Sequence < minimumSequence) throw new RoomProtocolException("malformed");
         return value;
+    }
+    private void ValidateBinding(RoomBootstrap value)
+    {
+        if (value.Snapshot.Epoch != admission.Bootstrap.Snapshot.Epoch || value.Connection != admission.Bootstrap.Connection
+            || !value.Snapshot.Members.Any(p => p.MemberId == admission.MemberId && p.Identity == identity)) throw new RoomProtocolException("malformed");
     }
     private async Task<RoomCatalogView> ReadAsync(RoomBootstrap? initial, CancellationToken cancellation)
     {

@@ -45,9 +45,11 @@ public sealed record RoomBootstrap(RoomSnapshot Snapshot, RoomConnection Connect
     public static RoomBootstrap Decode(ReadOnlyMemory<byte> bytes)
     { using var document = RoomWire.Parse(bytes); return RoomWire.Bootstrap(document.RootElement); }
 }
-public sealed record RoomAdmission(string RoomId, string MemberId, RoomSecret Token, RoomSecret? Invitation,
+public sealed record RoomAdmission(string RoomId, string MemberId, RoomSecret? Token, RoomSecret? Invitation,
     DateTimeOffset ExpiresAt, RoomBootstrap Bootstrap)
 {
+    internal Guid? AccountScope { get; init; }
+    public bool IsAccountBacked => AccountScope is not null;
     public static RoomAdmission Decode(ReadOnlyMemory<byte> bytes, RoomIdentity identity, bool owner)
     {
         using var document = RoomWire.Parse(bytes); var value = document.RootElement;

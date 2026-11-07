@@ -25,6 +25,52 @@ struct RoomWatchContext: Sendable {
         minimumSequence = admission.bootstrap.snapshot.sequence
     }
 
+    func invitation() async throws -> RoomInvitation { try await client.invite(admission) }
+    func pendingAdmissions() async throws -> [RoomAdmissionRequest] { try await client.pending(admission) }
+    func decideAdmission(_ id: String, approve: Bool) async throws {
+        try await client.decide(admission, approvalID: id, approve: approve)
+    }
+    func syncTicket() async throws -> RoomSyncTicket { try await client.syncTicket(admission) }
+    func admissionContext(_ expected: RoomBootstrap) async throws -> RoomWatchContext {
+        try validateBinding(expected)
+        guard expected.snapshot.watchStatus == "active", expected.snapshot.mediaID != nil else {
+            throw RoomProtocolFailure.malformed
+        }
+        // Selection reauthorizes this generation without replacing a catalog cursor or taking its gate.
+        for _ in 0..<2 {
+            let definition = try await client.selection(admission, bootstrap: expected)
+            try Task.checkCancellation()
+            if definition.sequence >= minimumSequence {
+                return RoomWatchContext(bootstrap: expected, definition: definition)
+            }
+        }
+        throw RoomProtocolFailure.malformed
+    }
+    // Calls have their own aggregate and do not acquire the ordered catalog/watch lock.
+    func callStatus() async throws -> RoomCallStatus { try await client.callStatus(admission) }
+    func callStartOperation() async throws -> RoomCallOperation { try await client.callStartOperation(admission) }
+    func callEndOperation(_ status: RoomCallStatus) async throws -> RoomCallOperation {
+        try await client.callEndOperation(admission, status: status)
+    }
+    func requestCall(_ operation: RoomCallOperation) async throws -> RoomCallStatus {
+        try await client.requestCall(operation, admission: admission)
+    }
+    func beginMeetAuthorization() async throws -> RoomMeetAuthorization {
+        try await client.beginMeetAuthorization(admission)
+    }
+    func meetAuthorizationStatus(_ flow: RoomMeetAuthorization) async throws -> RoomMeetAuthorizationStatus {
+        try await client.meetAuthorizationStatus(flow, admission: admission)
+    }
+    func verifyMeetAuthorization(_ flow: RoomMeetAuthorization, code: String) async throws
+        -> RoomMeetAuthorizationStatus
+    { try await client.verifyMeetAuthorization(flow, admission: admission, code: code) }
+    func confirmMeetAuthorization(_ flow: RoomMeetAuthorization, code: String) async throws
+        -> RoomMeetAuthorizationStatus
+    { try await client.confirmMeetAuthorization(flow, admission: admission, code: code) }
+    func cancelMeetAuthorization(_ flow: RoomMeetAuthorization) async throws -> RoomMeetAuthorizationStatus {
+        try await client.cancelMeetAuthorization(flow, admission: admission)
+    }
+
     func refresh(initial: RoomBootstrap? = nil, sequence: UInt64 = 0) async throws -> RoomCatalogView {
         try await enter()
         defer { leave() }
@@ -143,11 +189,16 @@ struct RoomWatchContext: Sendable {
     private func validatedSnapshot(_ initial: RoomBootstrap? = nil) async throws -> RoomBootstrap {
         let value: RoomBootstrap
         if let initial { value = initial } else { value = try await client.snapshot(admission) }
+        try validateBinding(value)
+        guard value.snapshot.sequence >= minimumSequence else { throw RoomProtocolFailure.malformed }
+        return value
+    }
+
+    private func validateBinding(_ value: RoomBootstrap) throws {
         guard value.snapshot.epoch == admission.bootstrap.snapshot.epoch,
-            value.snapshot.sequence >= minimumSequence, value.connection == admission.bootstrap.connection,
+            value.connection == admission.bootstrap.connection,
             value.snapshot.members.contains(where: { $0.memberID == admission.memberID && $0.identity == identity })
         else { throw RoomProtocolFailure.malformed }
-        return value
     }
 
     private func read(_ initial: RoomBootstrap?) async throws -> RoomCatalogView {

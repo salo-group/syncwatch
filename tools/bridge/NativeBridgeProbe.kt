@@ -38,7 +38,9 @@ fun main(arguments: Array<String>) {
         val hello = frame(1, "bridge.hello", mapOf("supportedVersions" to listOf(1L)))
         helper.send(hello).get(5, TimeUnit.SECONDS)
         val ready = read(helper, 1, "bridge.ready")
-        check(ready == mapOf("syncplayRevision" to revision))
+        check(ready == mapOf("syncplayRevision" to revision, "admissionVersion" to 1L)) {
+            "Current helper must advertise its pinned revision and admission capability"
+        }
         helper.send(hello).get(5, TimeUnit.SECONDS)
         check(read(helper, 1, "bridge.ready") == ready)
         helper.send(frame(2, "player.loaded", mapOf("mediaHandle" to "media-1", "name" to "Movie.mkv",

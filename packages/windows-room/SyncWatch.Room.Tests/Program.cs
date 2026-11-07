@@ -3,9 +3,14 @@ using System.Text.Json;
 using SyncWatch.Room;
 
 AccountCredentialVaultChecks.Run();
+RoomCallChecks.Run(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0]))!, "room-call.json"));
+RoomMeetAuthorizationChecks.Run(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0]))!, "meet-authorization.json"));
+await RoomAccountAuthorityChecks.Run();
 AccountSessionChecks.Run(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0]))!, "account-persistence.json"));
 
 using var fixture = JsonDocument.Parse(File.ReadAllBytes(args[0]));
+await RoomAccountPortChecks.Run(fixture.RootElement);
+await RoomAccountTransportChecks.Run();
 var identity = new RoomIdentity("run-room-client", "Room User");
 var bootstrap = RoomBootstrap.Decode(Encoding.UTF8.GetBytes(fixture.RootElement.GetProperty("catalogBootstrap").GetString()!));
 foreach (var entry in fixture.RootElement.GetProperty("catalogs").EnumerateArray())

@@ -651,6 +651,51 @@ public enum SyncWatchCopy {
             "accountSignInRequired": "Saved sign-in expired or was revoked. Sign in again.",
             "accountMemoryWithSaved": "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
             "accountUnavailable": "The account service is unavailable. Retrying…",
+            "roomAccountRequired":
+                "Sign in with Google to create a room or request admission. Local playback remains available without signing in.",
+            "roomAdmissionPending": "Waiting for the room owner to approve your request.",
+            "roomAdmissionDenied": "The owner declined this request. Ask for a new invitation to try again.",
+            "roomAdmissionExpired": "This request expired or the room closed. Ask for a new invitation.",
+            "roomRequestUnavailable":
+                "The request could not complete. Check your account and connection, or ask the owner for a new invitation.",
+            "roomApprovalRequests": "Admission requests",
+            "approveRoomAdmission": "Approve",
+            "denyRoomAdmission": "Deny",
+            "roomPendingUnavailable":
+                "Requests could not be refreshed. Approval is paused until the connection returns.",
+            "roomAdmissionChanged": "This request changed or expired. The list is being refreshed.",
+            "roomCancelRequest": "Cancel request",
+            "meetTitle": "Google Meet",
+            "meetExternalOwnership":
+                "Meet opens in its own browser or app window. Choose devices and join there. Leaving SyncWatch does not stop that window’s microphone or camera.",
+            "meetAuthorize": "Allow SyncWatch to create calls",
+            "meetConfirm": "Allow calls for this account",
+            "meetCancelAuthorization": "Cancel permission request",
+            "meetRoomRequired": "Join a room to use its call.",
+            "meetIdle": "No call in this room yet.",
+            "meetWorking": "Connecting to Google Meet…",
+            "meetAuthorizing": "Finish the permission request in your browser.",
+            "meetBrowserCode": "Enter the SyncWatch confirmation code shown in your browser.",
+            "meetPermissionConfirmation": "Check the account before allowing SyncWatch to create calls.",
+            "meetReady": "The room’s call is ready. Join in Meet.",
+            "meetHandedOff": "Meet was opened. Choose your devices and join there.",
+            "meetUnavailable": "The call is unavailable. Your movie can continue.",
+            "meetUnknown": "Google’s result could not be confirmed. The request will not be repeated automatically.",
+            "meetEnded": "Meet confirmed the end request. Check the Meet window for local audio and camera.",
+            "meetFailed": "The call action failed. You can keep watching.",
+            "meetEndForEveryone": "End call for everyone",
+            "meetStart": "Start room call",
+            "meetOpen": "Open in Google Meet",
+            "meetRetry": "Check again",
+            "meetInvalidConfirmation": "The code could not be verified. Check it or cancel the permission request.",
+            "meetAccountMismatch": "Use the Google account already signed in to SyncWatch.",
+            "meetPermissionUnavailable": "Google did not grant permission to create calls. You can keep watching.",
+            "meetPermissionExpired":
+                "The permission request expired. Allow calls again to start a new request. You can keep watching.",
+            "meetBrowserUnavailable": "Could not open your browser. Check the default browser setting and try again.",
+            "meetEndConfirmation": "End this room’s call for everyone?",
+            "meetKeepCall": "Keep call",
+            "meetEndConsequences": "Meet will end the active conference for everyone. The movie can continue.",
         ],
         "ru": [
             "brand": "SyncWatch",
@@ -937,6 +982,51 @@ public enum SyncWatchCopy {
             "accountSignInRequired": "Сохранённый вход истёк или отозван. Войдите снова.",
             "accountMemoryWithSaved": "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
             "accountUnavailable": "Сервис аккаунтов недоступен. Повторяем попытку…",
+            "roomAccountRequired":
+                "Войдите через Google, чтобы создать комнату или запросить допуск. Локальный просмотр доступен без входа.",
+            "roomAdmissionPending": "Ожидание одобрения владельца комнаты.",
+            "roomAdmissionDenied": "Владелец отклонил запрос. Для повторной попытки попросите новое приглашение.",
+            "roomAdmissionExpired": "Срок запроса истёк или комната закрыта. Попросите новое приглашение.",
+            "roomRequestUnavailable":
+                "Не удалось завершить запрос. Проверьте аккаунт и соединение или попросите владельца выдать новое приглашение.",
+            "roomApprovalRequests": "Запросы на допуск",
+            "approveRoomAdmission": "Разрешить",
+            "denyRoomAdmission": "Отказать",
+            "roomPendingUnavailable": "Не удалось обновить запросы. Одобрение приостановлено до восстановления связи.",
+            "roomAdmissionChanged": "Запрос изменился или истёк. Список обновляется.",
+            "roomCancelRequest": "Отменить запрос",
+            "meetTitle": "Google Meet",
+            "meetExternalOwnership":
+                "Meet откроется в отдельном окне браузера или приложения. Выберите устройства и войдите там. Выход из SyncWatch не выключает микрофон или камеру в этом окне.",
+            "meetAuthorize": "Разрешить SyncWatch создавать звонки",
+            "meetConfirm": "Разрешить звонки для этого аккаунта",
+            "meetCancelAuthorization": "Отменить запрос разрешения",
+            "meetRoomRequired": "Войдите в комнату, чтобы использовать её звонок.",
+            "meetIdle": "В этой комнате пока нет звонка.",
+            "meetWorking": "Подключение к Google Meet…",
+            "meetAuthorizing": "Завершите запрос разрешения в браузере.",
+            "meetBrowserCode": "Введите код подтверждения SyncWatch из браузера.",
+            "meetPermissionConfirmation": "Проверьте аккаунт перед разрешением создавать звонки.",
+            "meetReady": "Звонок комнаты готов. Войдите в Meet.",
+            "meetHandedOff": "Meet открыт. Выберите устройства и войдите там.",
+            "meetUnavailable": "Звонок недоступен. Просмотр фильма можно продолжить.",
+            "meetUnknown": "Не удалось подтвердить результат Google. Запрос не будет повторён автоматически.",
+            "meetEnded": "Meet подтвердил запрос завершения. Проверьте звук и камеру в окне Meet.",
+            "meetFailed": "Действие со звонком не выполнено. Просмотр можно продолжить.",
+            "meetEndForEveryone": "Завершить звонок для всех",
+            "meetStart": "Начать звонок комнаты",
+            "meetOpen": "Открыть в Google Meet",
+            "meetRetry": "Проверить снова",
+            "meetInvalidConfirmation": "Не удалось проверить код. Проверьте его или отмените запрос разрешения.",
+            "meetAccountMismatch": "Используйте аккаунт Google, с которым вы вошли в SyncWatch.",
+            "meetPermissionUnavailable":
+                "Google не предоставил разрешение создавать звонки. Просмотр можно продолжить.",
+            "meetPermissionExpired":
+                "Запрос разрешения истёк. Снова разрешите звонки, чтобы начать новый запрос. Просмотр можно продолжить.",
+            "meetBrowserUnavailable": "Не удалось открыть браузер. Проверьте браузер по умолчанию и повторите попытку.",
+            "meetEndConfirmation": "Завершить звонок этой комнаты для всех?",
+            "meetKeepCall": "Оставить звонок",
+            "meetEndConsequences": "Meet завершит активную конференцию для всех. Просмотр фильма можно продолжить.",
         ],
     ]
     public static func text(_ key: String, language: String = "en") -> String {
@@ -1042,7 +1132,23 @@ public struct SyncWatchRoomFormField: Sendable {
 
 public enum SyncWatchRoomForm {
     public static let sections = ["connection", "createRoom", "joinRoom"]
-    public static let states = ["disconnected", "connecting", "connected", "failed"]
+    public static let states = [
+        "disconnected", "connecting", "connected", "failed", "reconnecting", "awaitingApproval",
+    ]
+    public static let defaultFlow = "account"
+    public static let flows: [String: [String]] = [
+        "legacy": [
+            "serviceAddress", "username", "creationKey", "syncplayHost", "syncplayPort", "roomName", "roomID",
+            "invitation",
+        ],
+        "account": ["roomID", "invitation"],
+    ]
+    public static let signInFlows = ["account"]
+    public static let statusCopy: [String: String] = [
+        "connecting": "roomConnecting",
+        "reconnecting": "reconnecting",
+        "awaitingApproval": "roomAdmissionPending",
+    ]
     public static let defaults: [String: String] = [
         "serviceAddress": "",
         "username": "",
@@ -2233,7 +2339,7 @@ public enum SyncWatchSelectionMenu {
 }
 
 public enum SyncWatchLayouts {
-    public static let sourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1"
+    public static let sourceDigest = "d2a04f439b8a5ed83b9bc23da51ab977907383bf32605cd4cb2cea72d090b4e2"
     public static let coordinateSize = 20.0
     public static func themeColor(_ role: String, theme: SyncWatchTheme) -> Color? {
         switch role {
@@ -3318,6 +3424,7 @@ public enum SyncWatchLayouts {
         "Application": makeApplication(),
         "Room": makeRoom(),
         "Account": makeAccount(),
+        "Meet": makeMeet(),
     ]
     private static func makeLibrary() -> DesignNode {
         let node62 = DesignNode(
@@ -8806,6 +8913,105 @@ public enum SyncWatchLayouts {
                 "text": "~roomConnectionHint",
             ],
             children: [])
+        let roomAccountRequiredText = DesignNode(
+            id: "roomAccountRequiredText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~roomAccountRequired",
+            ],
+            children: [])
+        let roomAccountSignInLabel = DesignNode(
+            id: "roomAccountSignInLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountSignIn",
+            ],
+            children: [])
+        let roomAccountSignIn = DesignNode(
+            id: "roomAccountSignIn", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "openAccount",
+                "automation": "{namespace}.openAccount",
+                "enabled": "$can.openAccount",
+                "label": "~accountSignIn",
+            ],
+            children: [roomAccountSignInLabel])
+        let roomAccountRequired = DesignNode(
+            id: "roomAccountRequired", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "when": "$needsAccount",
+                "gap": "@control.compactGap",
+            ],
+            children: [roomAccountRequiredText, roomAccountSignIn])
+        let roomAccountName = DesignNode(
+            id: "roomAccountName", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{~openAccount}: {accountName}",
+            ],
+            children: [])
+        let roomAccountService = DesignNode(
+            id: "roomAccountService", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{~roomService}: {accountService}",
+            ],
+            children: [])
+        let roomAccountIdentity = DesignNode(
+            id: "roomAccountIdentity", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "when": "$showAccountIdentity",
+                "gap": "@control.compactGap",
+            ],
+            children: [roomAccountName, roomAccountService])
         let roomCreateModeLabel = DesignNode(
             id: "roomCreateModeLabel", kind: "text",
             props: [
@@ -9009,6 +9215,179 @@ public enum SyncWatchLayouts {
                 "gap": "@control.compactGap",
             ],
             children: [roomConnectedLabel, roomIdFact, roomMembersFact])
+        let roomPendingHeading = DesignNode(
+            id: "roomPendingHeading", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~roomApprovalRequests",
+            ],
+            children: [])
+        let roomPendingName = DesignNode(
+            id: "roomPendingName", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{name}",
+            ],
+            children: [])
+        let roomPendingEmail = DesignNode(
+            id: "roomPendingEmail", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{email}",
+            ],
+            children: [])
+        let roomPendingPerson = DesignNode(
+            id: "roomPendingPerson", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "width": "fill",
+                "gap": "@control.compactGap",
+            ],
+            children: [roomPendingName, roomPendingEmail])
+        let roomApproveAdmissionLabel = DesignNode(
+            id: "roomApproveAdmissionLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~approveRoomAdmission",
+            ],
+            children: [])
+        let roomApproveAdmission = DesignNode(
+            id: "roomApproveAdmission", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "approveRoomAdmission",
+                "automation": "{namespace}.approveRoomAdmission.{requestID}",
+                "enabled": "$can.decide",
+                "label": "{~approveRoomAdmission}: {name}",
+                "payload": "$requestID",
+            ],
+            children: [roomApproveAdmissionLabel])
+        let roomDenyAdmissionLabel = DesignNode(
+            id: "roomDenyAdmissionLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~denyRoomAdmission",
+            ],
+            children: [])
+        let roomDenyAdmission = DesignNode(
+            id: "roomDenyAdmission", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "denyRoomAdmission",
+                "automation": "{namespace}.denyRoomAdmission.{requestID}",
+                "enabled": "$can.decide",
+                "label": "{~denyRoomAdmission}: {name}",
+                "payload": "$requestID",
+            ],
+            children: [roomDenyAdmissionLabel])
+        let roomPendingRow = DesignNode(
+            id: "roomPendingRow", kind: "row",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "gap": "@control.compactGap",
+                "paddingY": "@control.compactGap",
+            ],
+            children: [roomPendingPerson, roomApproveAdmission, roomDenyAdmission])
+        let roomPendingRows = DesignNode(
+            id: "roomPendingRows", kind: "repeat",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "items": "pendingRequests",
+            ],
+            children: [roomPendingRow])
+        let roomPendingStatus = DesignNode(
+            id: "roomPendingStatus", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~{pendingStatus}",
+            ],
+            children: [])
+        let roomPendingRequests = DesignNode(
+            id: "roomPendingRequests", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "when": "$showPendingRequests",
+                "gap": "@control.compactGap",
+            ],
+            children: [roomPendingHeading, roomPendingRows, roomPendingStatus])
         let roomStatus = DesignNode(
             id: "roomStatus", kind: "text",
             props: [
@@ -9033,7 +9412,16 @@ public enum SyncWatchLayouts {
                 "padding": "@layout.settingsCardPadding",
                 "gap": "@layout.settingsCardPadding",
             ],
-            children: [roomHint, roomModeSelector, roomFields, roomConnectedFacts, roomStatus])
+            children: [
+                roomHint,
+                roomAccountRequired,
+                roomAccountIdentity,
+                roomModeSelector,
+                roomFields,
+                roomConnectedFacts,
+                roomPendingRequests,
+                roomStatus,
+            ])
         let roomBody = DesignNode(
             id: "roomBody", kind: "scroll",
             props: [
@@ -9175,6 +9563,44 @@ public enum SyncWatchLayouts {
                 "when": "$can.leaveRoom",
             ],
             children: [roomLeaveLabel])
+        let roomCancelAdmissionLabel = DesignNode(
+            id: "roomCancelAdmissionLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~roomCancelRequest",
+            ],
+            children: [])
+        let roomCancelAdmission = DesignNode(
+            id: "roomCancelAdmission", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "leaveRoom",
+                "automation": "{namespace}.leaveRoom",
+                "enabled": "$can.cancelRequest",
+                "label": "~roomCancelRequest",
+                "when": "$can.cancelRequest",
+            ],
+            children: [roomCancelAdmissionLabel])
         let roomConnectLabel = DesignNode(
             id: "roomConnectLabel", kind: "text",
             props: [
@@ -9225,7 +9651,7 @@ public enum SyncWatchLayouts {
                 "padding": "@layout.settingsCardPadding",
                 "gap": "@control.compactGap",
             ],
-            children: [roomFooterSpace, roomPaste, roomCopy, roomLeave, roomConnect])
+            children: [roomFooterSpace, roomPaste, roomCopy, roomLeave, roomCancelAdmission, roomConnect])
         let roomDialog = DesignNode(
             id: "roomDialog", kind: "column",
             props: [
@@ -9877,5 +10303,736 @@ public enum SyncWatchLayouts {
             ],
             children: [accountHeader, accountScroll, accountActions])
         return accountDialog
+    }
+    private static func makeMeet() -> DesignNode {
+        let meetTitle = DesignNode(
+            id: "meetTitle", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "fontSize": "@type.settingsTitleSize",
+                "weight": "bold",
+                "text": "~meetTitle",
+                "width": "fill",
+            ],
+            children: [])
+        let meetLabelclose = DesignNode(
+            id: "meetLabelclose", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~close",
+            ],
+            children: [])
+        let meetButtonclose = DesignNode(
+            id: "meetButtonclose", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "close",
+                "enabled": "$can.close",
+                "automation": "meet.close",
+                "label": "~close",
+            ],
+            children: [meetLabelclose])
+        let meetHeader = DesignNode(
+            id: "meetHeader", kind: "row",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "padding": "@layout.settingsCardPadding",
+                "gap": "@control.compactGap",
+            ],
+            children: [meetTitle, meetButtonclose])
+        let meetStatus = DesignNode(
+            id: "meetStatus", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~{status}",
+            ],
+            children: [])
+        let meetOwnership = DesignNode(
+            id: "meetOwnership", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetExternalOwnership",
+            ],
+            children: [])
+        let meetEndConsequences = DesignNode(
+            id: "meetEndConsequences", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetEndConsequences",
+                "when": "$can.meetConfirmEnd",
+            ],
+            children: [])
+        let meetLabelmeetOpenAuthorization = DesignNode(
+            id: "meetLabelmeetOpenAuthorization", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountOpenBrowser",
+            ],
+            children: [])
+        let meetButtonmeetOpenAuthorization = DesignNode(
+            id: "meetButtonmeetOpenAuthorization", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetOpenAuthorization",
+                "enabled": "$can.meetOpenAuthorization",
+                "automation": "meet.meetOpenAuthorization",
+                "label": "~accountOpenBrowser",
+                "when": "$can.meetOpenAuthorization",
+            ],
+            children: [meetLabelmeetOpenAuthorization])
+        let meetPendingState = DesignNode(
+            id: "meetPendingState", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "case": "pending",
+            ],
+            children: [meetButtonmeetOpenAuthorization])
+        let meetProofLabel = DesignNode(
+            id: "meetProofLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountBrowserProof",
+            ],
+            children: [])
+        let meetProofInput = DesignNode(
+            id: "meetProofInput", kind: "input",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accent",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "placeholderFill": "theme.textSecondary",
+                "height": "@control.fieldHeight",
+                "paddingX": "@layout.panelPadding",
+                "radius": "@control.fieldRadius",
+                "background": "theme.inputFill",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "value": "$browserProof",
+                "action": "editMeetBrowserProof",
+                "enabled": "$can.editMeetBrowserProof",
+                "automation": "meet.browserProof",
+                "label": "~accountBrowserProof",
+            ],
+            children: [])
+        let meetLabelmeetVerify = DesignNode(
+            id: "meetLabelmeetVerify", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountVerifyBrowserProof",
+            ],
+            children: [])
+        let meetButtonmeetVerify = DesignNode(
+            id: "meetButtonmeetVerify", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetVerify",
+                "enabled": "$can.meetVerify",
+                "automation": "meet.meetVerify",
+                "label": "~accountVerifyBrowserProof",
+                "when": "$can.meetVerify",
+            ],
+            children: [meetLabelmeetVerify])
+        let meetProofState = DesignNode(
+            id: "meetProofState", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "case": "browserConfirmationRequired",
+                "gap": "@control.compactGap",
+            ],
+            children: [meetProofLabel, meetProofInput, meetButtonmeetVerify])
+        let meetAccountName = DesignNode(
+            id: "meetAccountName", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{name}",
+            ],
+            children: [])
+        let meetAccountEmail = DesignNode(
+            id: "meetAccountEmail", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "{email}",
+            ],
+            children: [])
+        let meetLabelmeetConfirm = DesignNode(
+            id: "meetLabelmeetConfirm", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetConfirm",
+            ],
+            children: [])
+        let meetButtonmeetConfirm = DesignNode(
+            id: "meetButtonmeetConfirm", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetConfirm",
+                "enabled": "$can.meetConfirm",
+                "automation": "meet.meetConfirm",
+                "label": "~meetConfirm",
+                "when": "$can.meetConfirm",
+            ],
+            children: [meetLabelmeetConfirm])
+        let meetConfirmState = DesignNode(
+            id: "meetConfirmState", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "case": "confirmAuthorization",
+                "gap": "@control.compactGap",
+            ],
+            children: [meetAccountName, meetAccountEmail, meetButtonmeetConfirm])
+        let meetAuthorization = DesignNode(
+            id: "meetAuthorization", kind: "switch",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "value": "$authorizationState",
+            ],
+            children: [meetPendingState, meetProofState, meetConfirmState])
+        let meetLabelopenRoom = DesignNode(
+            id: "meetLabelopenRoom", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~openRoom",
+            ],
+            children: [])
+        let meetButtonopenRoom = DesignNode(
+            id: "meetButtonopenRoom", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "openRoom",
+                "enabled": "$can.openRoom",
+                "automation": "meet.openRoom",
+                "label": "~openRoom",
+                "when": "$can.openRoom",
+            ],
+            children: [meetLabelopenRoom])
+        let meetLabelmeetAuthorize = DesignNode(
+            id: "meetLabelmeetAuthorize", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetAuthorize",
+            ],
+            children: [])
+        let meetButtonmeetAuthorize = DesignNode(
+            id: "meetButtonmeetAuthorize", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetAuthorize",
+                "enabled": "$can.meetAuthorize",
+                "automation": "meet.meetAuthorize",
+                "label": "~meetAuthorize",
+                "when": "$can.meetAuthorize",
+            ],
+            children: [meetLabelmeetAuthorize])
+        let meetLabelmeetCancelAuthorization = DesignNode(
+            id: "meetLabelmeetCancelAuthorization", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetCancelAuthorization",
+            ],
+            children: [])
+        let meetButtonmeetCancelAuthorization = DesignNode(
+            id: "meetButtonmeetCancelAuthorization", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetCancelAuthorization",
+                "enabled": "$can.meetCancelAuthorization",
+                "automation": "meet.meetCancelAuthorization",
+                "label": "~meetCancelAuthorization",
+                "when": "$can.meetCancelAuthorization",
+            ],
+            children: [meetLabelmeetCancelAuthorization])
+        let meetLabelmeetStart = DesignNode(
+            id: "meetLabelmeetStart", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetStart",
+            ],
+            children: [])
+        let meetButtonmeetStart = DesignNode(
+            id: "meetButtonmeetStart", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetStart",
+                "enabled": "$can.meetStart",
+                "automation": "meet.meetStart",
+                "label": "~meetStart",
+                "when": "$can.meetStart",
+            ],
+            children: [meetLabelmeetStart])
+        let meetLabelmeetOpen = DesignNode(
+            id: "meetLabelmeetOpen", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetOpen",
+            ],
+            children: [])
+        let meetButtonmeetOpen = DesignNode(
+            id: "meetButtonmeetOpen", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetOpen",
+                "enabled": "$can.meetOpen",
+                "automation": "meet.meetOpen",
+                "label": "~meetOpen",
+                "when": "$can.meetOpen",
+            ],
+            children: [meetLabelmeetOpen])
+        let meetLabelmeetEnd = DesignNode(
+            id: "meetLabelmeetEnd", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetEndForEveryone",
+            ],
+            children: [])
+        let meetButtonmeetEnd = DesignNode(
+            id: "meetButtonmeetEnd", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetEnd",
+                "enabled": "$can.meetEnd",
+                "automation": "meet.meetEnd",
+                "label": "~meetEndForEveryone",
+                "when": "$can.meetEnd",
+            ],
+            children: [meetLabelmeetEnd])
+        let meetLabelmeetRetry = DesignNode(
+            id: "meetLabelmeetRetry", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetRetry",
+            ],
+            children: [])
+        let meetButtonmeetRetry = DesignNode(
+            id: "meetButtonmeetRetry", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetRetry",
+                "enabled": "$can.meetRetry",
+                "automation": "meet.meetRetry",
+                "label": "~meetRetry",
+                "when": "$can.meetRetry",
+            ],
+            children: [meetLabelmeetRetry])
+        let meetLabelmeetCancelEnd = DesignNode(
+            id: "meetLabelmeetCancelEnd", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetKeepCall",
+            ],
+            children: [])
+        let meetButtonmeetCancelEnd = DesignNode(
+            id: "meetButtonmeetCancelEnd", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetCancelEnd",
+                "enabled": "$can.meetCancelEnd",
+                "when": "$can.meetCancelEnd",
+                "automation": "meet.meetCancelEnd",
+                "label": "~meetKeepCall",
+            ],
+            children: [meetLabelmeetCancelEnd])
+        let meetLabelmeetConfirmEnd = DesignNode(
+            id: "meetLabelmeetConfirmEnd", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~meetEndForEveryone",
+            ],
+            children: [])
+        let meetButtonmeetConfirmEnd = DesignNode(
+            id: "meetButtonmeetConfirmEnd", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "meetConfirmEnd",
+                "enabled": "$can.meetConfirmEnd",
+                "when": "$can.meetConfirmEnd",
+                "automation": "meet.meetConfirmEnd",
+                "label": "~meetEndForEveryone",
+            ],
+            children: [meetLabelmeetConfirmEnd])
+        let meetBody = DesignNode(
+            id: "meetBody", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "gap": "@layout.settingsCardPadding",
+                "padding": "@layout.settingsCardPadding",
+            ],
+            children: [
+                meetStatus,
+                meetOwnership,
+                meetEndConsequences,
+                meetAuthorization,
+                meetButtonopenRoom,
+                meetButtonmeetAuthorize,
+                meetButtonmeetCancelAuthorization,
+                meetButtonmeetStart,
+                meetButtonmeetOpen,
+                meetButtonmeetEnd,
+                meetButtonmeetRetry,
+                meetButtonmeetCancelEnd,
+                meetButtonmeetConfirmEnd,
+            ])
+        let meetScroll = DesignNode(
+            id: "meetScroll", kind: "scroll",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "barWidth": "@control.compactGap",
+                "thumbMinimum": "@control.iconSize",
+                "thumbRadius": "@control.buttonRadius",
+                "thumbFill": "theme.border",
+                "height": "fill",
+                "minHeight": "0",
+            ],
+            children: [meetBody])
+        let meetDialog = DesignNode(
+            id: "meetDialog", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "width": "@layout.settingsWidth",
+                "height": "@layout.settingsHeight",
+                "fontSize": "@type.settingsBodySize",
+                "foreground": "theme.text",
+                "background": "theme.surface",
+                "radius": "@control.compactDialogRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "clip": "true",
+                "cycleFocus": "true",
+            ],
+            children: [meetHeader, meetScroll])
+        return meetDialog
     }
 }

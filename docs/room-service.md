@@ -4,18 +4,20 @@ The room metadata service uses .NET SDK 10.0.402 and the ASP.NET Core shared fra
 
 ## Build and check
 
-Run from the repository root:
+Run from the repository root on Windows x64. C# service checks run only on Windows:
 
-```sh
+```powershell
 git submodule update --init --checkout --depth=1 -- 3rdparty/fastjsonschema
-python3 tools/server/check.py --provision
+python tools/server/check.py --provision --admission-runtime <owned-admission-helper>
 ```
 
-On Windows use `python`. With an existing SDK, omit `--provision` or pass `--dotnet <path-to-dotnet>`. This checks the exact version, restores SDK/local references with the empty registry configuration, checks formatting, builds, runs real HTTP/WebSocket tests, and validates emitted events/snapshots with the pinned contract validator. `--provision` obtains a missing SDK from the official archive pinned by SHA-512 in [the manifest](../tools/server/toolchains.json).
+With an existing SDK, omit `--provision` or pass `--dotnet <path-to-dotnet>`. This checks the exact version, restores SDK/local references with the empty registry configuration, checks formatting, builds, runs real HTTP/WebSocket and TLS Syncplay admission/lifecycle tests, and validates emitted v1 metadata and v2 account/room responses with the pinned contract validator. Supply the matching source-built helper package; required Windows CI uses the helper from its assembled application. `--provision` obtains a missing SDK from the official archive pinned by SHA-512 in [the manifest](../tools/server/toolchains.json).
+
+The required native Windows job runs these service checks after assembling its verified application and helper. A successful Windows artifact requires a successful service stage. The room-metadata gate evaluates that complete job result, including failures and skips; it does not launch duplicate server builds or a C# toolchain on macOS/Linux. All three native client jobs and shared contract checks remain required.
 
 Equivalent build commands are:
 
-```sh
+```powershell
 dotnet restore services/room-metadata/RoomMetadata.slnx --configfile NuGet.Config
 dotnet format services/room-metadata/RoomMetadata.slnx --no-restore --verify-no-changes
 dotnet build services/room-metadata/RoomMetadata.slnx --no-restore --configuration Debug
@@ -23,14 +25,7 @@ dotnet build services/room-metadata/RoomMetadata.slnx --no-restore --configurati
 
 ## Local startup
 
-Generate a private creation key in the process environment. For a POSIX shell:
-
-```sh
-export SYNCWATCH_CREATE_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
-dotnet run --project services/room-metadata/RoomMetadata --no-launch-profile
-```
-
-For Windows PowerShell:
+For legacy metadata-only operation, generate a private creation key in Windows PowerShell. Authenticated deployment uses the [v2 authority configuration](authenticated-room-service.md), disables the legacy room routes, and requires no creation key.
 
 ```powershell
 $env:SYNCWATCH_CREATE_KEY = python -c "import secrets; print(secrets.token_hex(32))"

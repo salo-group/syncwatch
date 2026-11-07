@@ -10,7 +10,7 @@ internal suspend fun roomPublicationLiveChecks(scope: CoroutineScope) {
     val caseRoot = Path.of(checkNotNull(System.getenv("SYNCWATCH_PUBLICATION_CASE")))
     val directory = Files.createDirectory(caseRoot.resolve("movies"))
     for (suffix in listOf("A", "B")) Files.writeString(directory.resolve("Linux publication $suffix.mkv"), "authored catalog fixture")
-    val rootId = java.util.UUID.randomUUID().toString(); val scanner = FileSystemLibrary(); val controller = RoomController(scope)
+    val rootId = java.util.UUID.randomUUID().toString(); val scanner = FileSystemLibrary(); val controller = RoomController(scope, legacyValidation = true)
     suspend fun waitFor(allowPublicationFailure: Boolean = false, condition: () -> Boolean) = withTimeout(30000) {
         while (!condition()) {
             check(controller.editor.state != "failed" && (allowPublicationFailure || controller.editor.status != "roomCatalogPublishFailed")) { "Native publication failed" }

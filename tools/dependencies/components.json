@@ -15198,7 +15198,8 @@
         "packages/linux-library",
         "packages/linux-room",
         "contracts/fixtures/room-client.json",
-        "tools/consumers/linux_application.py"
+        "tools/consumers/linux_application.py",
+        "tools/consumers/admission_fixture.py"
       ]
     },
     "skiko-native-objects": {

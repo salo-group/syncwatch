@@ -366,13 +366,21 @@ class WorkflowChecks(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "selected results"):
             self.validate(lambda data: data["jobs"]["required"]["steps"][-1].update({"run": "true"}))
 
-    def test_metadata_job_must_execute_real_server_checks(self):
-        with self.assertRaisesRegex(ValidationError, "actual wire output"):
+    def test_metadata_gate_cannot_replace_native_result_with_success(self):
+        with self.assertRaisesRegex(ValidationError, "actual Windows service result"):
             self.validate(lambda data: data["jobs"]["metadata"]["steps"][-1].update({"run": "true"}))
 
-    def test_metadata_job_must_initialize_pinned_contract_sources(self):
-        with self.assertRaisesRegex(ValidationError, "actual wire output"):
-            self.validate(lambda data: data["jobs"]["metadata"]["steps"].pop(1))
+    def test_metadata_gate_requires_windows_dependency(self):
+        with self.assertRaisesRegex(ValidationError, "Windows service result"):
+            self.validate(lambda data: data["jobs"]["metadata"].update({"needs": ["contracts"]}))
+
+    def test_metadata_gate_must_evaluate_failed_windows_job(self):
+        with self.assertRaisesRegex(ValidationError, "Windows service result"):
+            self.validate(lambda data: data["jobs"]["metadata"].pop("if"))
+
+    def test_metadata_gate_cannot_invent_dependency_results(self):
+        with self.assertRaisesRegex(ValidationError, "actual Windows service result"):
+            self.validate(lambda data: data["jobs"]["metadata"]["steps"][-1].update({"env": {"CI_NEEDS_JSON": "{}"}}))
 
     def test_write_permissions_fail(self):
         with self.assertRaisesRegex(ValidationError, "read-only"):

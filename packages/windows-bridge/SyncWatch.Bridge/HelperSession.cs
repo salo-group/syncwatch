@@ -27,6 +27,9 @@ public sealed class HelperSession : IAsyncDisposable
     private readonly PlaybackScope nativeScope;
     private readonly SyncplayEndpoint endpoint;
     private readonly bool requireDeclaredIdentity;
+    private readonly Func<CancellationToken, Task<SyncplayAdmission>>? admissionProvider;
+    private readonly List<string> admissionNonces = [];
+    private string? pendingAdmissionNonce;
     private readonly SharedMedia media;
     private readonly string revision;
     private readonly Action<HelperSessionState> changed;
@@ -52,14 +55,14 @@ public sealed class HelperSession : IAsyncDisposable
     private long? recoveryDeadline;
 
     public HelperSession(IHelperTransport transport, IPlaybackPort player, PlaybackScope nativeScope,
-        SyncplayEndpoint endpoint, SharedMedia media, string revision, Action<HelperSessionState>? changed = null, bool requireDeclaredIdentity = false)
+        SyncplayEndpoint endpoint, SharedMedia media, string revision, Action<HelperSessionState>? changed = null, bool requireDeclaredIdentity = false, Func<CancellationToken, Task<SyncplayAdmission>>? admissionProvider = null)
     {
         owner = SynchronizationContext.Current ?? throw new InvalidOperationException("An owning synchronization context is required");
         this.transport = transport; this.player = player; this.nativeScope = nativeScope; this.endpoint = endpoint;
-        this.requireDeclaredIdentity = requireDeclaredIdentity;
+        this.requireDeclaredIdentity = requireDeclaredIdentity; this.admissionProvider = admissionProvider;
         this.media = media; this.revision = revision; this.changed = changed ?? (_ => { });
         commands = new(WireScope); fence = new(nativeScope);
-        _ = commands.Connect(1, endpoint.Host, endpoint.Port, endpoint.Room, endpoint.Username);
+        _ = commands.Connect(1, endpoint.Host, endpoint.Port, endpoint.Room, endpoint.Username, accountAdmission: admissionProvider is not null);
         _ = commands.Loaded(1, media.Handle, media.Name, media.DurationMs, media.FileSizeBytes);
         if (media.DurationMs <= 0 || revision.Length != 40 || revision.Any(c => !char.IsAsciiHexDigitLower(c))) throw Bad();
     }
@@ -145,7 +148,7 @@ public sealed class HelperSession : IAsyncDisposable
                 byte[] data = inbox.Dequeue(); using var doc = PlayerCorrection.DecodeFrame(data); var value = doc.RootElement;
                 if (value.TryGetProperty("replyTo", out var replyTo) && replyTo.ValueKind == JsonValueKind.String && replyTo.GetString() == "cmd-" + id)
                 {
-                    var reply = HelperReply.Decode(data, WireScope, id, expected, revision);
+                    var reply = HelperReply.Decode(data, WireScope, id, expected, revision, requireAdmission: admissionProvider is not null);
                     if (reply.ErrorCode is not null) throw Bad();
                     replies.Add((id, expected, reply)); if (replies.Count > 128) replies.RemoveAt(0); return;
                 }
@@ -164,13 +167,20 @@ public sealed class HelperSession : IAsyncDisposable
         await RequestAsync(HelperReplyKind.Ready, commands.Hello);
         await RequestAsync(HelperReplyKind.Applied, id => commands.Loaded(id, media.Handle, media.Name, media.DurationMs, media.FileSizeBytes));
         Publish(State with { Connection = HelperConnection.Connecting });
-        await RequestAsync(HelperReplyKind.Applied, id => commands.Connect(id, endpoint.Host, endpoint.Port, endpoint.Room, endpoint.Username));
+        await RequestAsync(HelperReplyKind.Applied, id => commands.Connect(id, endpoint.Host, endpoint.Port, endpoint.Room, endpoint.Username, accountAdmission: admissionProvider is not null));
         while (!closed)
         {
             CheckOpen();
             while (inbox.Count > 0)
             {
                 byte[] data = inbox.Dequeue(); using var doc = PlayerCorrection.DecodeFrame(data); await ReceiveAsync(data, doc.RootElement);
+            }
+            if (pendingAdmissionNonce is string nonce && admissionProvider is not null)
+            {
+                // Credential preparation shares the authenticated transport's ten-second admission window.
+                pendingAdmissionNonce = null; SetDeadline(10);
+                var credential = await admissionProvider(workCancellation.Token); CheckOpen(); deadline = null;
+                await RequestAsync(HelperReplyKind.Applied, id => commands.Admit(id, nonce, credential)); continue;
             }
             await CancelSupersededAsync();
             if (users.Count > 0) { await UserAsync(users.Dequeue()); continue; }
@@ -282,7 +292,7 @@ public sealed class HelperSession : IAsyncDisposable
         {
             string? id = replyTo.ValueKind == JsonValueKind.String ? replyTo.GetString() : null;
             var record = replies.FirstOrDefault(r => id == "cmd-" + r.Id);
-            if (record.Id == 0 || HelperReply.Decode(data, WireScope, record.Id, record.Expected, revision) != record.Reply) throw Bad();
+            if (record.Id == 0 || HelperReply.Decode(data, WireScope, record.Id, record.Expected, revision, requireAdmission: admissionProvider is not null) != record.Reply) throw Bad();
             return;
         }
         if (kind.StartsWith("player.", StringComparison.Ordinal))
@@ -304,6 +314,14 @@ public sealed class HelperSession : IAsyncDisposable
         eventSequence = ordinal; var payload = value.GetProperty("payload");
         switch (kind)
         {
+            case "sync.admissionRequired":
+                PlayerCorrection.Keys(payload, ["nonce"]);
+                string nonce = Text(payload.GetProperty("nonce"), 32);
+                if (admissionProvider is null || pendingAdmissionNonce is not null || State.Connection is not (HelperConnection.Connecting or HelperConnection.Reconnecting)
+                    || nonce.Length != 32 || nonce.Any(c => !char.IsAsciiHexDigitLower(c)) || admissionNonces.Contains(nonce)) throw Bad();
+                if (admissionNonces.Count == 128) admissionNonces.RemoveAt(0);
+                admissionNonces.Add(nonce); pendingAdmissionNonce = nonce;
+                break;
             case "sync.identity":
                 PlayerCorrection.Keys(payload, ["username"]); string username = Text(payload.GetProperty("username"), 64);
                 if (requireDeclaredIdentity && username != endpoint.Username) { State = State with { IdentityRejected = true }; throw Bad(); }

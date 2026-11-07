@@ -220,12 +220,8 @@ def check_workflows(root: Path) -> None:
     require(set(jobs) == {*selected, "required"}, "unexpected repository job set")
     runners = {name: "ubuntu-24.04" for name in ("repository", "tests", "contracts", "required", "metadata", "dependency-plan")}
     runners.update({"macos": "macos-15", "windows": "windows-2025", "linux": "ubuntu-24.04"})
-    runners["metadata"] = "${{ matrix.runner }}"
-    require(jobs["metadata"].get("strategy") == {"fail-fast": False, "matrix": {"include": [
-        {"runner": "ubuntu-24.04", "target": "linux-x64", "python": "python3"},
-        {"runner": "macos-15", "target": "osx-arm64", "python": "python3"},
-        {"runner": "windows-2025", "target": "win-x64", "python": "python"},
-    ]}}, "metadata builds must cover all declared server platforms")
+    require(jobs["metadata"].get("needs") == ["windows"] and jobs["metadata"].get("if") == "${{ always() }}"
+            and "strategy" not in jobs["metadata"], "metadata gate must require the Windows service result even after failure")
     for name, job in jobs.items():
         if name == "dependencies":
             require(job.get("uses") == "./.github/workflows/dependency-build.yml", "dependency jobs must use the repository-owned reusable workflow")
@@ -309,8 +305,10 @@ def check_workflows(root: Path) -> None:
                 "Hashtable regressions must prepare pinned sources and execute on Linux and Windows")
     require("python3 -m unittest discover -s tools/jvm/tests -v" in test_commands, "offline JVM metadata audit tests must execute")
     require("python3 -m unittest discover -s tools/server/tests -v" in test_commands, "server SDK provisioning tests must execute")
-    metadata_commands = {step.get("run") for step in jobs["metadata"]["steps"]}
-    require({"git submodule update --init --checkout --depth=1 -- 3rdparty/fastjsonschema", "${{ matrix.python }} tools/server/check.py --provision"}.issubset(metadata_commands), "metadata job must build, test, and validate actual wire output")
+    metadata_steps = jobs["metadata"]["steps"]
+    require(any(step.get("run") == "python3 tools/ci/required_status.py windows"
+                and step.get("env") == {"CI_NEEDS_JSON": "${{ toJSON(needs) }}"} for step in metadata_steps),
+            "metadata gate must inspect the actual Windows service result")
     require("node --test tools/ci/tests/artifact_upload.test.mjs tools/ci/tests/artifact_download.test.mjs" in test_commands,
             "artifact transport tests must execute")
     require("python3 -m unittest discover -s tools/dependencies/tests -v\nnode --test tools/dependencies/tests/cache.test.mjs" in test_commands, "dependency infrastructure tests must execute")

@@ -6,7 +6,7 @@ namespace SyncWatch;
 internal static class RoomEventMonitor
 {
     internal static async Task RunAsync(RoomAddress address, RoomMembershipSession membership,
-        Action reconnecting, Action<RoomCatalogView> accepted, CancellationToken cancellation)
+        Action reconnecting, Action<RoomCatalogView> accepted, CancellationToken cancellation, RoomAccountAuthority? authority = null)
     {
         int[] delays = [500, 1000, 2000, 4000, 8000];
         int failures = 0;
@@ -15,7 +15,7 @@ internal static class RoomEventMonitor
         {
             cancellation.ThrowIfCancellationRequested();
             Exception failure;
-            await using (var client = new RoomClient(address))
+            await using (var client = authority is null ? new RoomClient(address) : RoomClient.ForAccount(authority))
             {
                 try
                 {
