@@ -124,12 +124,14 @@ def verify_effects(context, package, directory, media):
 
 
 def verify_subtitle_seek(context, package, directory):
-    executable, actual = compile_consumer(context, package, directory, "subtitle_seek_probe.c",
-                                          "subtitle-seek-probe", ("avformat", "avcodec", "avutil"))
-    from subtitle_seek_fixtures import cases
-    fixture = embedded_tracks(directory)
+    executable = directory / ("subtitle-seek-probe.exe" if context.target == "windows-x64" else "subtitle-seek-probe")
+    fixture = directory / "owned-embedded-tracks.mkv"
     results = {}
     try:
+        executable, actual = compile_consumer(context, package, directory, "subtitle_seek_probe.c",
+                                              "subtitle-seek-probe", ("avformat", "avcodec", "avutil"))
+        from subtitle_seek_fixtures import cases
+        fixture = embedded_tracks(directory)
         variants = cases(fixture.read_bytes())
         for name, (data, expectation) in variants.items():
             fixture.write_bytes(data)
