@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
   "units": "logical",
-  "sourceDigest": "62f1f8db395fc0812163da74191f66732349bb6500e817cd28422806f2069095",
+  "sourceDigest": "0ea8413538581fcba3a8e73b5646dc06c4a1f2b517f7bf12157e36b882fcbb61",
   "sources": {
     "tokens/geometry.json": "83534a4d3b484f7a810a4c67f1f8ee58b2f2f4a14db4e4df404381e936a78a4b",
     "tokens/palette.json": "bb4dabce249ffe75a20192d8ccf523630432a3d1f3ca8dcba45fa787a7028a2c",
     "themes.json": "1a0a77546aeb1c96aaad53408a0a2e14e4be38298b50cfeb2700fd9a18b42b50",
-    "components.json": "858e396faa12caf3c1de8c1166ef99cfba48a893faeee5cba9a57565cc4a75f5",
-    "copy.json": "4a54071b2537d76c17ff8b418dc0793344bccd238fad88f99645f47ae2ae1e6c",
+    "components.json": "a141775c66fe624baf2662fd461eaab917011023b77f884d0aade7b9355b6b95",
+    "copy.json": "0da632bb5c664be46c572cb6f922f760ff5c8373995c19b07de916f4b2423172",
     "settings.json": "5c6a9033f9bf3df9e09f094996e75fd5432ac07f69f01120d4517eacce9973d8",
     "room.json": "84189acaeef566dfcdb6282eec0080e10afe045fb9a220d98ecc86ea5d33d96b",
     "player.json": "5cf83f28cc332de38632059c39e19669159a04ca2d2c0515f277b7667e83d9f3",
     "call.json": "a26821925540d925182355af12c02a40780c84c051e53610b300934536186a01",
     "player-settings.json": "ff81d15018deb6d25b2f43bf268d478acdfa63102596522e352e29e6a7fdecdc",
     "selection-menu.json": "86ff7683d675213327acd83ebc38174dbcfea37235b454e0afe37671c59d1502",
-    "layouts.json": "45ad72b900ec71ebd1f47632effab28a49d2f03659dfbe7a2d11b193cf0e80c8",
+    "layouts.json": "b1b8ea4430e1bd36197d46431661c4f17f46cad51bc68894d5e3d96d626bd331",
     "package.json": "49e278398b736b490a57f3ec73bfdcdcc863d63be73788115f41b6db6bee5165"
   },
   "generatorRevision": "9add2a388c3ba959dc1f260b44f97eebc2563d8200be065ee6abc25db2a61c96",
@@ -331,7 +331,38 @@
         "roomPeersMissingMedia": "A participant does not have the selected movie yet.",
         "sharedPositionCheckpoint": "Position before connection loss",
         "restoreSharedPosition": "Return to this position",
-        "dismissSharedPosition": "Dismiss"
+        "dismissSharedPosition": "Dismiss",
+        "openAccount": "Google account",
+        "accountSignIn": "Sign in with Google",
+        "accountOpenBrowser": "Continue in browser",
+        "accountConfirm": "Use this account",
+        "accountCancel": "Cancel sign-in",
+        "accountSignOut": "Sign out of SyncWatch",
+        "accountSignedOut": "Sign in to prepare your SyncWatch account for rooms and Meet.",
+        "accountPending": "Complete sign-in in the browser, then confirm the account here.",
+        "accountConfirmAccount": "Check the Google account before continuing.",
+        "accountSignedIn": "Signed in to SyncWatch",
+        "accountWorking": "Working…",
+        "accountFailed": "Sign-in could not finish. Check the service address and try again.",
+        "accountMemoryOnly": "This session stays in memory. Sign in again after restarting SyncWatch.",
+        "accountExternalSession": "Your Google browser session and any Meet call stay separate. Signing out here does not end a call.",
+        "accountSignOutFailed": "Server sign-out is unconfirmed. Retry while this window is open.",
+        "accountBrowserProof": "Confirmation code from the browser",
+        "accountConfirmationFailed": "The code could not be verified. Check it, or cancel and sign in again.",
+        "accountBrowserProofRequired": "Enter the confirmation code shown in the browser to check the account.",
+        "accountVerifyBrowserProof": "Check account",
+        "accountBrowserUnavailable": "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in.",
+        "accountWillRemember": "Your SyncWatch sign-in will be saved in this device’s secure storage.",
+        "accountSavedOnDevice": "Sign-in is saved securely on this device. Closing SyncWatch keeps it; Sign out removes it.",
+        "accountRestoring": "Restoring your saved SyncWatch sign-in…",
+        "accountStorageUnavailable": "Saved sign-in could not be accessed or restored. Retry, forget it, or explicitly continue without saving.",
+        "accountSavedUnavailable": "A previous saved sign-in stays unchanged if you continue in memory only.",
+        "accountRetryStorage": "Retry saved sign-in",
+        "accountForgetStorage": "Forget on this device",
+        "accountUseMemory": "Use memory only",
+        "accountSignInRequired": "Saved sign-in expired or was revoked. Sign in again.",
+        "accountMemoryWithSaved": "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
+        "accountUnavailable": "The account service is unavailable. Retrying…"
       },
       "ru": {
         "brand": "SyncWatch",
@@ -576,7 +607,38 @@
         "roomPeersMissingMedia": "У одного из участников пока нет выбранного фильма.",
         "sharedPositionCheckpoint": "Позиция до потери связи",
         "restoreSharedPosition": "Вернуться к этой позиции",
-        "dismissSharedPosition": "Скрыть"
+        "dismissSharedPosition": "Скрыть",
+        "openAccount": "Аккаунт Google",
+        "accountSignIn": "Войти через Google",
+        "accountOpenBrowser": "Продолжить в браузере",
+        "accountConfirm": "Использовать этот аккаунт",
+        "accountCancel": "Отменить вход",
+        "accountSignOut": "Выйти из SyncWatch",
+        "accountSignedOut": "Войдите, чтобы подготовить аккаунт SyncWatch для комнат и Meet.",
+        "accountPending": "Завершите вход в браузере и подтвердите аккаунт здесь.",
+        "accountConfirmAccount": "Проверьте аккаунт Google перед продолжением.",
+        "accountSignedIn": "Вход в SyncWatch выполнен",
+        "accountWorking": "Подождите…",
+        "accountFailed": "Не удалось войти. Проверьте адрес сервиса и повторите попытку.",
+        "accountMemoryOnly": "Сессия хранится в памяти. После перезапуска SyncWatch войдите снова.",
+        "accountExternalSession": "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок.",
+        "accountSignOutFailed": "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто.",
+        "accountBrowserProof": "Код подтверждения из браузера",
+        "accountConfirmationFailed": "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
+        "accountBrowserProofRequired": "Введите код из браузера, чтобы проверить аккаунт.",
+        "accountVerifyBrowserProof": "Проверить аккаунт",
+        "accountBrowserUnavailable": "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход.",
+        "accountWillRemember": "Вход в SyncWatch будет сохранён в защищённом хранилище устройства.",
+        "accountSavedOnDevice": "Вход безопасно сохранён на устройстве. Закрытие SyncWatch сохраняет его; выход удаляет.",
+        "accountRestoring": "Восстанавливаем сохранённый вход в SyncWatch…",
+        "accountStorageUnavailable": "Не удалось прочитать или восстановить вход. Повторите, удалите его или явно продолжите без сохранения.",
+        "accountSavedUnavailable": "При работе только в памяти прежний сохранённый вход остаётся без изменений.",
+        "accountRetryStorage": "Повторить вход",
+        "accountForgetStorage": "Забыть на устройстве",
+        "accountUseMemory": "Только в памяти",
+        "accountSignInRequired": "Сохранённый вход истёк или отозван. Войдите снова.",
+        "accountMemoryWithSaved": "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
+        "accountUnavailable": "Сервис аккаунтов недоступен. Повторяем попытку…"
       }
     },
     "gallery": {
@@ -604,7 +666,8 @@
         "openCall",
         "openRoom",
         "openLibraryAudio",
-        "openLibrarySubtitles"
+        "openLibrarySubtitles",
+        "openAccount"
       ]
     }
   },
@@ -2761,6 +2824,31 @@
                   "lines": "1"
                 },
                 "children": []
+              },
+              {
+                "id": "libraryOpenAccount",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "openAccount",
+                  "automation": "{namespace}.openAccount",
+                  "enabled": "$can.openAccount",
+                  "label": "~openAccount"
+                },
+                "children": [
+                  {
+                    "id": "libraryOpenAccountLabel",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~openAccount"
+                    },
+                    "children": []
+                  }
+                ]
               },
               {
                 "id": "node69",
@@ -7253,6 +7341,434 @@
                     "styles": [],
                     "props": {
                       "text": "~{connectLabel}"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "Account": {
+        "id": "accountDialog",
+        "kind": "column",
+        "styles": [
+          "dialog"
+        ],
+        "props": {},
+        "children": [
+          {
+            "id": "accountHeader",
+            "kind": "row",
+            "styles": [],
+            "props": {
+              "padding": "@layout.settingsCardPadding",
+              "gap": "@control.compactGap"
+            },
+            "children": [
+              {
+                "id": "accountTitle",
+                "kind": "text",
+                "styles": [
+                  "dialogTitle"
+                ],
+                "props": {
+                  "text": "~openAccount",
+                  "width": "fill"
+                },
+                "children": []
+              },
+              {
+                "id": "accountClose",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "close",
+                  "automation": "account.close",
+                  "enabled": "$can.close",
+                  "label": "~close",
+                  "shortcut": "cancel"
+                },
+                "children": [
+                  {
+                    "id": "accountCloseLabel",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~close"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "accountScroll",
+            "kind": "scroll",
+            "styles": [],
+            "props": {
+              "height": "fill",
+              "minHeight": "0"
+            },
+            "children": [
+              {
+                "id": "accountBody",
+                "kind": "column",
+                "styles": [],
+                "props": {
+                  "gap": "@layout.settingsCardPadding",
+                  "padding": "@layout.settingsCardPadding"
+                },
+                "children": [
+                  {
+                    "id": "accountServiceLabel",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~roomService"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "accountServiceInput",
+                    "kind": "input",
+                    "styles": [
+                      "input"
+                    ],
+                    "props": {
+                      "value": "$service",
+                      "action": "editAccountService",
+                      "enabled": "$can.editAccountService",
+                      "automation": "account.service",
+                      "label": "~roomService",
+                      "width": "fill"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "accountState",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~{status}"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "accountName",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "$name",
+                      "when": "$hasProfile"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "accountEmail",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "$email",
+                      "when": "$hasProfile"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "accountBrowserProofLabel",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountBrowserProof",
+                      "when": "$codeRequired"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "accountBrowserProofInput",
+                    "kind": "input",
+                    "styles": [
+                      "input"
+                    ],
+                    "props": {
+                      "value": "$browserProof",
+                      "width": "fill",
+                      "secret": "true",
+                      "action": "editAccountBrowserProof",
+                      "enabled": "$can.editAccountBrowserProof",
+                      "automation": "account.browserProof",
+                      "label": "~accountBrowserProof",
+                      "when": "$codeRequired"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "accountMemory",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~{storageNotice}",
+                      "lines": "4"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "accountBoundary",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountExternalSession",
+                      "lines": "5"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "accountActions",
+            "kind": "row",
+            "styles": [],
+            "props": {
+              "padding": "@layout.settingsCardPadding",
+              "gap": "@control.compactGap"
+            },
+            "children": [
+              {
+                "id": "accountaccountSignIn",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountSignIn",
+                  "enabled": "$can.accountSignIn",
+                  "automation": "account.accountSignIn",
+                  "label": "~accountSignIn",
+                  "when": "$showSignIn"
+                },
+                "children": [
+                  {
+                    "id": "accountaccountSignInText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountSignIn"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "accountaccountOpenBrowser",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountOpenBrowser",
+                  "enabled": "$can.accountOpenBrowser",
+                  "automation": "account.accountOpenBrowser",
+                  "label": "~accountOpenBrowser",
+                  "when": "$pending"
+                },
+                "children": [
+                  {
+                    "id": "accountaccountOpenBrowserText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountOpenBrowser"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "verifyaccountaccountConfirm",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountVerifyBrowserProof",
+                  "enabled": "$can.accountVerifyBrowserProof",
+                  "automation": "account.accountVerifyBrowserProof",
+                  "label": "~accountVerifyBrowserProof",
+                  "when": "$codeRequired"
+                },
+                "children": [
+                  {
+                    "id": "verifyaccountaccountConfirmText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountVerifyBrowserProof"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "accountaccountConfirm",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountConfirm",
+                  "enabled": "$can.accountConfirm",
+                  "automation": "account.accountConfirm",
+                  "label": "~accountConfirm",
+                  "when": "$confirmation"
+                },
+                "children": [
+                  {
+                    "id": "accountaccountConfirmText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountConfirm"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "accountaccountCancel",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountCancel",
+                  "enabled": "$can.accountCancel",
+                  "automation": "account.accountCancel",
+                  "label": "~accountCancel",
+                  "when": "$canCancel"
+                },
+                "children": [
+                  {
+                    "id": "accountaccountCancelText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountCancel"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "accountaccountSignOut",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountSignOut",
+                  "enabled": "$can.accountSignOut",
+                  "automation": "account.accountSignOut",
+                  "label": "~accountSignOut",
+                  "when": "$signedIn"
+                },
+                "children": [
+                  {
+                    "id": "accountaccountSignOutText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountSignOut"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "accountRetryStorage",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountRetryStorage",
+                  "enabled": "$can.accountRetryStorage",
+                  "when": "$storageRecovery",
+                  "label": "~accountRetryStorage",
+                  "automation": "account.accountRetryStorage"
+                },
+                "children": [
+                  {
+                    "id": "accountRetryStorageText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountRetryStorage"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "accountForgetStorage",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountForgetStorage",
+                  "enabled": "$can.accountForgetStorage",
+                  "when": "$storageRecovery",
+                  "label": "~accountForgetStorage",
+                  "automation": "account.accountForgetStorage"
+                },
+                "children": [
+                  {
+                    "id": "accountForgetStorageText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountForgetStorage"
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "accountUseMemory",
+                "kind": "button",
+                "styles": [
+                  "button",
+                  "compact"
+                ],
+                "props": {
+                  "action": "accountUseMemory",
+                  "enabled": "$can.accountUseMemory",
+                  "when": "$storageRecovery",
+                  "label": "~accountUseMemory",
+                  "automation": "account.accountUseMemory"
+                },
+                "children": [
+                  {
+                    "id": "accountUseMemoryText",
+                    "kind": "text",
+                    "styles": [],
+                    "props": {
+                      "text": "~accountUseMemory"
                     },
                     "children": []
                   }

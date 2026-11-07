@@ -44,6 +44,7 @@ def linux_inputs(directory, media, desktop):
     profiles = [ROOT / "tools/application" / name for name in ("jvm-profile.json", "linux-clients.json")]
     sources = sorted({item["path"] for profile in profiles
                       for item in json.loads(profile.read_text())["sources"].values()})
+    sources.append("3rdparty/desktop-dbus")  # Original public headers for the isolated account store adapter.
     run("git", "submodule", "update", "--init", "--checkout", "--depth=1", "--", *sources)
     with tempfile.TemporaryDirectory(prefix=".linux-build-inputs-", dir=directory) as temporary:
         work = Path(temporary)

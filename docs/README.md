@@ -1,11 +1,12 @@
 # SyncWatch documentation
 
-SyncWatch lets people watch their local movie files together with synchronized playback and a Google Meet call in a separate application-owned window.
+SyncWatch lets people watch their local movie files together with synchronized playback and a Google Meet call opened in a supported browser or the official Meet PWA.
 
 ## Application
 
 - [Application behavior](application.md): screens, controls, settings, keyboard actions, window behavior, and connection recovery.
 - [Running the room service](room-service.md): service setup, configuration, and startup.
+- [Google sign-in and Meet setup](google-meet-setup.md): developer registration, protected credentials, test users, and browser/PWA requirements.
 - [Building and running](building.md): source checkout, declared toolchains, native builds, and launch commands.
 - [Building the design tools](design-generator.md): source-only Style Dictionary profile and API.
 - [Inspecting JVM dependencies](jvm-dependencies.md): offline runtime metadata inventory before source adoption.
@@ -27,7 +28,7 @@ SyncWatch lets people watch their local movie files together with synchronized p
 - [Room service API](architecture/room-service.md): authorization, catalog batches, snapshots, ordered events, and limits.
 - [Google accounts, rooms, and calls](architecture/accounts-and-rooms.md): target sign-in, room admission, automatic Meet creation, session security, and provider boundaries.
 - [Syncplay and room metadata](architecture/syncplay.md): engine integration, local IPC, media selection, and reconnect behavior.
-- [Google Meet integration](architecture/google-meet.md): application-owned call windows, authentication, capabilities, and browser-host limitations.
+- [Google Meet integration](architecture/google-meet.md): room-to-browser/PWA handoff, authentication, capabilities, and lifecycle boundaries.
 - [Dependencies](architecture/dependencies.md): pinned Git submodules and source dependency policy.
 
 ## Technology choices
@@ -35,16 +36,18 @@ SyncWatch lets people watch their local movie files together with synchronized p
 | Area | Technology |
 |---|---|
 | macOS client | Swift, SwiftUI, AppKit |
-| Linux client (planned) | Kotlin/JVM, Compose Multiplatform Desktop; dependency closure and implementation pending |
+| Linux client | Kotlin/JVM, Compose Multiplatform Desktop |
 | Windows client | C#, WPF, .NET 10 LTS |
 | Shared design | `packages/design`, Apache 2.0, generated with Style Dictionary |
 | Movie playback | VLC/libVLC |
 | Playback synchronization | Syncplay |
-| Calls | Google Meet in an application-owned window |
+| Calls | Google Meet in a supported browser or official PWA; SyncWatch manages the room and intended provisioning/handoff |
 | Room metadata service | C#, ASP.NET Core, HTTPS/WSS |
 | External source dependencies | Pinned Git submodules under `3rdparty/` |
 
-Native application shells, domain ownership guards, generated design resources, and shared contracts are present. The shared Library workspace, application-settings dialog, core Player component and PlayerSettings dialog run in SwiftUI/WPF, with local language/theme persistence and opt-in component galleries. Kotlin resources and Compose Library/Settings/Player/PlayerSettings source are present, with the Linux build still unavailable. The source-built headless Syncplay/TLS runtime and development helper/pipe transports are present. Actual player integration, application synchronization provider activation, and calling remain incomplete. See [helper ownership and native pipes](syncplay-bridge.md). Application documentation describes the intended interface; the existing shells do not yet provide these workflows. Provider and dependency limitations are described in the architecture.
+The three native clients contain Library, local WatchSession/VLC ownership, generated Design, room transport, and a source-built Syncplay helper integration. Account sign-in, automatic Meet provisioning, and normal room-to-browser/PWA call handoff remain unimplemented. Component galleries are design fixtures rather than provider acceptance. See [application behavior](application.md), [helper ownership](syncplay-bridge.md), and the integration limitations in the architecture.
 
 - [Local library ownership and scanning](architecture/library.md)
 - [Native playback ownership, development entry and acceptance](playback.md)
+
+- [Account service](account-service.md): confidential Google sign-in, proof-bound native handoff, device sessions and current implementation limits.

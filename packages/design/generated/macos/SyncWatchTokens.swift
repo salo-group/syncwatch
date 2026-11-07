@@ -616,6 +616,41 @@ public enum SyncWatchCopy {
             "sharedPositionCheckpoint": "Position before connection loss",
             "restoreSharedPosition": "Return to this position",
             "dismissSharedPosition": "Dismiss",
+            "openAccount": "Google account",
+            "accountSignIn": "Sign in with Google",
+            "accountOpenBrowser": "Continue in browser",
+            "accountConfirm": "Use this account",
+            "accountCancel": "Cancel sign-in",
+            "accountSignOut": "Sign out of SyncWatch",
+            "accountSignedOut": "Sign in to prepare your SyncWatch account for rooms and Meet.",
+            "accountPending": "Complete sign-in in the browser, then confirm the account here.",
+            "accountConfirmAccount": "Check the Google account before continuing.",
+            "accountSignedIn": "Signed in to SyncWatch",
+            "accountWorking": "Working…",
+            "accountFailed": "Sign-in could not finish. Check the service address and try again.",
+            "accountMemoryOnly": "This session stays in memory. Sign in again after restarting SyncWatch.",
+            "accountExternalSession":
+                "Your Google browser session and any Meet call stay separate. Signing out here does not end a call.",
+            "accountSignOutFailed": "Server sign-out is unconfirmed. Retry while this window is open.",
+            "accountBrowserProof": "Confirmation code from the browser",
+            "accountConfirmationFailed": "The code could not be verified. Check it, or cancel and sign in again.",
+            "accountBrowserProofRequired": "Enter the confirmation code shown in the browser to check the account.",
+            "accountVerifyBrowserProof": "Check account",
+            "accountBrowserUnavailable":
+                "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in.",
+            "accountWillRemember": "Your SyncWatch sign-in will be saved in this device’s secure storage.",
+            "accountSavedOnDevice":
+                "Sign-in is saved securely on this device. Closing SyncWatch keeps it; Sign out removes it.",
+            "accountRestoring": "Restoring your saved SyncWatch sign-in…",
+            "accountStorageUnavailable":
+                "Saved sign-in could not be accessed or restored. Retry, forget it, or explicitly continue without saving.",
+            "accountSavedUnavailable": "A previous saved sign-in stays unchanged if you continue in memory only.",
+            "accountRetryStorage": "Retry saved sign-in",
+            "accountForgetStorage": "Forget on this device",
+            "accountUseMemory": "Use memory only",
+            "accountSignInRequired": "Saved sign-in expired or was revoked. Sign in again.",
+            "accountMemoryWithSaved": "This sign-in stays in memory. Any previous saved sign-in remains unchanged.",
+            "accountUnavailable": "The account service is unavailable. Retrying…",
         ],
         "ru": [
             "brand": "SyncWatch",
@@ -867,6 +902,41 @@ public enum SyncWatchCopy {
             "sharedPositionCheckpoint": "Позиция до потери связи",
             "restoreSharedPosition": "Вернуться к этой позиции",
             "dismissSharedPosition": "Скрыть",
+            "openAccount": "Аккаунт Google",
+            "accountSignIn": "Войти через Google",
+            "accountOpenBrowser": "Продолжить в браузере",
+            "accountConfirm": "Использовать этот аккаунт",
+            "accountCancel": "Отменить вход",
+            "accountSignOut": "Выйти из SyncWatch",
+            "accountSignedOut": "Войдите, чтобы подготовить аккаунт SyncWatch для комнат и Meet.",
+            "accountPending": "Завершите вход в браузере и подтвердите аккаунт здесь.",
+            "accountConfirmAccount": "Проверьте аккаунт Google перед продолжением.",
+            "accountSignedIn": "Вход в SyncWatch выполнен",
+            "accountWorking": "Подождите…",
+            "accountFailed": "Не удалось войти. Проверьте адрес сервиса и повторите попытку.",
+            "accountMemoryOnly": "Сессия хранится в памяти. После перезапуска SyncWatch войдите снова.",
+            "accountExternalSession":
+                "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок.",
+            "accountSignOutFailed": "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто.",
+            "accountBrowserProof": "Код подтверждения из браузера",
+            "accountConfirmationFailed": "Не удалось проверить код. Проверьте его или отмените вход и начните снова.",
+            "accountBrowserProofRequired": "Введите код из браузера, чтобы проверить аккаунт.",
+            "accountVerifyBrowserProof": "Проверить аккаунт",
+            "accountBrowserUnavailable":
+                "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход.",
+            "accountWillRemember": "Вход в SyncWatch будет сохранён в защищённом хранилище устройства.",
+            "accountSavedOnDevice":
+                "Вход безопасно сохранён на устройстве. Закрытие SyncWatch сохраняет его; выход удаляет.",
+            "accountRestoring": "Восстанавливаем сохранённый вход в SyncWatch…",
+            "accountStorageUnavailable":
+                "Не удалось прочитать или восстановить вход. Повторите, удалите его или явно продолжите без сохранения.",
+            "accountSavedUnavailable": "При работе только в памяти прежний сохранённый вход остаётся без изменений.",
+            "accountRetryStorage": "Повторить вход",
+            "accountForgetStorage": "Забыть на устройстве",
+            "accountUseMemory": "Только в памяти",
+            "accountSignInRequired": "Сохранённый вход истёк или отозван. Войдите снова.",
+            "accountMemoryWithSaved": "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений.",
+            "accountUnavailable": "Сервис аккаунтов недоступен. Повторяем попытку…",
         ],
     ]
     public static func text(_ key: String, language: String = "en") -> String {
@@ -886,6 +956,7 @@ public enum SyncWatchCopy {
         "openRoom",
         "openLibraryAudio",
         "openLibrarySubtitles",
+        "openAccount",
     ]
     public static let galleryMovies = [
         "Example Movie 01.mkv",
@@ -2162,7 +2233,7 @@ public enum SyncWatchSelectionMenu {
 }
 
 public enum SyncWatchLayouts {
-    public static let sourceDigest = "c9abba47f60911bdf25c77058e47f13c493d5dd2dbbdcad7fef0fd9977c232fa"
+    public static let sourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1"
     public static let coordinateSize = 20.0
     public static func themeColor(_ role: String, theme: SyncWatchTheme) -> Color? {
         switch role {
@@ -3246,6 +3317,7 @@ public enum SyncWatchLayouts {
         "selectionFixture": makeselectionFixture(),
         "Application": makeApplication(),
         "Room": makeRoom(),
+        "Account": makeAccount(),
     ]
     private static func makeLibrary() -> DesignNode {
         let node62 = DesignNode(
@@ -3347,6 +3419,43 @@ public enum SyncWatchLayouts {
                 "lines": "1",
             ],
             children: [])
+        let libraryOpenAccountLabel = DesignNode(
+            id: "libraryOpenAccountLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~openAccount",
+            ],
+            children: [])
+        let libraryOpenAccount = DesignNode(
+            id: "libraryOpenAccount", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "openAccount",
+                "automation": "{namespace}.openAccount",
+                "enabled": "$can.openAccount",
+                "label": "~openAccount",
+            ],
+            children: [libraryOpenAccountLabel])
         let node68 = DesignNode(
             id: "node68", kind: "text",
             props: [
@@ -3400,7 +3509,7 @@ public enum SyncWatchLayouts {
                 "height": "@layout.headerHeight",
                 "paddingX": "@layout.workspacePadding",
             ],
-            children: [node62, node63, node64, node65, node66, libraryFriendStatus, node67, node69])
+            children: [node62, node63, node64, node65, node66, libraryFriendStatus, node67, libraryOpenAccount, node69])
         let node71 = DesignNode(
             id: "node71", kind: "text",
             props: [
@@ -9139,5 +9248,634 @@ public enum SyncWatchLayouts {
             ],
             children: [roomHeader, roomDivider, roomBody, roomFooter])
         return roomDialog
+    }
+    private static func makeAccount() -> DesignNode {
+        let accountTitle = DesignNode(
+            id: "accountTitle", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "fontSize": "@type.settingsTitleSize",
+                "weight": "bold",
+                "text": "~openAccount",
+                "width": "fill",
+            ],
+            children: [])
+        let accountCloseLabel = DesignNode(
+            id: "accountCloseLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~close",
+            ],
+            children: [])
+        let accountClose = DesignNode(
+            id: "accountClose", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "close",
+                "automation": "account.close",
+                "enabled": "$can.close",
+                "label": "~close",
+                "shortcut": "cancel",
+            ],
+            children: [accountCloseLabel])
+        let accountHeader = DesignNode(
+            id: "accountHeader", kind: "row",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "padding": "@layout.settingsCardPadding",
+                "gap": "@control.compactGap",
+            ],
+            children: [accountTitle, accountClose])
+        let accountServiceLabel = DesignNode(
+            id: "accountServiceLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~roomService",
+            ],
+            children: [])
+        let accountServiceInput = DesignNode(
+            id: "accountServiceInput", kind: "input",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accent",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "placeholderFill": "theme.textSecondary",
+                "height": "@control.fieldHeight",
+                "paddingX": "@layout.panelPadding",
+                "radius": "@control.fieldRadius",
+                "background": "theme.inputFill",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "value": "$service",
+                "action": "editAccountService",
+                "enabled": "$can.editAccountService",
+                "automation": "account.service",
+                "label": "~roomService",
+                "width": "fill",
+            ],
+            children: [])
+        let accountState = DesignNode(
+            id: "accountState", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~{status}",
+            ],
+            children: [])
+        let accountName = DesignNode(
+            id: "accountName", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "$name",
+                "when": "$hasProfile",
+            ],
+            children: [])
+        let accountEmail = DesignNode(
+            id: "accountEmail", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "$email",
+                "when": "$hasProfile",
+            ],
+            children: [])
+        let accountBrowserProofLabel = DesignNode(
+            id: "accountBrowserProofLabel", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountBrowserProof",
+                "when": "$codeRequired",
+            ],
+            children: [])
+        let accountBrowserProofInput = DesignNode(
+            id: "accountBrowserProofInput", kind: "input",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accent",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "placeholderFill": "theme.textSecondary",
+                "height": "@control.fieldHeight",
+                "paddingX": "@layout.panelPadding",
+                "radius": "@control.fieldRadius",
+                "background": "theme.inputFill",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "value": "$browserProof",
+                "width": "fill",
+                "secret": "true",
+                "action": "editAccountBrowserProof",
+                "enabled": "$can.editAccountBrowserProof",
+                "automation": "account.browserProof",
+                "label": "~accountBrowserProof",
+                "when": "$codeRequired",
+            ],
+            children: [])
+        let accountMemory = DesignNode(
+            id: "accountMemory", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~{storageNotice}",
+                "lines": "4",
+            ],
+            children: [])
+        let accountBoundary = DesignNode(
+            id: "accountBoundary", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountExternalSession",
+                "lines": "5",
+            ],
+            children: [])
+        let accountBody = DesignNode(
+            id: "accountBody", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "gap": "@layout.settingsCardPadding",
+                "padding": "@layout.settingsCardPadding",
+            ],
+            children: [
+                accountServiceLabel,
+                accountServiceInput,
+                accountState,
+                accountName,
+                accountEmail,
+                accountBrowserProofLabel,
+                accountBrowserProofInput,
+                accountMemory,
+                accountBoundary,
+            ])
+        let accountScroll = DesignNode(
+            id: "accountScroll", kind: "scroll",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "barWidth": "@control.compactGap",
+                "thumbMinimum": "@control.iconSize",
+                "thumbRadius": "@control.buttonRadius",
+                "thumbFill": "theme.border",
+                "height": "fill",
+                "minHeight": "0",
+            ],
+            children: [accountBody])
+        let accountaccountSignInText = DesignNode(
+            id: "accountaccountSignInText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountSignIn",
+            ],
+            children: [])
+        let accountaccountSignIn = DesignNode(
+            id: "accountaccountSignIn", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountSignIn",
+                "enabled": "$can.accountSignIn",
+                "automation": "account.accountSignIn",
+                "label": "~accountSignIn",
+                "when": "$showSignIn",
+            ],
+            children: [accountaccountSignInText])
+        let accountaccountOpenBrowserText = DesignNode(
+            id: "accountaccountOpenBrowserText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountOpenBrowser",
+            ],
+            children: [])
+        let accountaccountOpenBrowser = DesignNode(
+            id: "accountaccountOpenBrowser", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountOpenBrowser",
+                "enabled": "$can.accountOpenBrowser",
+                "automation": "account.accountOpenBrowser",
+                "label": "~accountOpenBrowser",
+                "when": "$pending",
+            ],
+            children: [accountaccountOpenBrowserText])
+        let verifyaccountaccountConfirmText = DesignNode(
+            id: "verifyaccountaccountConfirmText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountVerifyBrowserProof",
+            ],
+            children: [])
+        let verifyaccountaccountConfirm = DesignNode(
+            id: "verifyaccountaccountConfirm", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountVerifyBrowserProof",
+                "enabled": "$can.accountVerifyBrowserProof",
+                "automation": "account.accountVerifyBrowserProof",
+                "label": "~accountVerifyBrowserProof",
+                "when": "$codeRequired",
+            ],
+            children: [verifyaccountaccountConfirmText])
+        let accountaccountConfirmText = DesignNode(
+            id: "accountaccountConfirmText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountConfirm",
+            ],
+            children: [])
+        let accountaccountConfirm = DesignNode(
+            id: "accountaccountConfirm", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountConfirm",
+                "enabled": "$can.accountConfirm",
+                "automation": "account.accountConfirm",
+                "label": "~accountConfirm",
+                "when": "$confirmation",
+            ],
+            children: [accountaccountConfirmText])
+        let accountaccountCancelText = DesignNode(
+            id: "accountaccountCancelText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountCancel",
+            ],
+            children: [])
+        let accountaccountCancel = DesignNode(
+            id: "accountaccountCancel", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountCancel",
+                "enabled": "$can.accountCancel",
+                "automation": "account.accountCancel",
+                "label": "~accountCancel",
+                "when": "$canCancel",
+            ],
+            children: [accountaccountCancelText])
+        let accountaccountSignOutText = DesignNode(
+            id: "accountaccountSignOutText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountSignOut",
+            ],
+            children: [])
+        let accountaccountSignOut = DesignNode(
+            id: "accountaccountSignOut", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountSignOut",
+                "enabled": "$can.accountSignOut",
+                "automation": "account.accountSignOut",
+                "label": "~accountSignOut",
+                "when": "$signedIn",
+            ],
+            children: [accountaccountSignOutText])
+        let accountRetryStorageText = DesignNode(
+            id: "accountRetryStorageText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountRetryStorage",
+            ],
+            children: [])
+        let accountRetryStorage = DesignNode(
+            id: "accountRetryStorage", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountRetryStorage",
+                "enabled": "$can.accountRetryStorage",
+                "when": "$storageRecovery",
+                "label": "~accountRetryStorage",
+                "automation": "account.accountRetryStorage",
+            ],
+            children: [accountRetryStorageText])
+        let accountForgetStorageText = DesignNode(
+            id: "accountForgetStorageText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountForgetStorage",
+            ],
+            children: [])
+        let accountForgetStorage = DesignNode(
+            id: "accountForgetStorage", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountForgetStorage",
+                "enabled": "$can.accountForgetStorage",
+                "when": "$storageRecovery",
+                "label": "~accountForgetStorage",
+                "automation": "account.accountForgetStorage",
+            ],
+            children: [accountForgetStorageText])
+        let accountUseMemoryText = DesignNode(
+            id: "accountUseMemoryText", kind: "text",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "text": "~accountUseMemory",
+            ],
+            children: [])
+        let accountUseMemory = DesignNode(
+            id: "accountUseMemory", kind: "button",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "paddingX": "@layout.settingsCardPadding",
+                "minHeight": "0",
+                "radius": "@control.buttonRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "background": "theme.surfaceRaised",
+                "foreground": "theme.text",
+                "fontSize": "@type.settingsBodySize",
+                "weight": "normal",
+                "contentAlign": "center",
+                "height": "@layout.settingsControlHeight",
+                "action": "accountUseMemory",
+                "enabled": "$can.accountUseMemory",
+                "when": "$storageRecovery",
+                "label": "~accountUseMemory",
+                "automation": "account.accountUseMemory",
+            ],
+            children: [accountUseMemoryText])
+        let accountActions = DesignNode(
+            id: "accountActions", kind: "row",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "padding": "@layout.settingsCardPadding",
+                "gap": "@control.compactGap",
+            ],
+            children: [
+                accountaccountSignIn,
+                accountaccountOpenBrowser,
+                verifyaccountaccountConfirm,
+                accountaccountConfirm,
+                accountaccountCancel,
+                accountaccountSignOut,
+                accountRetryStorage,
+                accountForgetStorage,
+                accountUseMemory,
+            ])
+        let accountDialog = DesignNode(
+            id: "accountDialog", kind: "column",
+            props: [
+                "disabledOpacity": "0.4",
+                "pressedOpacity": "0.75",
+                "focusBorder": "theme.accentSoft",
+                "hoverBorder": "theme.accent",
+                "focusWidth": "@control.borderWidth",
+                "align": "leading",
+                "width": "@layout.settingsWidth",
+                "height": "@layout.settingsHeight",
+                "fontSize": "@type.settingsBodySize",
+                "foreground": "theme.text",
+                "background": "theme.surface",
+                "radius": "@control.compactDialogRadius",
+                "border": "theme.border",
+                "borderWidth": "@control.borderWidth",
+                "clip": "true",
+                "cycleFocus": "true",
+            ],
+            children: [accountHeader, accountScroll, accountActions])
+        return accountDialog
     }
 }

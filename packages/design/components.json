@@ -36,7 +36,8 @@
         "openCall",
         "openRoom",
         "openLibraryAudio",
-        "openLibrarySubtitles"
+        "openLibrarySubtitles",
+        "openAccount"
       ]
     },
     "PlayerChrome": {
@@ -254,6 +255,33 @@
         "leaveRoom",
         "copyInvitation",
         "close"
+      ]
+    },
+    "Account": {
+      "tokens": [],
+      "states": [
+        "signedOut",
+        "working",
+        "pending",
+        "authorizing",
+        "confirmAccount",
+        "signedIn",
+        "failed",
+        "browserConfirmationRequired"
+      ],
+      "actions": [
+        "editAccountService",
+        "accountSignIn",
+        "accountOpenBrowser",
+        "accountConfirm",
+        "accountCancel",
+        "accountSignOut",
+        "close",
+        "editAccountBrowserProof",
+        "accountVerifyBrowserProof",
+        "accountRetryStorage",
+        "accountForgetStorage",
+        "accountUseMemory"
       ]
     }
   }

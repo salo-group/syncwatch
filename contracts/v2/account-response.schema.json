@@ -1,0 +1,421 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v2/account-response.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "transactionId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{43}$"
+                },
+                "browserUri": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                },
+                "expiresIn": {
+                  "type": "integer",
+                  "const": 300
+                },
+                "pollAfterMs": {
+                  "type": "integer",
+                  "const": 2000
+                }
+              },
+              "required": [
+                "transactionId",
+                "browserUri",
+                "expiresIn",
+                "pollAfterMs"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "pending"
+                },
+                "account": {
+                  "type": "null"
+                },
+                "session": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "authorizing"
+                },
+                "account": {
+                  "type": "null"
+                },
+                "session": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "confirmAccount"
+                },
+                "account": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "const": ""
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                    },
+                    "email": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 320,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email"
+                  ],
+                  "additionalProperties": false
+                },
+                "session": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "complete"
+                },
+                "account": {
+                  "type": "null"
+                },
+                "session": {
+                  "type": "object",
+                  "properties": {
+                    "account": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{43}$"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                        },
+                        "email": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 320,
+                          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "accessToken": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "refreshToken": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "expiresIn": {
+                      "const": 600,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "account",
+                    "accessToken",
+                    "refreshToken",
+                    "expiresIn"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "cancelled"
+                },
+                "account": {
+                  "type": "null"
+                },
+                "session": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "failed"
+                },
+                "account": {
+                  "type": "null"
+                },
+                "session": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "complete"
+                },
+                "account": {
+                  "type": "null"
+                },
+                "session": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "account": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                    },
+                    "email": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 320,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "account"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "object",
+                  "properties": {
+                    "account": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{43}$"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                        },
+                        "email": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 320,
+                          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "accessToken": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "refreshToken": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "expiresIn": {
+                      "const": 600,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "account",
+                    "accessToken",
+                    "refreshToken",
+                    "expiresIn"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "session"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "signedOut"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "browserConfirmationRequired"
+                },
+                "account": {
+                  "type": "null"
+                },
+                "session": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "status",
+                "account",
+                "session"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "v",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "v",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

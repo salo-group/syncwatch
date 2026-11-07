@@ -436,6 +436,37 @@ object SyncWatchCopy {
         "en" to "sharedPositionCheckpoint" -> "Position before connection loss"
         "en" to "restoreSharedPosition" -> "Return to this position"
         "en" to "dismissSharedPosition" -> "Dismiss"
+        "en" to "openAccount" -> "Google account"
+        "en" to "accountSignIn" -> "Sign in with Google"
+        "en" to "accountOpenBrowser" -> "Continue in browser"
+        "en" to "accountConfirm" -> "Use this account"
+        "en" to "accountCancel" -> "Cancel sign-in"
+        "en" to "accountSignOut" -> "Sign out of SyncWatch"
+        "en" to "accountSignedOut" -> "Sign in to prepare your SyncWatch account for rooms and Meet."
+        "en" to "accountPending" -> "Complete sign-in in the browser, then confirm the account here."
+        "en" to "accountConfirmAccount" -> "Check the Google account before continuing."
+        "en" to "accountSignedIn" -> "Signed in to SyncWatch"
+        "en" to "accountWorking" -> "Working…"
+        "en" to "accountFailed" -> "Sign-in could not finish. Check the service address and try again."
+        "en" to "accountMemoryOnly" -> "This session stays in memory. Sign in again after restarting SyncWatch."
+        "en" to "accountExternalSession" -> "Your Google browser session and any Meet call stay separate. Signing out here does not end a call."
+        "en" to "accountSignOutFailed" -> "Server sign-out is unconfirmed. Retry while this window is open."
+        "en" to "accountBrowserProof" -> "Confirmation code from the browser"
+        "en" to "accountConfirmationFailed" -> "The code could not be verified. Check it, or cancel and sign in again."
+        "en" to "accountBrowserProofRequired" -> "Enter the confirmation code shown in the browser to check the account."
+        "en" to "accountVerifyBrowserProof" -> "Check account"
+        "en" to "accountBrowserUnavailable" -> "Could not open your default browser. Check your desktop browser settings, then try again or cancel sign-in."
+        "en" to "accountWillRemember" -> "Your SyncWatch sign-in will be saved in this device’s secure storage."
+        "en" to "accountSavedOnDevice" -> "Sign-in is saved securely on this device. Closing SyncWatch keeps it; Sign out removes it."
+        "en" to "accountRestoring" -> "Restoring your saved SyncWatch sign-in…"
+        "en" to "accountStorageUnavailable" -> "Saved sign-in could not be accessed or restored. Retry, forget it, or explicitly continue without saving."
+        "en" to "accountSavedUnavailable" -> "A previous saved sign-in stays unchanged if you continue in memory only."
+        "en" to "accountRetryStorage" -> "Retry saved sign-in"
+        "en" to "accountForgetStorage" -> "Forget on this device"
+        "en" to "accountUseMemory" -> "Use memory only"
+        "en" to "accountSignInRequired" -> "Saved sign-in expired or was revoked. Sign in again."
+        "en" to "accountMemoryWithSaved" -> "This sign-in stays in memory. Any previous saved sign-in remains unchanged."
+        "en" to "accountUnavailable" -> "The account service is unavailable. Retrying…"
         "ru" to "brand" -> "SyncWatch"
         "ru" to "room" -> "Смотрим вместе"
         "ru" to "library" -> "Библиотека фильмов"
@@ -679,10 +710,41 @@ object SyncWatchCopy {
         "ru" to "sharedPositionCheckpoint" -> "Позиция до потери связи"
         "ru" to "restoreSharedPosition" -> "Вернуться к этой позиции"
         "ru" to "dismissSharedPosition" -> "Скрыть"
+        "ru" to "openAccount" -> "Аккаунт Google"
+        "ru" to "accountSignIn" -> "Войти через Google"
+        "ru" to "accountOpenBrowser" -> "Продолжить в браузере"
+        "ru" to "accountConfirm" -> "Использовать этот аккаунт"
+        "ru" to "accountCancel" -> "Отменить вход"
+        "ru" to "accountSignOut" -> "Выйти из SyncWatch"
+        "ru" to "accountSignedOut" -> "Войдите, чтобы подготовить аккаунт SyncWatch для комнат и Meet."
+        "ru" to "accountPending" -> "Завершите вход в браузере и подтвердите аккаунт здесь."
+        "ru" to "accountConfirmAccount" -> "Проверьте аккаунт Google перед продолжением."
+        "ru" to "accountSignedIn" -> "Вход в SyncWatch выполнен"
+        "ru" to "accountWorking" -> "Подождите…"
+        "ru" to "accountFailed" -> "Не удалось войти. Проверьте адрес сервиса и повторите попытку."
+        "ru" to "accountMemoryOnly" -> "Сессия хранится в памяти. После перезапуска SyncWatch войдите снова."
+        "ru" to "accountExternalSession" -> "Сессия Google в браузере и звонок Meet управляются отдельно. Выход здесь не завершает звонок."
+        "ru" to "accountSignOutFailed" -> "Выход на сервере не подтверждён. Повторите попытку, пока окно открыто."
+        "ru" to "accountBrowserProof" -> "Код подтверждения из браузера"
+        "ru" to "accountConfirmationFailed" -> "Не удалось проверить код. Проверьте его или отмените вход и начните снова."
+        "ru" to "accountBrowserProofRequired" -> "Введите код из браузера, чтобы проверить аккаунт."
+        "ru" to "accountVerifyBrowserProof" -> "Проверить аккаунт"
+        "ru" to "accountBrowserUnavailable" -> "Не удалось открыть браузер по умолчанию. Проверьте настройки браузера в системе, повторите попытку или отмените вход."
+        "ru" to "accountWillRemember" -> "Вход в SyncWatch будет сохранён в защищённом хранилище устройства."
+        "ru" to "accountSavedOnDevice" -> "Вход безопасно сохранён на устройстве. Закрытие SyncWatch сохраняет его; выход удаляет."
+        "ru" to "accountRestoring" -> "Восстанавливаем сохранённый вход в SyncWatch…"
+        "ru" to "accountStorageUnavailable" -> "Не удалось прочитать или восстановить вход. Повторите, удалите его или явно продолжите без сохранения."
+        "ru" to "accountSavedUnavailable" -> "При работе только в памяти прежний сохранённый вход остаётся без изменений."
+        "ru" to "accountRetryStorage" -> "Повторить вход"
+        "ru" to "accountForgetStorage" -> "Забыть на устройстве"
+        "ru" to "accountUseMemory" -> "Только в памяти"
+        "ru" to "accountSignInRequired" -> "Сохранённый вход истёк или отозван. Войдите снова."
+        "ru" to "accountMemoryWithSaved" -> "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений."
+        "ru" to "accountUnavailable" -> "Сервис аккаунтов недоступен. Повторяем попытку…"
         else -> if (language != "en") text(key, "en") else key
     }
     val galleryStates = listOf("empty", "scanning", "selected", "missingMedia", "reconnecting")
-    val libraryActions = setOf("chooseFolder", "rescan", "search", "selectMovie", "startWatching", "continueWatching", "endWatching", "openSettings", "openCall", "openRoom", "openLibraryAudio", "openLibrarySubtitles")
+    val libraryActions = setOf("chooseFolder", "rescan", "search", "selectMovie", "startWatching", "continueWatching", "endWatching", "openSettings", "openCall", "openRoom", "openLibraryAudio", "openLibrarySubtitles", "openAccount")
     val galleryMovies = listOf("Example Movie 01.mkv", "A very long movie title for responsive layout and selection.mkv", "Example Movie 03.mp4")
 }
 
@@ -893,7 +955,7 @@ object SyncWatchSelectionMenu {
 }
 
 object SyncWatchLayouts {
-    const val sourceDigest = "c9abba47f60911bdf25c77058e47f13c493d5dd2dbbdcad7fef0fd9977c232fa"
+    const val sourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1"
     const val coordinateSize = 20.0f
     fun themeColor(role: String, theme: SyncWatchTheme): Long? = when (role) {
         "background" -> theme.background
@@ -1105,6 +1167,7 @@ object SyncWatchLayouts {
         "selectionFixture" to makeselectionFixture(),
         "Application" to makeApplication(),
         "Room" to makeRoom(),
+        "Account" to makeAccount(),
     )
     private fun makeLibrary(): DesignNode {
         val node62 = DesignNode("node62", "icon", mapOf(
@@ -1185,6 +1248,37 @@ object SyncWatchLayouts {
             "text" to "~callInactive",
             "lines" to "1",
         ), listOf())
+        val libraryOpenAccountLabel = DesignNode("libraryOpenAccountLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~openAccount",
+        ), listOf())
+        val libraryOpenAccount = DesignNode("libraryOpenAccount", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "openAccount",
+            "automation" to "{namespace}.openAccount",
+            "enabled" to "\$can.openAccount",
+            "label" to "~openAccount",
+        ), listOf(libraryOpenAccountLabel))
         val node68 = DesignNode("node68", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -1229,7 +1323,7 @@ object SyncWatchLayouts {
             "gap" to "@layout.panelGap",
             "height" to "@layout.headerHeight",
             "paddingX" to "@layout.workspacePadding",
-        ), listOf(node62, node63, node64, node65, node66, libraryFriendStatus, node67, node69))
+        ), listOf(node62, node63, node64, node65, node66, libraryFriendStatus, node67, libraryOpenAccount, node69))
         val node71 = DesignNode("node71", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5848,5 +5942,509 @@ object SyncWatchLayouts {
             "cycleFocus" to "true",
         ), listOf(roomHeader, roomDivider, roomBody, roomFooter))
         return roomDialog
+    }
+    private fun makeAccount(): DesignNode {
+        val accountTitle = DesignNode("accountTitle", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "fontSize" to "@type.settingsTitleSize",
+            "weight" to "bold",
+            "text" to "~openAccount",
+            "width" to "fill",
+        ), listOf())
+        val accountCloseLabel = DesignNode("accountCloseLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~close",
+        ), listOf())
+        val accountClose = DesignNode("accountClose", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "close",
+            "automation" to "account.close",
+            "enabled" to "\$can.close",
+            "label" to "~close",
+            "shortcut" to "cancel",
+        ), listOf(accountCloseLabel))
+        val accountHeader = DesignNode("accountHeader", "row", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "padding" to "@layout.settingsCardPadding",
+            "gap" to "@control.compactGap",
+        ), listOf(accountTitle, accountClose))
+        val accountServiceLabel = DesignNode("accountServiceLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~roomService",
+        ), listOf())
+        val accountServiceInput = DesignNode("accountServiceInput", "input", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accent",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "placeholderFill" to "theme.textSecondary",
+            "height" to "@control.fieldHeight",
+            "paddingX" to "@layout.panelPadding",
+            "radius" to "@control.fieldRadius",
+            "background" to "theme.inputFill",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "value" to "\$service",
+            "action" to "editAccountService",
+            "enabled" to "\$can.editAccountService",
+            "automation" to "account.service",
+            "label" to "~roomService",
+            "width" to "fill",
+        ), listOf())
+        val accountState = DesignNode("accountState", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~{status}",
+        ), listOf())
+        val accountName = DesignNode("accountName", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "\$name",
+            "when" to "\$hasProfile",
+        ), listOf())
+        val accountEmail = DesignNode("accountEmail", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "\$email",
+            "when" to "\$hasProfile",
+        ), listOf())
+        val accountBrowserProofLabel = DesignNode("accountBrowserProofLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountBrowserProof",
+            "when" to "\$codeRequired",
+        ), listOf())
+        val accountBrowserProofInput = DesignNode("accountBrowserProofInput", "input", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accent",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "placeholderFill" to "theme.textSecondary",
+            "height" to "@control.fieldHeight",
+            "paddingX" to "@layout.panelPadding",
+            "radius" to "@control.fieldRadius",
+            "background" to "theme.inputFill",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "value" to "\$browserProof",
+            "width" to "fill",
+            "secret" to "true",
+            "action" to "editAccountBrowserProof",
+            "enabled" to "\$can.editAccountBrowserProof",
+            "automation" to "account.browserProof",
+            "label" to "~accountBrowserProof",
+            "when" to "\$codeRequired",
+        ), listOf())
+        val accountMemory = DesignNode("accountMemory", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~{storageNotice}",
+            "lines" to "4",
+        ), listOf())
+        val accountBoundary = DesignNode("accountBoundary", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountExternalSession",
+            "lines" to "5",
+        ), listOf())
+        val accountBody = DesignNode("accountBody", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "gap" to "@layout.settingsCardPadding",
+            "padding" to "@layout.settingsCardPadding",
+        ), listOf(accountServiceLabel, accountServiceInput, accountState, accountName, accountEmail, accountBrowserProofLabel, accountBrowserProofInput, accountMemory, accountBoundary))
+        val accountScroll = DesignNode("accountScroll", "scroll", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "barWidth" to "@control.compactGap",
+            "thumbMinimum" to "@control.iconSize",
+            "thumbRadius" to "@control.buttonRadius",
+            "thumbFill" to "theme.border",
+            "height" to "fill",
+            "minHeight" to "0",
+        ), listOf(accountBody))
+        val accountaccountSignInText = DesignNode("accountaccountSignInText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountSignIn",
+        ), listOf())
+        val accountaccountSignIn = DesignNode("accountaccountSignIn", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountSignIn",
+            "enabled" to "\$can.accountSignIn",
+            "automation" to "account.accountSignIn",
+            "label" to "~accountSignIn",
+            "when" to "\$showSignIn",
+        ), listOf(accountaccountSignInText))
+        val accountaccountOpenBrowserText = DesignNode("accountaccountOpenBrowserText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountOpenBrowser",
+        ), listOf())
+        val accountaccountOpenBrowser = DesignNode("accountaccountOpenBrowser", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountOpenBrowser",
+            "enabled" to "\$can.accountOpenBrowser",
+            "automation" to "account.accountOpenBrowser",
+            "label" to "~accountOpenBrowser",
+            "when" to "\$pending",
+        ), listOf(accountaccountOpenBrowserText))
+        val verifyaccountaccountConfirmText = DesignNode("verifyaccountaccountConfirmText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountVerifyBrowserProof",
+        ), listOf())
+        val verifyaccountaccountConfirm = DesignNode("verifyaccountaccountConfirm", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountVerifyBrowserProof",
+            "enabled" to "\$can.accountVerifyBrowserProof",
+            "automation" to "account.accountVerifyBrowserProof",
+            "label" to "~accountVerifyBrowserProof",
+            "when" to "\$codeRequired",
+        ), listOf(verifyaccountaccountConfirmText))
+        val accountaccountConfirmText = DesignNode("accountaccountConfirmText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountConfirm",
+        ), listOf())
+        val accountaccountConfirm = DesignNode("accountaccountConfirm", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountConfirm",
+            "enabled" to "\$can.accountConfirm",
+            "automation" to "account.accountConfirm",
+            "label" to "~accountConfirm",
+            "when" to "\$confirmation",
+        ), listOf(accountaccountConfirmText))
+        val accountaccountCancelText = DesignNode("accountaccountCancelText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountCancel",
+        ), listOf())
+        val accountaccountCancel = DesignNode("accountaccountCancel", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountCancel",
+            "enabled" to "\$can.accountCancel",
+            "automation" to "account.accountCancel",
+            "label" to "~accountCancel",
+            "when" to "\$canCancel",
+        ), listOf(accountaccountCancelText))
+        val accountaccountSignOutText = DesignNode("accountaccountSignOutText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountSignOut",
+        ), listOf())
+        val accountaccountSignOut = DesignNode("accountaccountSignOut", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountSignOut",
+            "enabled" to "\$can.accountSignOut",
+            "automation" to "account.accountSignOut",
+            "label" to "~accountSignOut",
+            "when" to "\$signedIn",
+        ), listOf(accountaccountSignOutText))
+        val accountRetryStorageText = DesignNode("accountRetryStorageText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountRetryStorage",
+        ), listOf())
+        val accountRetryStorage = DesignNode("accountRetryStorage", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountRetryStorage",
+            "enabled" to "\$can.accountRetryStorage",
+            "when" to "\$storageRecovery",
+            "label" to "~accountRetryStorage",
+            "automation" to "account.accountRetryStorage",
+        ), listOf(accountRetryStorageText))
+        val accountForgetStorageText = DesignNode("accountForgetStorageText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountForgetStorage",
+        ), listOf())
+        val accountForgetStorage = DesignNode("accountForgetStorage", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountForgetStorage",
+            "enabled" to "\$can.accountForgetStorage",
+            "when" to "\$storageRecovery",
+            "label" to "~accountForgetStorage",
+            "automation" to "account.accountForgetStorage",
+        ), listOf(accountForgetStorageText))
+        val accountUseMemoryText = DesignNode("accountUseMemoryText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountUseMemory",
+        ), listOf())
+        val accountUseMemory = DesignNode("accountUseMemory", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "accountUseMemory",
+            "enabled" to "\$can.accountUseMemory",
+            "when" to "\$storageRecovery",
+            "label" to "~accountUseMemory",
+            "automation" to "account.accountUseMemory",
+        ), listOf(accountUseMemoryText))
+        val accountActions = DesignNode("accountActions", "row", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "padding" to "@layout.settingsCardPadding",
+            "gap" to "@control.compactGap",
+        ), listOf(accountaccountSignIn, accountaccountOpenBrowser, verifyaccountaccountConfirm, accountaccountConfirm, accountaccountCancel, accountaccountSignOut, accountRetryStorage, accountForgetStorage, accountUseMemory))
+        val accountDialog = DesignNode("accountDialog", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "width" to "@layout.settingsWidth",
+            "height" to "@layout.settingsHeight",
+            "fontSize" to "@type.settingsBodySize",
+            "foreground" to "theme.text",
+            "background" to "theme.surface",
+            "radius" to "@control.compactDialogRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "clip" to "true",
+            "cycleFocus" to "true",
+        ), listOf(accountHeader, accountScroll, accountActions))
+        return accountDialog
     }
 }

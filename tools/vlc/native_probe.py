@@ -111,10 +111,15 @@ def verify_effects(context, package, directory, media):
             args.append(external[name].resolve().as_uri())
         output, errors = directory / (name + "-proof.json"), directory / (name + "-stderr.log")
         with output.open("wb") as log, errors.open("wb") as diagnostics:
-            process = subprocess.run(args, env=env, stdin=subprocess.DEVNULL,
-                                     stdout=log, stderr=diagnostics, timeout=30)
+            try:
+                process = subprocess.run(args, env=env, stdin=subprocess.DEVNULL,
+                                         stdout=log, stderr=diagnostics, timeout=30)
+            except subprocess.TimeoutExpired as failure:
+                raise ValueError(f"Native media effect {name} timed out after 30 seconds:\n" +
+                                 errors.read_text(errors="replace")) from failure
         if process.returncode:
-            raise ValueError("Native media effect failed:\n" + errors.read_text(errors="replace"))
+            raise ValueError(f"Native media effect {name} failed (exit {process.returncode}):\n" +
+                             output.read_text(errors="replace") + errors.read_text(errors="replace"))
         result = json.loads(output.read_bytes())
         if (result.get("case") != name or result.get("ownedLibraryLoaded") is not True or
                 result.get("physicalOutputAccepted") is not False):

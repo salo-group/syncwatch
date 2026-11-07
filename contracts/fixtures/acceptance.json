@@ -1297,5 +1297,130 @@
       "localPath": "/private/movie"
     },
     "error": "malformed"
+  },
+  {
+    "name": "account-start-request",
+    "schema": "account-request",
+    "value": {
+      "v": 2,
+      "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": null
+  },
+  {
+    "name": "account-request-rejects-room-version",
+    "schema": "account-request",
+    "value": {
+      "v": 1,
+      "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "error": "unsupportedVersion"
+  },
+  {
+    "name": "account-proof-is-not-identity",
+    "schema": "account-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "email": "untrusted@example.invalid"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "account-short-proof",
+    "schema": "account-request",
+    "value": {
+      "v": 2,
+      "proof": "A"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "account-browser-result-has-no-session",
+    "schema": "account-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "confirmAccount",
+        "account": {
+          "id": "",
+          "name": "Test account",
+          "email": "test@example.invalid"
+        },
+        "session": null
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "account-browser-cannot-issue-session",
+    "schema": "account-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "authorizing",
+        "account": null,
+        "session": {
+          "accessToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        }
+      }
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "account-complete-session",
+    "schema": "account-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "complete",
+        "account": null,
+        "session": {
+          "account": {
+            "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "name": "Test account",
+            "email": "test@example.invalid"
+          },
+          "accessToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "refreshToken": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "expiresIn": 600
+        }
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "native-proof-without-browser-counterproof",
+    "schema": "account-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "requestId": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+    },
+    "error": "malformed"
+  },
+  {
+    "name": "browser-counterproof-required-for-confirmation",
+    "schema": "account-request",
+    "value": {
+      "v": 2,
+      "proof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "requestId": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "browserProof": "012345ABCDEF"
+    },
+    "error": null
+  },
+  {
+    "name": "browser-proof-gates-profile",
+    "schema": "account-response",
+    "value": {
+      "v": 2,
+      "result": {
+        "status": "browserConfirmationRequired",
+        "account": null,
+        "session": null
+      }
+    },
+    "error": null
   }
 ]

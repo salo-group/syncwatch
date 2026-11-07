@@ -11,6 +11,8 @@
     "room-event": "v1/room-event.schema.json",
     "room-snapshot": "v1/room-snapshot.schema.json",
     "helper-ipc": "v1/helper-ipc.schema.json",
-    "room-selection": "v1/room-selection.schema.json"
+    "room-selection": "v1/room-selection.schema.json",
+    "account-request": "v2/account-request.schema.json",
+    "account-response": "v2/account-response.schema.json"
   }
 }

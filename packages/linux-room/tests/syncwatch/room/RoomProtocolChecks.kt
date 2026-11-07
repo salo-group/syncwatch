@@ -43,5 +43,5 @@ fun main(args: Array<String>) {
     }
     println("SYNCWATCH_ROOM_PROTOCOL_OK")
     selectionChecks(Path.of(args[0]).resolveSibling("room-selection.json"))
-    kotlinx.coroutines.runBlocking { catalogViewChecks(fixture); commandChecks(fixture); transportChecks() }
+    kotlinx.coroutines.runBlocking { accountCredentialVaultChecks(); accountSessionChecks(Path.of(args[0]).resolveSibling("account-persistence.json")); catalogViewChecks(fixture); commandChecks(fixture); transportChecks() }
 }

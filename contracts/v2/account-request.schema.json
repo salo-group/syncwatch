@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v2/account-request.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "challenge": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      },
+      "required": [
+        "v",
+        "challenge"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "proof": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      },
+      "required": [
+        "v",
+        "proof"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "proof": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "browserProof": {
+          "type": "string",
+          "pattern": "^[0-9A-F]{12}$"
+        }
+      },
+      "required": [
+        "v",
+        "proof",
+        "requestId",
+        "browserProof"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "refreshToken": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      },
+      "required": [
+        "v",
+        "refreshToken",
+        "requestId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "proof": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "browserProof": {
+          "type": "string",
+          "pattern": "^[0-9A-F]{12}$"
+        }
+      },
+      "required": [
+        "v",
+        "proof",
+        "browserProof"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
