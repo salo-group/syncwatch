@@ -34,7 +34,9 @@
         "bridge.result",
         "bridge.error",
         "bridge.stopped",
-        "sync.identity"
+        "sync.identity",
+        "sync.admissionRequired",
+        "sync.admit"
       ]
     },
     "clientRunId": {
@@ -138,6 +140,10 @@
             },
             "secretHandle": {
               "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            },
+            "accountAdmission": {
+              "type": "boolean",
+              "const": true
             }
           },
           "required": [
@@ -499,6 +505,10 @@
             "syncplayRevision": {
               "type": "string",
               "pattern": "^[0-9a-f]{40}$"
+            },
+            "admissionVersion": {
+              "type": "integer",
+              "const": 1
             }
           },
           "required": [
@@ -698,6 +708,85 @@
             "username"
           ],
           "additionalProperties": false
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "sync.admissionRequired"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "nonce": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "minLength": 32,
+              "maxLength": 32
+            }
+          },
+          "required": [
+            "nonce"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^event-[1-9][0-9]*$",
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "not": {
+        "required": [
+          "replyTo"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "sync.admit"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "nonce": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$",
+              "minLength": 32,
+              "maxLength": 32
+            },
+            "ticket": {
+              "type": "string",
+              "pattern": "^[0-9A-F]{64}$",
+              "minLength": 64,
+              "maxLength": 64
+            },
+            "clientRunId": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            }
+          },
+          "required": [
+            "nonce",
+            "ticket",
+            "clientRunId"
+          ],
+          "additionalProperties": false
+        },
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
         }
       },
       "required": [

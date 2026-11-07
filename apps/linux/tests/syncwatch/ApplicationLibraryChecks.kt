@@ -32,6 +32,7 @@ fun main(arguments: Array<String>) = runBlocking {
             playerPreferencesChecks(scratch)
             watchPersistenceChecks(scratch)
             roomPlaybackGateChecks(owner)
+            accountRoomControllerChecks(owner)
             roomPublicationChecks(repository.resolve("contracts/fixtures/room-client.json"))
             roomPublicationLiveChecks(owner)
             roomWatchContextChecks()

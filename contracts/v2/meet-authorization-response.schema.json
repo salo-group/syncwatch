@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v2/meet-authorization-response.schema.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 2,
+      "type": "integer"
+    },
+    "result": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "transactionId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "browserUri": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "expiresIn": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 600
+            },
+            "pollAfterMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000
+            }
+          },
+          "required": [
+            "transactionId",
+            "browserUri",
+            "expiresIn",
+            "pollAfterMs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "pending",
+                "authorizing",
+                "complete",
+                "cancelled",
+                "expired"
+              ]
+            },
+            "account": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "status",
+            "account",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "browserConfirmationRequired"
+            },
+            "account": {
+              "type": "null"
+            },
+            "reason": {
+              "enum": [
+                null,
+                "invalidConfirmation"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "account",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "confirmAuthorization"
+            },
+            "account": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{43}$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                },
+                "email": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 320,
+                  "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "email"
+              ],
+              "additionalProperties": false
+            },
+            "reason": {
+              "enum": [
+                null,
+                "invalidConfirmation"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "account",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "failed"
+            },
+            "account": {
+              "type": "null"
+            },
+            "reason": {
+              "enum": [
+                "roomChanged",
+                "accountMismatch",
+                "permissionUnavailable",
+                "invalidConfirmation"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "account",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": [
+    "v",
+    "result"
+  ],
+  "additionalProperties": false
+}

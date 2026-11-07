@@ -9,7 +9,9 @@
     "disconnected",
     "connecting",
     "connected",
-    "failed"
+    "failed",
+    "reconnecting",
+    "awaitingApproval"
   ],
   "fields": [
     {
@@ -86,5 +88,30 @@
     "roomName": "",
     "roomID": "",
     "invitation": ""
+  },
+  "flows": {
+    "legacy": [
+      "serviceAddress",
+      "username",
+      "creationKey",
+      "syncplayHost",
+      "syncplayPort",
+      "roomName",
+      "roomID",
+      "invitation"
+    ],
+    "account": [
+      "roomID",
+      "invitation"
+    ]
+  },
+  "defaultFlow": "account",
+  "signInFlows": [
+    "account"
+  ],
+  "statusCopy": {
+    "connecting": "roomConnecting",
+    "reconnecting": "reconnecting",
+    "awaitingApproval": "roomAdmissionPending"
   }
 }

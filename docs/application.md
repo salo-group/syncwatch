@@ -1,6 +1,6 @@
 # Application behavior
 
-This guide describes the intended SyncWatch interface on macOS, Windows, and Linux, using the [shared component contracts](../packages/design/components.json). The application is under development: Library, local WatchSession playback, appearance settings, and isolated component galleries are connected. Shared watch and call workflows still require synchronization/provider activation; see [native playback](playback.md).
+This guide describes the intended SyncWatch interface on macOS, Windows, and Linux, using the [shared component contracts](../packages/design/components.json). Library, local playback, shared watch, account/room flows, and Meet provisioning have native implementations. Complete functional qualification remains open. The required owned Meet host is unimplemented; see [native playback](playback.md) and [Meet integration](architecture/google-meet.md).
 
 ## Library and watch session
 
@@ -46,13 +46,13 @@ One audio popover provides independent movie and call output controls. Movie mut
 
 Optional movie ducking is disabled by default. When remote-speaking detection is available, movie volume uses a 0.35 multiplier and returns to the user's level after a 280 ms release delay. System communications attenuation and other applications' volume are unaffected.
 
-Use Google Meet through the room's **Open call** action in a supported browser or the official Meet PWA. Prefer its separate app-like window where available. Device selection, microphone/camera, actual local preview, hangup, and window controls belong to Meet. Google manages this window independently of SyncWatch. Native call-window controls and embedded presentation remain unmet capabilities rather than simulated controls.
+Use Google Meet through the room's **Open call** action in a SyncWatch-owned call component or separate owned window. SyncWatch must own its lifetime and local media teardown. Google supplies the meeting page and provider controls. The current implementation opens the operating system's HTTPS handler; it does not yet meet this owned-host requirement. CEF and bundled Chromium are candidates pending qualification.
 
 With camera enabled by user preference and permission granted, joining starts the camera and preview on the first attempt, without an off/on workaround. Permission denial or unavailable hardware produces an explicit state. Minimizing an ongoing call does not end it; hangup or closing the call must stop participation, remote audio, and owned capture.
 
 Outside an active joined call, no remote participant audio is audible. Connecting to a synchronization room does not implicitly join a call or open its audio path. After hangup, close, failed join, or call teardown, received call audio stops even if synchronization and movie playback continue.
 
-The 300 by 210 call-shell token belongs to the native Design gallery; it does not constrain Google's window. Native independent call volume, speaking-based ducking, preview, camera startup, and hangup are not implemented. Opening a URI is not joined state; leaving a room or closing SyncWatch does not confirm an external call ended. Provide a clear route to leave in Meet. See [Meet integration](architecture/google-meet.md) for capabilities and [Google setup](google-meet-setup.md) for registration.
+The shared Design library owns call-window dimensions and SyncWatch controls. Native independent call volume, speaking-based ducking, preview, camera startup, and hangup are not implemented. Opening a URI is not joined state. The current external handoff cannot confirm local teardown; retain a clear route to leave in Meet until the owned host is qualified. See [Meet integration](architecture/google-meet.md) for capabilities and [Google setup](google-meet-setup.md) for registration.
 
 ## Settings
 
@@ -89,4 +89,4 @@ All three desktop clients share design token IDs, component order, actions, and 
 
 The three desktop shells bind `AccountController` to the same declarative `Account` component in SyncWatch Design. The account API adapter is isolated from room admission and playback, reusing only the service-origin and bounded JSON primitives in the native service packages. Account errors leave the library and local movie usable. No Google credential is bundled in an application or persisted in its preferences.
 
-The account surface accepts a service origin, starts a proof-bound sign-in transaction, and explicitly opens its validated browser URI. Enter the confirmation code shown by that browser in the initiating SyncWatch window, choose **Check account**, then review and confirm the proposed account. The application owns session refresh/cancellation/logout. Current desktop sessions are explicitly memory-only. The browser's own Google session and external Meet call remain separately owned. Production secure-store persistence and complete account-to-room-to-call acceptance remain incomplete; see the [account service](account-service.md).
+The account surface accepts a service origin, starts a proof-bound sign-in transaction, and explicitly opens its validated browser URI. Enter the browser's confirmation code in the initiating SyncWatch window. Choose **Check account**, then review and confirm the proposed account. The application owns session refresh, cancellation, and logout. Users can remember the device session through OS-protected storage or choose memory-only operation. Storage failure requires explicit recovery; it never permits plaintext fallback. The authorization browser's Google session remains separate from SyncWatch. Complete account-to-room-to-owned-call acceptance remains incomplete; see the [account service](account-service.md).

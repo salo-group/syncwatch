@@ -43,6 +43,8 @@ internal static class HelperSessionChecks
         private bool holdUser;
         internal bool StationaryHandshake { get; set; }
         private int samples;
+        internal bool TicketMode { get; set; }
+        internal bool AdvertiseAdmission { get; set; } = true;
         private bool automaticReady = true;
         internal bool? PulseBeforeAck { get; set; }
         internal bool UserWriteHeld { get; private set; }
@@ -82,17 +84,29 @@ internal static class HelperSessionChecks
             }
             bool hello = kind == "bridge.hello";
             var reply = Frame(hello ? "bridge.ready" : "bridge.result",
-                hello ? new { syncplayRevision = Revision } : (object)new { status = "applied" });
+                hello ? (AdvertiseAdmission ? new { syncplayRevision = Revision, admissionVersion = 1 } : (object)new { syncplayRevision = Revision }) : new { status = "applied" });
+            if (kind == "sync.connect" && TicketMode)
+            {
+                Require(value.GetProperty("payload").GetProperty("accountAdmission").GetBoolean());
+                Event("sync.admissionRequired", new { nonce = new string('a', 32) });
+            }
             if (kind == "sync.setReady" && PulseBeforeAck == true)
             { Event("sync.readiness", new { ready = true }); Event("sync.readiness", new { ready = false }); }
             reply["replyTo"] = id.GetString(); Push(reply);
-            if (kind == "sync.connect" && !StationaryHandshake)
+            if (kind == "sync.connect" && !TicketMode && !StationaryHandshake || kind == "sync.admit")
             { Event("sync.identity", new { username = "Viewer_2" }); Event("sync.connection", new { state = "connected" }); }
             if (kind == "sync.setReady" && automaticReady && PulseBeforeAck != true)
             { Event("sync.readiness", new { ready = true }); if (PulseBeforeAck == false) Event("sync.readiness", new { ready = false }); }
         }
         public Task<byte[]> ReadAsync(CancellationToken cancellation = default) => incoming.Reader.ReadAsync(cancellation).AsTask();
         public ValueTask DisposeAsync() { incoming.Writer.TryComplete(); writing?.TrySetCanceled(); return ValueTask.CompletedTask; }
+        internal void RequestAdmission(string nonce) => Event("sync.admissionRequired", new { nonce });
+        internal int AdmissionCount => sent.Count(v => v.GetProperty("type").GetString() == "sync.admit");
+        internal bool AdmissionMatches(int index, string ticket, string nonce)
+        {
+            var payload = sent.Where(v => v.GetProperty("type").GetString() == "sync.admit").ElementAt(index).GetProperty("payload");
+            return payload.GetProperty("ticket").GetString() == ticket && payload.GetProperty("nonce").GetString() == nonce && payload.GetProperty("clientRunId").GetString() == "member-run";
+        }
         internal void Readiness(bool value) => Event("sync.readiness", new { ready = value });
         internal void Connection(string value) => Event("sync.connection", new { state = value });
         internal void Identity(string value) => Event("sync.identity", new { username = value });
@@ -267,10 +281,57 @@ internal static class HelperSessionChecks
         session.Start(); await Eventually(() => session.State.PlaybackReady);
         Require(player.Paused && player.Position == 1200 && peer.UserCount == 0 && player.Closes == 0);
     }
+    private static async Task AdmissionChecks()
+    {
+        var native = PlaybackScope.Create().ReplacingMedia(); var peer = new Peer { TicketMode = true }; int calls = 0;
+        await using (var session = new HelperSession(peer, new Player(native), native, new("localhost", 8999, "room", "Viewer_2"),
+            new("media-1", "Movie.mkv", 60000, 1234), Revision, requireDeclaredIdentity: true,
+            admissionProvider: async token =>
+            {
+                calls++;
+                if (calls == 2) await Task.Delay(TimeSpan.FromSeconds(6), token);
+                return new SyncplayAdmission(new string(calls == 1 ? 'A' : 'B', 64), "member-run");
+            }))
+        {
+            session.Start(); await Eventually(() => session.State.PlaybackReady);
+            Require(calls == 1 && peer.AdmissionMatches(0, new string('A', 64), new string('a', 32)));
+            peer.Connection("connecting"); peer.RequestAdmission(new string('b', 32));
+            await Eventually(() => calls == 2);
+            Require(session.State.Connection == HelperConnection.Reconnecting && !session.State.PlaybackReady);
+            await Task.Delay(TimeSpan.FromSeconds(6));
+            Require(session.State.Connection != HelperConnection.Failed);
+            await Eventually(() => calls == 2 && session.State.PlaybackReady);
+            Require(peer.AdmissionMatches(1, new string('B', 64), new string('b', 32)));
+            peer.Connection("connecting"); peer.RequestAdmission(new string('a', 32));
+            await Eventually(() => session.State.Connection == HelperConnection.Failed); Require(calls == 2);
+        }
+        foreach ((bool missing, bool expires) in new[] { (false, false), (true, false), (false, true) })
+        {
+            calls = 0; bool cancelled = false; peer = new Peer { TicketMode = true, AdvertiseAdmission = !missing };
+            await using var session = new HelperSession(peer, new Player(native), native, new("localhost", 8999, "room", "Viewer_2"),
+                new("media-1", "Movie.mkv", 60000, 1234), Revision, admissionProvider: async token =>
+                {
+                    calls++;
+                    try { await Task.Delay(TimeSpan.FromSeconds(20), token); }
+                    catch (OperationCanceledException) { cancelled = true; throw; }
+                    return new(new string('A', 64), "member-run");
+                });
+            session.Start(); await Eventually(() => missing ? session.State.Connection == HelperConnection.Failed : calls == 1);
+            if (expires)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(11));
+                Require(session.State.Connection == HelperConnection.Failed && cancelled);
+            }
+            await session.DisposeAsync(); await session.DisposeAsync();
+            Require(calls == (missing ? 0 : 1) && (missing || cancelled) && peer.AdmissionCount == 0);
+        }
+        Require(new SyncplayAdmission(new string('A', 64), "member-run").ToString() == "[redacted]");
+    }
     internal static void Run()
     {
         new OwnerContext().Run(async () =>
         {
+            await AdmissionChecks();
             await StationaryHandshake();
             await ReadinessPulse(false); await ReadinessPulse(true);
             await Scenario(false); await Scenario(true); await Scenario(false, strict: true); await Scenario(false, nativeEnd: true);

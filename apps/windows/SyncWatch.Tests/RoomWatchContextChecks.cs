@@ -76,7 +76,7 @@ internal static class RoomWatchContextChecks
     }
     private static async Task PreparedPublicationAsync(string address, string key)
     {
-        var controller = new RoomController();
+        var controller = new RoomController(legacyValidation: true);
         foreach (var (field, value) in new[] { ("serviceAddress", address), ("username", "Windows prepared publisher"), ("creationKey", key), ("syncplayHost", "syncplay.example.com"), ("roomName", "Prepared publication lifecycle") }) controller.Editor.Edit(field, value);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         try
@@ -89,7 +89,7 @@ internal static class RoomWatchContextChecks
             if (!controller.CanContinuePlayback(intent.Membership)) throw new Exception("Current playback membership unavailable");
             var context = await controller.PerformWatchAsync(new RoomCommandAction.Select(first.Media.MediaId), intent.Membership, intent.Context, deadline.Token);
             context = await controller.PerformWatchAsync(new RoomCommandAction.Start(first.Media.MediaId), intent.Membership, context, deadline.Token);
-            var empty = new RoomController();
+            var empty = new RoomController(legacyValidation: true);
             try
             {
                 empty.Editor.SelectMode("joinRoom"); empty.Editor.Edit("serviceAddress", address); empty.Editor.Edit("username", "Windows empty library");

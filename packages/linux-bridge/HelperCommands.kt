@@ -13,10 +13,14 @@ class HelperCommands(private val wireScope: PlaybackScope) {
     fun shutdown(id: Long) = frame(id, "bridge.shutdown", emptyMap())
     fun disconnect(id: Long) = frame(id, "sync.disconnect", emptyMap())
     fun ready(id: Long, value: Boolean) = frame(id, "sync.setReady", mapOf("ready" to value))
-    fun connect(id: Long, host: String, port: Int, room: String, username: String): ByteArray {
+    fun connect(id: Long, host: String, port: Int, room: String, username: String, accountAdmission: Boolean = false): ByteArray {
         if (host.length !in 1..253 || !host.matches(Regex("[A-Za-z0-9.:_-]+")) || port !in 1..65535) bad()
         text(room, 256); text(username, 64)
-        return frame(id, "sync.connect", mapOf("host" to host, "port" to port, "room" to room, "username" to username, "tls" to true))
+        return frame(id, "sync.connect", mapOf("host" to host, "port" to port, "room" to room, "username" to username, "tls" to true) + if (accountAdmission) mapOf("accountAdmission" to true) else emptyMap())
+    }
+    fun admit(id: Long, nonce: String, authority: SyncplayAdmission): ByteArray {
+        if (!nonce.matches(Regex("[0-9a-f]{32}"))) bad()
+        return frame(id, "sync.admit", mapOf("nonce" to nonce, "ticket" to authority.credential, "clientRunId" to authority.clientRunId))
     }
     fun loaded(id: Long, handle: String, name: String, durationMs: Long, fileSizeBytes: Long): ByteArray {
         PlaybackScope.validateId(handle); text(name, 256)

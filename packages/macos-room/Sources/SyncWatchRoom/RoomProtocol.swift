@@ -64,7 +64,9 @@ public struct RoomBootstrap: Sendable, Equatable {
 public struct RoomAdmission: Sendable {
     public let roomID: String
     public let memberID: String
-    public let token: RoomSecret
+    public let token: RoomSecret?
+    var accountScope: UUID? = nil
+    public var isAccountBacked: Bool { accountScope != nil }
     public let invitation: RoomSecret?
     public let expiresAt: Date
     public let bootstrap: RoomBootstrap
@@ -190,12 +192,14 @@ enum RoomWire {
             }) ?? true
         else { throw RoomProtocolFailure.malformed }
     }
-    static func encode(_ value: [String: Any]) throws -> Data {
+    static func encode(_ value: Any) throws -> Data {
+        guard JSONSerialization.isValidJSONObject(value) else { throw RoomProtocolFailure.malformed }
         let bytes = try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
         guard bytes.count <= maximumBytes else { throw RoomProtocolFailure.frameTooLarge }
         return bytes
     }
-    static func object(_ data: Data) throws -> [String: Any] {
+    static func object(_ data: Data) throws -> [String: Any] { try dictionary(value(data)) }
+    static func value(_ data: Data) throws -> Any {
         guard data.count <= maximumBytes else { throw RoomProtocolFailure.frameTooLarge }
         guard String(data: data, encoding: .utf8) != nil else { throw RoomProtocolFailure.malformed }
         // Reject duplicate names before Foundation collapses them. Room counters have integer syntax.
@@ -239,6 +243,6 @@ enum RoomWire {
             index += 1
         }
         guard stack.isEmpty else { throw RoomProtocolFailure.malformed }
-        return try dictionary(JSONSerialization.jsonObject(with: data))
+        do { return try JSONSerialization.jsonObject(with: data) } catch { throw RoomProtocolFailure.malformed }
     }
 }

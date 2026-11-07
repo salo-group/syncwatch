@@ -1,0 +1,344 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.syncwatch.invalid/v2/room-access-response.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "roomId": {
+                  "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+                },
+                "memberId": {
+                  "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 64
+                },
+                "bootstrap": {
+                  "$ref": "https://schemas.syncwatch.invalid/v2/room-access-response.schema.json#/definitions/bootstrap"
+                }
+              },
+              "required": [
+                "roomId",
+                "memberId",
+                "expiresAt",
+                "bootstrap"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "$ref": "https://schemas.syncwatch.invalid/v2/room-access-response.schema.json#/definitions/bootstrap"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "roomId": {
+                  "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+                },
+                "invitation": {
+                  "type": "string",
+                  "pattern": "^[0-9A-F]{64}$"
+                },
+                "expiresIn": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 86400
+                }
+              },
+              "required": [
+                "roomId",
+                "invitation",
+                "expiresIn"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ticket": {
+                  "type": "string",
+                  "pattern": "^[0-9A-F]{64}$"
+                },
+                "expiresIn": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 60
+                }
+              },
+              "required": [
+                "ticket",
+                "expiresIn"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "$ref": "https://schemas.syncwatch.invalid/v2/room-access-response.schema.json#/definitions/admissionRequest"
+            },
+            {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
+                "$ref": "https://schemas.syncwatch.invalid/v2/room-access-response.schema.json#/definitions/admissionRequest"
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "decided",
+                    "left",
+                    "revoked"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "type": "integer",
+                  "const": 1
+                },
+                "roomEpoch": {
+                  "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+                },
+                "sequence": {
+                  "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/counter"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "memberId": {
+                        "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+                      },
+                      "media": {
+                        "$ref": "https://schemas.syncwatch.invalid/v1/media-descriptor.schema.json"
+                      }
+                    },
+                    "required": [
+                      "memberId",
+                      "media"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "nextCursor": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "v",
+                "roomEpoch",
+                "sequence",
+                "items",
+                "nextCursor"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "$ref": "https://schemas.syncwatch.invalid/v1/room-selection.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "type": "integer",
+                  "const": 1
+                },
+                "type": {
+                  "const": "command.result"
+                },
+                "id": {
+                  "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/commandId"
+                },
+                "sequence": {
+                  "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/counter"
+                },
+                "error": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "v",
+                "type",
+                "id",
+                "sequence",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "v",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 2
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "v",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "bootstrap": {
+      "type": "object",
+      "properties": {
+        "snapshot": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/room-snapshot.schema.json"
+        },
+        "connection": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "room": {
+              "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+            },
+            "requireTls": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "host",
+            "port",
+            "room",
+            "requireTls"
+          ],
+          "additionalProperties": false
+        },
+        "catalogCursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "missingMembers": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+          }
+        }
+      },
+      "required": [
+        "snapshot",
+        "connection",
+        "catalogCursor",
+        "missingMembers"
+      ],
+      "additionalProperties": false
+    },
+    "admissionRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "https://schemas.syncwatch.invalid/v1/common.schema.json#/definitions/id"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "approved",
+            "denied",
+            "admitted",
+            "expired",
+            "revoked",
+            "closed"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "accountId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "email": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "name",
+        "accountId",
+        "email"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

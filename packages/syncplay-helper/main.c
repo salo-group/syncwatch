@@ -27,7 +27,9 @@ static int run(int argc, wchar_t **argv)
     const wchar_t *search[4];
     sw_python_paths config;
     int result;
-    if (argc != 2) { fputs("Helper argument count invalid\n", stderr); return 64; }
+    if (argc != 2 && (argc != 3 || wcscmp(argv[2], L"--admission-server") != 0)) {
+        fputs("Helper arguments invalid\n", stderr); return 64;
+    }
 #ifdef _WIN32
     if (_setmode(_fileno(stdin), _O_BINARY) == -1 || _setmode(_fileno(stdout), _O_BINARY) == -1) return 70;
 #define CORE L"/bin"
@@ -47,7 +49,8 @@ static int run(int argc, wchar_t **argv)
     config.search_path_count = 4;
     config.search_paths = search;
     if (sw_python_start(&config) != SW_PYTHON_OK) return 70;
-    result = PyRun_SimpleString("from syncwatch_bridge.main import main\nmain()\n");
+    if (argc == 3) result = PyRun_SimpleString("from syncwatch_bridge.server_main import main\nmain()\n");
+    else result = PyRun_SimpleString("from syncwatch_bridge.main import main\nmain()\n");
     if (sw_python_stop() != SW_PYTHON_OK) return 70;
     return result == 0 ? 0 : 70;
 }
@@ -85,16 +88,17 @@ invalid:
 
 int main(int argc, char **argv)
 {
-    wchar_t *arguments[2];
+    wchar_t *arguments[3] = {NULL, NULL, NULL};
     int result;
-    if (argc != 2) { fputs("Helper argument count invalid\n", stderr); return 64; }
+    if (argc != 2 && argc != 3) { fputs("Helper argument count invalid\n", stderr); return 64; }
     /* Isolated helper policy: a closed socket/pipe reports an I/O error to
        CPython/Twisted instead of terminating the process during recovery. */
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) return 70;
     arguments[0] = utf8(argv[0]); arguments[1] = utf8(argv[1]);
-    if (arguments[0] == NULL || arguments[1] == NULL) { fputs("Helper path encoding invalid\n", stderr); result = 64; }
+    if (argc == 3) arguments[2] = utf8(argv[2]);
+    if (arguments[0] == NULL || arguments[1] == NULL || (argc == 3 && arguments[2] == NULL)) { fputs("Helper path encoding invalid\n", stderr); result = 64; }
     else result = run(argc, arguments);
-    free(arguments[0]); free(arguments[1]);
+    free(arguments[0]); free(arguments[1]); free(arguments[2]);
     return result;
 }
 #endif

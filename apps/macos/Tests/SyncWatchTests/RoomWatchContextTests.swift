@@ -8,7 +8,7 @@ import Testing
 @MainActor @Test(.enabled(if: ProcessInfo.processInfo.environment["SYNCWATCH_ROOM_SERVICE"] != nil))
 func preparedPublicationCannotEscapeItsMembership() async throws {
     let environment = ProcessInfo.processInfo.environment
-    let controller = RoomController()
+    let controller = RoomController(legacyValidation: true)
     for (field, value) in [
         "serviceAddress": try #require(environment["SYNCWATCH_ROOM_SERVICE"]), "username": "macOS prepared publisher",
         "creationKey": try #require(environment["SYNCWATCH_ROOM_CREATION_KEY"]),
@@ -37,7 +37,7 @@ func preparedPublicationCannotEscapeItsMembership() async throws {
             .select(mediaID: first.media.mediaID), membership: intent.membership, expected: intent.context)
         context = try await controller.performWatch(
             .start(mediaID: first.media.mediaID), membership: intent.membership, expected: context)
-        let empty = RoomController()
+        let empty = RoomController(legacyValidation: true)
         do {
             empty.editor.selectMode("joinRoom")
             empty.editor.edit("serviceAddress", value: try #require(environment["SYNCWATCH_ROOM_SERVICE"]))

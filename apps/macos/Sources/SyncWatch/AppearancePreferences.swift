@@ -155,6 +155,7 @@ import SyncWatchLibrary
     @StateObject private var watch: WatchSessionCoordinator
     @StateObject private var shared: RoomWatchCoordinator
     @StateObject private var account: AccountController
+    @StateObject private var meet: MeetController
     private let lifecycle: ApplicationLifecycle
     init(lifecycle: ApplicationLifecycle) {
         self.lifecycle = lifecycle
@@ -167,9 +168,11 @@ import SyncWatchLibrary
             stateURL = AppearancePreferences.defaultURL
         }
         let preferences = AppearancePreferences(store: FileLocalStateStore(url: stateURL))
-        _account = StateObject(wrappedValue: AccountController(directory: stateURL.deletingLastPathComponent()))
+        let account = AccountController(directory: stateURL.deletingLastPathComponent())
+        _account = StateObject(wrappedValue: account)
         _preferences = StateObject(wrappedValue: preferences)
-        let room = RoomController()
+        let room = RoomController(accountSource: { [weak account] in account?.roomAuthority })
+        _meet = StateObject(wrappedValue: MeetController(room: room))
         let watch = WatchSessionCoordinator(
             preferences: preferences, media: MediaConfiguration.read(CommandLine.arguments))
         let library = LibraryController(
@@ -193,6 +196,7 @@ import SyncWatchLibrary
     }
     @State private var showRoom = false
     @State private var showAccount = false
+    @State private var showMeet = false
     @State private var showSettings = false
     @State private var editor = SettingsEditor()
 
@@ -201,8 +205,9 @@ import SyncWatchLibrary
             playerPresented: watch.playerPresented,
             library: AnyView(
                 LibraryWorkspace(
-                    presentation: account.libraryPresentation(
-                        shared.libraryPresentation(watch.libraryPresentation(library.presentation))),
+                    presentation: meet.libraryPresentation(
+                        account.libraryPresentation(
+                            shared.libraryPresentation(watch.libraryPresentation(library.presentation)))),
                     language: preferences.state.preferences.language
                 ) { action, value in
                     if action != "openLibraryAudio" && action != "openLibrarySubtitles" { library.dismissTracks() }
@@ -222,6 +227,9 @@ import SyncWatchLibrary
                         watch.continueWatching()
                     } else if action == "endWatching" {
                         Task { await shared.end() }
+                    } else if action == "openCall" {
+                        meet.present()
+                        showMeet = true
                     } else if action == "openRoom" {
                         showRoom = true
                     } else if action == "openAccount" {
@@ -242,14 +250,25 @@ import SyncWatchLibrary
             room.updateLibrary(revision: revision, files: library.roomFiles)
         }
         .onChange(of: watch.playerPresented) { if $0 { library.dismissTracks() } }
-        .onChange(of: room.connected) { _ in shared.membershipChanged() }
+        .onChange(of: room.connected) { _ in
+            shared.membershipChanged()
+            meet.membershipChanged()
+        }
+        .task(
+            id: room.callMembership().map {
+                CallRoomBinding(owner: ObjectIdentifier($0.owner), member: $0.memberID, epoch: $0.epoch)
+            }
+        ) {
+            meet.membershipChanged()
+        }
         .task {
             account.restore()
             lifecycle.prepareForTermination = {
                 [
                     weak sessionOwner = watch, weak catalogOwner = library, weak roomOwner = room,
-                    weak sharedOwner = shared, weak accountOwner = account
+                    weak sharedOwner = shared, weak accountOwner = account, weak meetOwner = meet
                 ] in
+                await meetOwner?.close()
                 await sharedOwner?.close()
                 await accountOwner?.close()
                 await sessionOwner?.close()
@@ -266,7 +285,9 @@ import SyncWatchLibrary
             let roomOwner = room
             let sharedOwner = shared
             let accountOwner = account
+            let meetOwner = meet
             Task {
+                await meetOwner.close()
                 await sharedOwner.close()
                 await accountOwner.close()
                 await sessionOwner.close()
@@ -317,23 +338,32 @@ import SyncWatchLibrary
                     return saved
                 }, onClose: { showSettings = false })
         }
+        .task(
+            id: AccountRoomBinding(
+                authority: account.roomAuthority.map { ObjectIdentifier($0) }, name: account.presentation.name)
+        ) {
+            await shared.bindAccount(account.roomAuthority, name: account.presentation.name)
+            meet.membershipChanged()
+        }
         .sheet(isPresented: $showRoom, onDismiss: { room.clearSecrets() }) {
-            RoomConnectionSheet(room: room, shared: shared, language: preferences.state.preferences.language) {
+            RoomConnectionSheet(
+                room: room, account: account, shared: shared, language: preferences.state.preferences.language
+            ) {
                 showRoom = false
             }
         }
         .sheet(isPresented: $showAccount, onDismiss: { Task { await account.dismiss() } }) {
-            AccountDialog(presentation: account.presentation, language: preferences.state.preferences.language) {
-                action, value in
-                if action == "close" {
-                    Task {
-                        await account.dismiss()
-                        showAccount = false
-                    }
-                } else {
-                    account.action(action, value: value)
-                }
+            AccountConnectionSheet(account: account, language: preferences.state.preferences.language) {
+                showAccount = false
             }
+        }
+        .sheet(isPresented: $showMeet, onDismiss: { Task { await meet.dismiss() } }) {
+            MeetConnectionSheet(
+                meet: meet, language: preferences.state.preferences.language, onClose: { showMeet = false },
+                onOpenRoom: {
+                    showMeet = false
+                    showRoom = true
+                })
         }
         .preferredColorScheme(preferences.colorScheme)
         .environment(\.locale, Locale(identifier: preferences.state.preferences.language))
@@ -343,7 +373,11 @@ import SyncWatchLibrary
             return AnyView(
                 ConfiguredPlaybackPane(
                     controller: controller, preferences: preferences,
-                    roomNotice: shared.playerNotice, onSaved: watch.preferencesChanged
+                    roomNotice: shared.playerNotice, onSaved: watch.preferencesChanged,
+                    onOpenCall: {
+                        meet.present()
+                        showMeet = true
+                    }
                 )
                 .id(controller.scope.mediaGeneration))
         }
@@ -352,10 +386,11 @@ import SyncWatchLibrary
     private func close() async {
         let sessionOwner = watch
         let catalogOwner = library
+        await meet.close()
         await shared.close()
-        await account.close()
         await sessionOwner.close()
         await room.close()
+        await account.close()
         await catalogOwner.closeAndWait()
     }
     private func chooseFolder() {
@@ -376,4 +411,14 @@ import SyncWatchLibrary
         }
     }
 
+}
+
+private struct AccountRoomBinding: Equatable {
+    let authority: ObjectIdentifier?
+    let name: String
+}
+private struct CallRoomBinding: Equatable {
+    let owner: ObjectIdentifier
+    let member: String
+    let epoch: String
 }

@@ -131,7 +131,11 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
                 await owned.ConnectSharedAsync(transport,
                     new(connection.Host, connection.Port, connection.Room, intent.Membership.Identity.SyncplayUsername),
                     new("loaded-" + Guid.NewGuid().ToString("N"), remote.Title, local.DurationMs!.Value, (ulong)local.FileSizeBytes),
-                    runtime.Revision, requireDeclaredIdentity: true, authority: Authorized);
+                    runtime.Revision, requireDeclaredIdentity: true, authority: Authorized,
+                    admissionProvider: room.AccountAuthority is null ? null : async cancellation =>
+                    {
+                        return await TransportAdmissionAsync(intent.Membership, current, local, cancellation);
+                    });
             }
             catch { await transport.DisposeAsync(); throw; }
             long readyDeadline = Environment.TickCount64 + 20000;
@@ -187,7 +191,8 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
                 await Task.Delay(100, token);
             }
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        // Native and helper adapters can report transport errors after cancellation.
+        catch (Exception) when (closing || token.IsCancellationRequested) { }
         catch (RoomProtocolException error) when (error.Message == "staleGeneration") { follow = true; }
         catch (Exception error)
         {
@@ -244,7 +249,7 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
                     await Task.Delay(100, token);
                 }
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested) { return null; }
+            catch (Exception) when (closing || token.IsCancellationRequested) { return null; }
             catch (Exception error) { watch.End(); ErrorKey = FailureKey(error, false); Status = ErrorKey; Changed?.Invoke(); }
         }
         return null;
@@ -257,6 +262,32 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
         return room.IsCurrent(value.Membership) && room.WatchBootstrap is { } current
             && current.Snapshot.Epoch == value.Context.Bootstrap.Snapshot.Epoch
             && current.Snapshot.WatchGeneration == value.Context.Bootstrap.Snapshot.WatchGeneration && current.Snapshot.WatchStatus == "active";
+    }
+    private bool CanAdmitTransport() => Authorized() && active is { } current
+        && (room.IsCurrent(current.Membership) || admitted && room.CanRenewWatchAdmission(current.Membership))
+        && room.WatchBootstrap is { } latest && latest.Snapshot.Epoch == current.Context.Bootstrap.Snapshot.Epoch
+        && latest.Snapshot.WatchGeneration == current.Context.Bootstrap.Snapshot.WatchGeneration
+        && latest.Snapshot.WatchStatus == "active" && latest.Snapshot.MediaId == current.Context.Bootstrap.Snapshot.MediaId;
+    private async Task<SyncplayAdmission> TransportAdmissionAsync(RoomWatchMembership membership, RoomWatchContext expected, MediaDescriptor local, CancellationToken token)
+    {
+        // The helper bounds retries. Only an established scope may outlive the event transport.
+        while (true)
+        {
+            token.ThrowIfCancellationRequested();
+            if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
+            try
+            {
+                var ticket = await room.SyncAdmissionAsync(membership, expected, fresh => { RequireSameGeneration(expected, fresh); RequireMatch(local, fresh); }, token);
+                if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
+                return new(ticket.AdmissionCredential(), membership.Identity.ClientRunId);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch (Exception error)
+            {
+                if (!admitted || !Authorized() || room.Editor.State != "reconnecting" || !RoomController.IsMetadataInterruption(error)) throw;
+                await Task.Delay(100, token);
+            }
+        }
     }
     internal static string FailureKey(Exception error, bool identityRejected) => identityRejected ? "sharedWatchIdentityRejected"
         : error is RoomProtocolException { Message: "staleGeneration" } ? "sharedWatchRoomChanged"
@@ -351,11 +382,26 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
         }
         watch.End(); Status = ""; Changed?.Invoke();
     }
+    private long accountBinding;
+    private Task accountBindingWork = Task.CompletedTask;
+    internal Task BindAccountAsync(RoomAccountAuthority? authority, string name)
+    {
+        if (closing) return Task.CompletedTask;
+        long revision = ++accountBinding;
+        return accountBindingWork = BindAccountAfterAsync(accountBindingWork, authority, name, revision);
+    }
+    private async Task BindAccountAfterAsync(Task previous, RoomAccountAuthority? authority, string name, long revision)
+    {
+        await previous;
+        if (closing || accountBinding != revision) return;
+        if (!ReferenceEquals(room.AccountAuthority, authority) && room.HasRoomScope) await LeaveAsync();
+        if (!closing && accountBinding == revision) room.BindAccount(authority, name);
+    }
     internal async Task LeaveAsync()
     {
         await StopAsync(); await room.CloseAsync();
         if (watch.Player is { } player) await player.RevokeSharedAsync(releaseAdmission: true);
         Status = ""; seenMembership = false; Changed?.Invoke();
     }
-    internal async Task CloseAsync() { closing = true; await StopAsync(); }
+    internal async Task CloseAsync() { accountBinding++; closing = true; await accountBindingWork; await StopAsync(); }
 }

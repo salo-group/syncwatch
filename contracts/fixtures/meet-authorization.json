@@ -1,0 +1,152 @@
+{
+  "accountId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "statuses": [
+    {
+      "name": "pending",
+      "wire": "{\"status\":\"pending\",\"account\":null,\"reason\":null}",
+      "valid": true
+    },
+    {
+      "name": "authorizing",
+      "wire": "{\"status\":\"authorizing\",\"account\":null,\"reason\":null}",
+      "valid": true
+    },
+    {
+      "name": "browserConfirmationRequired",
+      "wire": "{\"status\":\"browserConfirmationRequired\",\"account\":null,\"reason\":null}",
+      "valid": true
+    },
+    {
+      "name": "complete",
+      "wire": "{\"status\":\"complete\",\"account\":null,\"reason\":null}",
+      "valid": true
+    },
+    {
+      "name": "cancelled",
+      "wire": "{\"status\":\"cancelled\",\"account\":null,\"reason\":null}",
+      "valid": true
+    },
+    {
+      "name": "expired",
+      "wire": "{\"status\":\"expired\",\"account\":null,\"reason\":null}",
+      "valid": true
+    },
+    {
+      "name": "native confirmation",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":{\"id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"name\":\"Owner\",\"email\":\"owner@example.invalid\"},\"reason\":null}",
+      "valid": true
+    },
+    {
+      "name": "roomChanged",
+      "wire": "{\"status\":\"failed\",\"account\":null,\"reason\":\"roomChanged\"}",
+      "valid": true
+    },
+    {
+      "name": "accountMismatch",
+      "wire": "{\"status\":\"failed\",\"account\":null,\"reason\":\"accountMismatch\"}",
+      "valid": true
+    },
+    {
+      "name": "permissionUnavailable",
+      "wire": "{\"status\":\"failed\",\"account\":null,\"reason\":\"permissionUnavailable\"}",
+      "valid": true
+    },
+    {
+      "name": "invalidConfirmation",
+      "wire": "{\"status\":\"failed\",\"account\":null,\"reason\":\"invalidConfirmation\"}",
+      "valid": true
+    },
+    {
+      "name": "wrong code feedback",
+      "wire": "{\"status\":\"browserConfirmationRequired\",\"account\":null,\"reason\":\"invalidConfirmation\"}",
+      "valid": true
+    },
+    {
+      "name": "confirm wrong code",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":{\"id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"name\":\"Owner\",\"email\":\"owner@example.invalid\"},\"reason\":\"invalidConfirmation\"}",
+      "valid": true
+    },
+    {
+      "name": "unknown status",
+      "wire": "{\"status\":\"joined\",\"account\":null,\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "profile disclosed early",
+      "wire": "{\"status\":\"browserConfirmationRequired\",\"account\":{\"id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"name\":\"Owner\",\"email\":\"owner@example.invalid\"},\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "missing confirmation profile",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":null,\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "wrong account",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":{\"id\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\",\"name\":\"Owner\",\"email\":\"owner@example.invalid\"},\"reason\":null}",
+      "valid": false,
+      "schemaValid": true
+    },
+    {
+      "name": "arbitrary failure",
+      "wire": "{\"status\":\"failed\",\"account\":null,\"reason\":\"provider secret\"}",
+      "valid": false
+    },
+    {
+      "name": "missing failure reason",
+      "wire": "{\"status\":\"failed\",\"account\":null,\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "unexpected complete reason",
+      "wire": "{\"status\":\"complete\",\"account\":null,\"reason\":\"invalidConfirmation\"}",
+      "valid": false
+    },
+    {
+      "name": "wrong reason type",
+      "wire": "{\"status\":\"failed\",\"account\":null,\"reason\":7}",
+      "valid": false
+    },
+    {
+      "name": "wrong state type",
+      "wire": "{\"status\":7,\"account\":null,\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "token disclosure",
+      "wire": "{\"status\":\"pending\",\"account\":null,\"reason\":null,\"refreshToken\":\"synthetic-provider-token\"}",
+      "valid": false
+    },
+    {
+      "name": "bad profile",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":{\"id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"name\":\"\",\"email\":\"owner@example.invalid\"},\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "duplicate keys",
+      "wire": "{\"status\":\"pending\",\"status\":\"complete\",\"account\":null,\"reason\":null}",
+      "valid": false,
+      "duplicate": true
+    },
+    {
+      "name": "wrong account type",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":[],\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "wrong name type",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":{\"id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"name\":7,\"email\":\"owner@example.invalid\"},\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "extra account field",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":{\"id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"name\":\"Owner\",\"email\":\"owner@example.invalid\",\"refreshToken\":\"must-not-enter-native-profile\"},\"reason\":null}",
+      "valid": false
+    },
+    {
+      "name": "missing account field",
+      "wire": "{\"status\":\"confirmAuthorization\",\"account\":{\"id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"name\":\"Owner\"},\"reason\":null}",
+      "valid": false
+    }
+  ]
+}

@@ -8,11 +8,17 @@ import tempfile
 
 import kotlin
 import stdlib
+from admission_fixture import environment
 
 
 def check(root, classpath, home, compiler):
     if sys.platform != "linux":
         raise SystemExit("Linux application/design consumer requires Linux")
+    with environment(root):
+        _check(root, classpath, home, compiler)
+
+
+def _check(root, classpath, home, compiler):
     with tempfile.TemporaryDirectory(prefix="compose-ui-consumer-") as temporary:
         work = Path(temporary).resolve() / "Кино 映画"
         work.mkdir()

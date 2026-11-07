@@ -7,18 +7,34 @@ using SyncWatch.Room;
 namespace SyncWatch;
 
 internal sealed record RoomWatchMembership(RoomMembershipSession Owner, string MemberId, RoomIdentity Identity, string Epoch);
+internal sealed record RoomCallMembership(RoomMembershipSession Owner, string MemberId, string Epoch, bool IsOwner);
+internal sealed record RoomInvitationTransfer(RoomMembershipSession Owner, RoomInvitation Invitation, Guid Revision);
 internal sealed record RoomPreparedPublication(Guid Lease, MediaDescriptor Media);
 
 /// <summary>The workspace owns membership independently of the visible dialog.</summary>
 internal sealed class RoomController
 {
     private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
-    public RoomEditor Editor { get; } = new();
+    public RoomEditor Editor { get; }
+    internal RoomAccountAuthority? AccountAuthority { get; private set; }
+    private readonly Func<RoomAccountAuthority?>? accountSource;
+    internal RoomController(bool legacyValidation = false, Func<RoomAccountAuthority?>? accountSource = null)
+    { this.accountSource = accountSource; Editor = new(flow: legacyValidation ? "legacy" : SyncWatchRoomForm.DefaultFlow); }
+    private bool CurrentAccount => !Editor.RequiresAccount || AccountAuthority is not null && (accountSource is null || ReferenceEquals(accountSource(), AccountAuthority));
+    internal void BindAccount(RoomAccountAuthority? authority, string name)
+    {
+        if (!Editor.RequiresAccount) return;
+        AccountAuthority = authority; Editor.AccountReady = authority is not null;
+        Editor.AccountName = authority is null ? "" : name; Editor.AccountService = authority?.Address.Origin.AbsoluteUri ?? "";
+        Changed?.Invoke();
+    }
     public RoomCatalogView? CatalogView { get; private set; }
     public RoomBootstrap? Bootstrap => CatalogView?.Bootstrap;
     internal RoomBootstrap? WatchBootstrap { get; private set; }
-    public bool Connected => Editor.Connected && Bootstrap is not null;
+    internal bool HasRoomScope => Editor.State != "disconnected" || work is not null || playbackSession is not null;
+    public bool Connected => Editor.Connected && Bootstrap is not null && CurrentAccount;
     public event Action? Changed;
+    private RoomApprovalController? approvals;
     private RoomAdmission? admission;
     private CancellationTokenSource? stop;
     private Task? work;
@@ -37,10 +53,11 @@ internal sealed class RoomController
     {
         dispatcher.VerifyAccess();
         if (stopping || Editor.Busy || Connected || work is not null || !Editor.IsValid) return;
+        if (!CurrentAccount) return;
         playbackSession = null; playbackEpoch = null;
         var values = Editor.Values; bool owner = Editor.Mode == "createRoom";
         Editor.State = "connecting"; Editor.Status = "";
-        stop = new(); work = RunAsync(values, owner, stop.Token); Changed?.Invoke();
+        stop = new(); work = RunAsync(values, owner, stop.Token, AccountAuthority); Changed?.Invoke();
     }
     public LibraryPresentation LibraryPresentation(LibraryPresentation source, bool sharedStartAvailable = false)
     {
@@ -104,6 +121,39 @@ internal sealed class RoomController
         }
         Changed?.Invoke();
     }
+    internal void DecideAdmission(string id, bool approve)
+    {
+        if (!stopping && Connected && Editor.Owner) approvals?.Decide(id, approve);
+    }
+    private bool invitationCopyBusy;
+    private Guid invitationCopyRevision;
+    internal async Task<RoomInvitationTransfer?> InvitationForCopyAsync()
+    {
+        if (invitationCopyBusy || stopping || !Connected || !Editor.Owner || session is null || admission is null) return null;
+        var owner = session; var value = admission;
+        invitationCopyBusy = true; Guid revision = invitationCopyRevision = Guid.NewGuid();
+        try
+        {
+            RoomInvitation invitation = AccountAuthority is not null ? await owner.InvitationAsync()
+                : new(value.RoomId, value.Invitation ?? throw new RoomProtocolException("malformed"));
+            var transfer = new RoomInvitationTransfer(owner, invitation, revision); return CanCopy(transfer) ? transfer : null;
+        }
+        catch (Exception) { if (Connected && ReferenceEquals(session, owner)) { Editor.Status = "roomInvitationCopyFailed"; Changed?.Invoke(); } return null; }
+        finally { invitationCopyBusy = false; }
+    }
+    internal bool CanCopy(RoomInvitationTransfer transfer) => !stopping && Connected && Editor.Owner && ReferenceEquals(session, transfer.Owner) && invitationCopyRevision == transfer.Revision;
+    internal void InvitationCopyCompleted(bool copied, RoomInvitationTransfer transfer) { if (CanCopy(transfer)) InvitationCopyCompleted(copied); }
+    private void StartApprovals(RoomMembershipSession owner)
+    {
+        if (approvals is not null || !Connected || !Editor.Owner || AccountAuthority is null) return;
+        approvals = new(owner, value =>
+        {
+            if (stopping || !Connected || !ReferenceEquals(session, owner)) return;
+            Editor.PendingRequests = value.Rows; Editor.PendingAvailable = value.Available; Editor.Deciding = value.Deciding; Editor.PendingStatus = value.Notice;
+            Changed?.Invoke();
+        });
+        approvals.Start();
+    }
     public string? InvitationToCopy() => Connected && admission?.Invitation is { } invitation ? new RoomInvitation(admission.RoomId, invitation).CopyText() : null;
     public void InvitationCopyCompleted(bool copied)
     {
@@ -127,6 +177,18 @@ internal sealed class RoomController
         if (localRevision == revision) return;
         localRevision = revision; localFiles = files().ToArray(); StartPublisher(); StartMissingReport();
     }
+    internal RoomCallMembership? CallMembership()
+    {
+        dispatcher.VerifyAccess();
+        return AccountAuthority is not null && !stopping && Connected && session is not null && admission is not null
+            ? new(session, admission.MemberId, admission.Bootstrap.Snapshot.Epoch, Editor.Owner) : null;
+    }
+    internal bool IsCurrent(RoomCallMembership membership)
+    {
+        dispatcher.VerifyAccess();
+        return AccountAuthority is not null && !stopping && Connected && ReferenceEquals(session, membership.Owner)
+            && admission?.MemberId == membership.MemberId && admission?.Bootstrap.Snapshot.Epoch == membership.Epoch;
+    }
     internal bool IsCurrent(RoomWatchMembership membership)
     {
         dispatcher.VerifyAccess();
@@ -134,7 +196,7 @@ internal sealed class RoomController
             && admission?.Bootstrap.Snapshot.Epoch == membership.Epoch;
     }
     // Existing playback survives only transport interruption, never a replacement membership.
-    internal bool CanContinuePlayback(RoomWatchMembership membership) => !stopping && ReferenceEquals(playbackSession, membership.Owner) && playbackEpoch == membership.Epoch;
+    internal bool CanContinuePlayback(RoomWatchMembership membership) => !stopping && CurrentAccount && ReferenceEquals(playbackSession, membership.Owner) && playbackEpoch == membership.Epoch;
     internal static bool IsMetadataInterruption(Exception error) => error switch
     {
         RoomProtocolException protocol => protocol.Message is "transport" or "closed",
@@ -144,6 +206,27 @@ internal sealed class RoomController
         OperationCanceledException => true,
         _ => false
     };
+    internal bool CanRenewWatchAdmission(RoomWatchMembership membership) => IsCurrent(membership)
+        || Editor.State == "reconnecting" && CanContinuePlayback(membership) && ReferenceEquals(session, membership.Owner)
+            && admission?.MemberId == membership.MemberId && admission?.Bootstrap.Snapshot.Epoch == membership.Epoch;
+    internal async Task<RoomSyncTicket> SyncAdmissionAsync(RoomWatchMembership membership, RoomWatchContext expected, Action<RoomWatchContext> validate, CancellationToken cancellation = default)
+    {
+        if (AccountAuthority is null || !CanRenewWatchAdmission(membership)) throw new RoomProtocolException("closed");
+        // Fresh server state authorizes the transport; event-stream backoff does not.
+        var context = await membership.Owner.AdmissionContextAsync(expected.Bootstrap, cancellation);
+        cancellation.ThrowIfCancellationRequested();
+        if (AccountAuthority is null || !CanRenewWatchAdmission(membership)) throw new RoomProtocolException("closed");
+        validate(context);
+        var ticket = await membership.Owner.SyncTicketAsync(cancellation);
+        cancellation.ThrowIfCancellationRequested();
+        if (AccountAuthority is null || !CanRenewWatchAdmission(membership)) throw new RoomProtocolException("closed");
+        // Events can still be absent when ticket issuance races a generation change.
+        var confirmed = await membership.Owner.AdmissionContextAsync(expected.Bootstrap, cancellation);
+        cancellation.ThrowIfCancellationRequested();
+        if (AccountAuthority is null || !CanRenewWatchAdmission(membership)) throw new RoomProtocolException("closed");
+        validate(confirmed);
+        return ticket;
+    }
     internal async Task<(RoomWatchMembership Membership, RoomWatchContext Context)> BeginWatchAsync(CancellationToken cancellation = default)
     {
         dispatcher.VerifyAccess();
@@ -235,15 +318,29 @@ internal sealed class RoomController
     {
         if (bootstrap.Snapshot.Sequence >= (WatchBootstrap?.Snapshot.Sequence ?? 0)) WatchBootstrap = bootstrap;
     }
-    private async Task RunAsync(IReadOnlyDictionary<string, string> values, bool owner, CancellationToken cancellation)
+    private async Task RunAsync(IReadOnlyDictionary<string, string> values, bool owner, CancellationToken cancellation, RoomAccountAuthority? authority)
     {
         await Task.Yield(); RoomClient? current = null; RoomAdmission? admitted = null; bool failed = false, interrupted = false;
+        AccountRoomAdmission? pending = null; string failureNotice = authority is null ? "roomConnectionFailed" : "roomRequestUnavailable";
         try
         {
-            current = new(new(values["serviceAddress"]));
-            var identity = new RoomIdentity("run-" + Guid.NewGuid().ToString("N"), values["username"]);
-            admitted = owner ? await current.CreateAsync(identity, new(values["syncplayHost"], int.Parse(values["syncplayPort"], System.Globalization.CultureInfo.InvariantCulture), values["roomName"]), new(values["creationKey"]), cancellation)
-                : await current.JoinAsync(values["roomID"], new(values["invitation"]), identity, cancellation);
+            current = authority is null ? new RoomClient(new(values["serviceAddress"])) : RoomClient.ForAccount(authority);
+            RoomIdentity identity;
+            if (authority is not null)
+            {
+                pending = new(current, owner, values);
+                admitted = await pending.PerformAsync(() => { Editor.State = "awaitingApproval"; Changed?.Invoke(); }, cancellation);
+                identity = admitted.Bootstrap.Snapshot.Members.First(p => p.MemberId == admitted.MemberId).Identity;
+                pending = null;
+            }
+            else
+            {
+                identity = new RoomIdentity("run-" + Guid.NewGuid().ToString("N"), values["username"]);
+                admitted = owner ? await current.CreateAsync(identity, new(values["syncplayHost"], int.Parse(values["syncplayPort"], System.Globalization.CultureInfo.InvariantCulture), values["roomName"]), new(values["creationKey"]), cancellation)
+                    : await current.JoinAsync(values["roomID"], new(values["invitation"]), identity, cancellation);
+            }
+            cancellation.ThrowIfCancellationRequested();
+            if (!CurrentAccount) throw new RoomProtocolException("closed");
             admission = admitted; Editor.ClearSecrets();
             var ownerSession = new RoomMembershipSession(current, admitted, identity);
             session = ownerSession; catalogMap = new(); acknowledgedRevision = null; prepared = null; acknowledgedPrepared = null;
@@ -253,11 +350,12 @@ internal sealed class RoomController
                 {
                     playbackSession = ownerSession; playbackEpoch = admitted.Bootstrap.Snapshot.Epoch;
                     Editor.State = "connected"; Editor.RoomId = admitted.RoomId; Editor.Owner = owner;
-                    Accept(view); StartPublisher(); Changed?.Invoke();
-                }, cancellation);
+                    Accept(view); StartApprovals(ownerSession); StartPublisher(); Changed?.Invoke();
+                }, cancellation, authority);
         }
         catch (Exception error)
         {
+            if (error is RoomAdmissionException admissionError) failureNotice = admissionError.Notice;
             failed = !cancellation.IsCancellationRequested;
             interrupted = failed && IsMetadataInterruption(error) && playbackSession is not null;
             if (!interrupted) { playbackSession = null; playbackEpoch = null; }
@@ -265,6 +363,8 @@ internal sealed class RoomController
         }
         finally
         {
+            if (approvals is not null) await approvals.CloseAsync(); approvals = null;
+            Editor.PendingRequests = []; Editor.PendingStatus = ""; Editor.Deciding = false; Editor.PendingAvailable = false;
             if (missingReport is not null) await missingReport;
             missingReport = null;
             if (publisher is not null) await publisher;
@@ -272,14 +372,14 @@ internal sealed class RoomController
             WatchBootstrap = null;
             if (current is not null)
             {
-                if (admitted is not null && !interrupted)
+                if (!interrupted)
                 {
                     using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                    try { await current.LeaveAsync(admitted, timeout.Token); } catch (Exception) { }
+                    try { if (admitted is not null) await current.LeaveAsync(admitted, timeout.Token); else if (pending is not null) await pending.CancelAsync(timeout.Token); } catch (Exception) { }
                 }
                 await current.DisposeAsync();
             }
-            admission = null; CatalogView = null; Editor.ClearSecrets(); Editor.MemberCount = 0; Editor.Owner = false; work = null; stop?.Dispose(); stop = null; if (failed) { Editor.State = "failed"; Editor.Status = "roomConnectionFailed"; }
+            admission = null; CatalogView = null; Editor.ClearSecrets(); Editor.MemberCount = 0; Editor.Owner = false; work = null; stop?.Dispose(); stop = null; if (failed) { Editor.State = "failed"; Editor.Status = failureNotice; }
             Changed?.Invoke();
         }
     }

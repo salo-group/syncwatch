@@ -282,6 +282,69 @@
         "loading": true
       },
       "expected": null
+    },
+    {
+      "name": "account-connect",
+      "op": "connect",
+      "args": {
+        "accountAdmission": true
+      },
+      "expected": {
+        "v": 1,
+        "id": "cmd-9",
+        "type": "sync.connect",
+        "clientRunId": "helper-run",
+        "mediaGeneration": 7,
+        "payload": {
+          "host": "127.0.0.1",
+          "port": 8999,
+          "room": "room",
+          "username": "Viewer",
+          "tls": true,
+          "accountAdmission": true
+        }
+      }
+    },
+    {
+      "name": "admit",
+      "op": "admit",
+      "args": {},
+      "expected": {
+        "v": 1,
+        "id": "cmd-9",
+        "type": "sync.admit",
+        "clientRunId": "helper-run",
+        "mediaGeneration": 7,
+        "payload": {
+          "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "ticket": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "clientRunId": "room-run"
+        }
+      }
+    },
+    {
+      "name": "admit-invalid-nonce",
+      "op": "admit",
+      "args": {
+        "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "expected": null
+    },
+    {
+      "name": "admit-invalid-ticket",
+      "op": "admit",
+      "args": {
+        "ticket": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expected": null
+    },
+    {
+      "name": "admit-foreign-run-shape",
+      "op": "admit",
+      "args": {
+        "clientRunId": "../outside"
+      },
+      "expected": null
     }
   ]
 }

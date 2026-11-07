@@ -12,15 +12,25 @@ public struct HelperCommands: Sendable {
     public func shutdown(_ id: UInt64) throws -> Data { try frame(id, "bridge.shutdown", [:]) }
     public func disconnect(_ id: UInt64) throws -> Data { try frame(id, "sync.disconnect", [:]) }
     public func ready(_ id: UInt64, value: Bool) throws -> Data { try frame(id, "sync.setReady", ["ready": value]) }
-    public func connect(_ id: UInt64, host: String, port: Int, room: String, username: String) throws -> Data {
+    public func connect(
+        _ id: UInt64, host: String, port: Int, room: String, username: String, accountAdmission: Bool = false
+    ) throws -> Data {
         guard (1...253).contains(host.utf8.count),
             host.range(of: "\\A[A-Za-z0-9.:_-]+\\z", options: .regularExpression) != nil,
             (1...65_535).contains(port)
         else { throw PlayerCorrectionFailure.malformed }
         try text(room, maximum: 256)
         try text(username, maximum: 64)
+        var payload: [String: Any] = ["host": host, "port": port, "room": room, "username": username, "tls": true]
+        if accountAdmission { payload["accountAdmission"] = true }
+        return try frame(id, "sync.connect", payload)
+    }
+    public func admit(_ id: UInt64, nonce: String, authority: SyncplayAdmission) throws -> Data {
+        guard nonce.range(of: "\\A[0-9a-f]{32}\\z", options: .regularExpression) != nil else {
+            throw PlayerCorrectionFailure.malformed
+        }
         return try frame(
-            id, "sync.connect", ["host": host, "port": port, "room": room, "username": username, "tls": true])
+            id, "sync.admit", ["nonce": nonce, "ticket": authority.credential, "clientRunId": authority.clientRunID])
     }
     public func loaded(_ id: UInt64, handle: String, name: String, durationMs: Int64, fileSizeBytes: UInt64) throws
         -> Data

@@ -24,6 +24,8 @@ private class SessionPeer : HelperTransport {
     private var holdUser = false
     private var stationaryHandshake = false
     private var samples = 0
+    var ticketMode = false
+    var advertiseAdmission = true
     private var automaticReady = true
     private var pulseBeforeAck: Boolean? = null
     @Volatile var userWriteHeld = false
@@ -61,9 +63,13 @@ private class SessionPeer : HelperTransport {
         if (kind == "sync.setReady" && pulseBeforeAck == true) {
             emit("sync.readiness", mapOf("ready" to true)); emit("sync.readiness", mapOf("ready" to false))
         }
+        if (kind == "sync.connect" && ticketMode) {
+            check(Json.`object`(value["payload"])["accountAdmission"] == true)
+            emit("sync.admissionRequired", mapOf("nonce" to "a".repeat(32)))
+        }
         push(base(if (hello) "bridge.ready" else "bridge.result",
-            if (hello) mapOf("syncplayRevision" to SESSION_REVISION) else mapOf("status" to "applied")).also { it["replyTo"] = id })
-        if (kind == "sync.connect" && !stationaryHandshake) {
+            if (hello) mapOf("syncplayRevision" to SESSION_REVISION) + if (advertiseAdmission) mapOf("admissionVersion" to 1L) else emptyMap() else mapOf("status" to "applied")).also { it["replyTo"] = id })
+        if (kind == "sync.connect" && !ticketMode && !stationaryHandshake || kind == "sync.admit") {
             emit("sync.identity", mapOf("username" to "Viewer_2")); emit("sync.connection", mapOf("state" to "connected"))
         }
         if (kind == "sync.setReady" && automaticReady && pulseBeforeAck != true) {
@@ -79,6 +85,12 @@ private class SessionPeer : HelperTransport {
     @Synchronized override fun close() {
         ended = true; reading?.completeExceptionally(IllegalStateException("EOF")); reading = null
         writing?.completeExceptionally(IllegalStateException("EOF")); writing = null
+    }
+    @Synchronized fun requestAdmission(nonce: String) { emit("sync.admissionRequired", mapOf("nonce" to nonce)) }
+    @Synchronized fun admissionCount(): Int = sent.count { it["type"] == "sync.admit" }
+    @Synchronized fun admissionMatches(index: Int, ticket: String, nonce: String): Boolean {
+        val payload = Json.`object`(sent.filter { it["type"] == "sync.admit" }[index]["payload"])
+        return payload["ticket"] == ticket && payload["nonce"] == nonce && payload["clientRunId"] == "member-run"
     }
     @Synchronized fun readiness(value: Boolean) { emit("sync.readiness", mapOf("ready" to value)) }
     @Synchronized fun connection(value: String) { emit("sync.connection", mapOf("state" to value)) }
@@ -237,9 +249,55 @@ private suspend fun stationaryHandshake(owner: CoroutineScope) {
     } finally { session.close() }
 }
 
+private suspend fun admissionChecks(owner: CoroutineScope) {
+    val native = PlaybackScope.fresh().replacingMedia(); var calls = 0
+    var peer = SessionPeer().apply { ticketMode = true }
+    var session = HelperSession(peer, SessionPlayer(native), native, SyncplayEndpoint("localhost", 8999, "room", "Viewer_2"),
+        SharedMedia("media-1", "Movie.mkv", 60000, 1234), SESSION_REVISION, owner, requireDeclaredIdentity = true,
+        admissionProvider = {
+            calls++; if (calls == 2) delay(6000)
+            SyncplayAdmission((if (calls == 1) "A" else "B").repeat(64), "member-run")
+        })
+    try {
+        session.start(); eventually { session.state.playbackReady }
+        check(calls == 1 && peer.admissionMatches(0, "A".repeat(64), "a".repeat(32)))
+        peer.connection("connecting"); peer.requestAdmission("b".repeat(32))
+        eventually { calls == 2 }
+        check(session.state.connection == HelperConnection.reconnecting && !session.state.playbackReady)
+        delay(6000)
+        check(session.state.connection != HelperConnection.failed) { "Transport admission ended before its challenge window" }
+        eventually { calls == 2 && session.state.playbackReady }
+        check(peer.admissionMatches(1, "B".repeat(64), "b".repeat(32)))
+        peer.connection("connecting"); peer.requestAdmission("a".repeat(32))
+        eventually { session.state.connection == HelperConnection.failed }; check(calls == 2)
+    } finally { session.close() }
+    for ((missing, expires) in listOf(false to false, true to false, false to true)) {
+        calls = 0; var cancelled = false
+        peer = SessionPeer().apply { ticketMode = true; advertiseAdmission = !missing }
+        session = HelperSession(peer, SessionPlayer(native), native, SyncplayEndpoint("localhost", 8999, "room", "Viewer_2"),
+            SharedMedia("media-1", "Movie.mkv", 60000, 1234), SESSION_REVISION, owner,
+            admissionProvider = {
+                calls++
+                try { delay(20_000) } catch (error: kotlinx.coroutines.CancellationException) { cancelled = true; throw error }
+                SyncplayAdmission("A".repeat(64), "member-run")
+            })
+        try {
+            session.start(); eventually { if (missing) session.state.connection == HelperConnection.failed else calls == 1 }
+            if (expires) {
+                delay(11_000)
+                check(session.state.connection == HelperConnection.failed && cancelled)
+            }
+            session.close(); session.close()
+            check(calls == (if (missing) 0 else 1) && (missing || cancelled) && peer.admissionCount() == 0)
+        } finally { session.close() }
+    }
+    check(SyncplayAdmission("A".repeat(64), "member-run").toString() == "[redacted]")
+}
+
 internal fun helperSessionChecks() {
     Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
         runBlocking(dispatcher) {
+            admissionChecks(this)
             stationaryHandshake(this)
             for (beforeAck in listOf(false, true)) readinessPulse(this, beforeAck)
             scenario(this, false); scenario(this, true); scenario(this, false, strict = true); scenario(this, false, nativeEnd = true)

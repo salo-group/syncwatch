@@ -55,10 +55,23 @@ class NativeJobChecks(unittest.TestCase):
                 self.assertFalse(native_job.restore_current_dependency_cache("kotlin-stdlib", "linux-x64"))
             command.assert_not_called()
 
-    def report(self):
+    def report(self, with_service=False):
         report = native_job.Report()
         report.execute("Native checks", lambda: None)
+        if with_service:
+            report.execute(native_job.WINDOWS_SERVICE_STAGE, lambda: None)
         return report
+
+    def test_windows_success_cannot_be_published_without_successful_service_checks(self):
+        for service_result in (None, False):
+            with self.subTest(service_result=service_result):
+                report = self.report()
+                if service_result is not None:
+                    report.cases.append({"name": native_job.WINDOWS_SERVICE_STAGE, "success": service_result, "seconds": 0})
+                directory = self.root / "artifacts/native/windows"
+                with self.assertRaisesRegex(ValueError, "admitted room service stage"):
+                    native_job.prepare_archive(self.root, directory, "windows", "x64", {}, report, True)
+                self.assertFalse((directory / "payload").exists())
 
     def design_matrix(self, target="macos"):
         source = self.root / "artifacts/design" / target
@@ -255,7 +268,7 @@ class NativeJobChecks(unittest.TestCase):
         path = candidate / "contents/SyncWatch/Runtime/engine"
         path.write_text("changed after receipt")
         with self.assertRaisesRegex(ValueError, "stale, incomplete"):
-            native_job.prepare_archive(self.root, self.root / "report", "windows", "x64", {}, self.report(), True)
+            native_job.prepare_archive(self.root, self.root / "report", "windows", "x64", {}, self.report(with_service=True), True)
 
     def test_archive_mutation_never_publishes_a_partial_success(self):
         self.initialize_repository()
@@ -269,7 +282,7 @@ class NativeJobChecks(unittest.TestCase):
             return digest
         output = self.root / "report"
         with patch("native_job.sha256", side_effect=mutate), self.assertRaisesRegex(ValueError, "changed while archiving"):
-            native_job.prepare_archive(self.root, output, "windows", "x64", {}, self.report(), True)
+            native_job.prepare_archive(self.root, output, "windows", "x64", {}, self.report(with_service=True), True)
         self.assertFalse((output / "artifact.zip").exists())
         self.assertFalse(list(output.glob(".native-archive-*")))
 
@@ -279,7 +292,7 @@ class NativeJobChecks(unittest.TestCase):
         (self.root / "external").write_text("private")
         (candidate / "contents/SyncWatch/outside").symlink_to(self.root / "external")
         with self.assertRaises(ValueError):
-            native_job.prepare_archive(self.root, self.root / "report", "windows", "x64", {}, self.report(), True)
+            native_job.prepare_archive(self.root, self.root / "report", "windows", "x64", {}, self.report(with_service=True), True)
 
 
 if __name__ == "__main__":

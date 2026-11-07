@@ -11,6 +11,17 @@ struct RoomWatchMembership {
     let identity: RoomIdentity
     let epoch: String
 }
+struct RoomCallMembership {
+    let owner: RoomMembershipSession
+    let memberID: String
+    let epoch: String
+    let isOwner: Bool
+}
+struct RoomInvitationTransfer {
+    fileprivate let owner: RoomMembershipSession
+    let invitation: RoomInvitation
+    fileprivate let revision: UUID
+}
 struct RoomPreparedPublication {
     let lease: UUID
     let media: MediaDescriptor
@@ -18,10 +29,29 @@ struct RoomPreparedPublication {
 
 /// The workspace owns membership independently of the visible connection sheet.
 @MainActor final class RoomController: ObservableObject {
-    @Published var editor = RoomEditor()
+    @Published var editor: RoomEditor
+    private(set) var accountAuthority: RoomAccountAuthority?
+    private let accountSource: (@MainActor () -> RoomAccountAuthority?)?
+    init(legacyValidation: Bool = false, accountSource: (@MainActor () -> RoomAccountAuthority?)? = nil) {
+        self.accountSource = accountSource
+        editor = RoomEditor(flow: legacyValidation ? "legacy" : SyncWatchRoomForm.defaultFlow)
+    }
+    private var currentAccount: Bool {
+        guard editor.requiresAccount else { return true }
+        guard let accountAuthority else { return false }
+        return accountSource.map { $0() === accountAuthority } ?? true
+    }
+    func bindAccount(_ authority: RoomAccountAuthority?, name: String) {
+        guard editor.requiresAccount else { return }
+        accountAuthority = authority
+        editor.accountReady = authority != nil
+        editor.accountName = authority == nil ? "" : name
+        editor.accountService = authority?.address.origin.absoluteString ?? ""
+    }
     @Published private(set) var catalogView: RoomCatalogView?
     var bootstrap: RoomBootstrap? { catalogView?.bootstrap }
     private(set) var watchBootstrap: RoomBootstrap?
+    private var approvals: RoomApprovalController?
     private var admission: RoomAdmission?
     private var work: Task<Void, Never>?
     private var session: RoomMembershipSession?
@@ -37,16 +67,19 @@ struct RoomPreparedPublication {
     private var acknowledgedPrepared: RoomPreparedPublication?
     private var stopping = false
     private var closing: Task<Void, Never>?
-    var connected: Bool { editor.connected && bootstrap != nil }
+    var hasRoomScope: Bool { editor.state != "disconnected" || work != nil || playbackSession != nil }
+    var connected: Bool { editor.connected && bootstrap != nil && currentAccount }
     func connect() {
         guard !stopping, !editor.busy, !connected, work == nil, editor.isValid else { return }
+        if !currentAccount { return }
         playbackSession = nil
         playbackEpoch = nil
         let values = editor.values
+        let authority = accountAuthority
         let owner = editor.mode == "createRoom"
         editor.state = "connecting"
         editor.status = ""
-        work = Task { await run(values, owner: owner) }
+        work = Task { await run(values, owner: owner, authority: authority) }
     }
     func libraryPresentation(_ source: LibraryPresentation, sharedStartAvailable: Bool = false) -> LibraryPresentation {
         var result = source
@@ -122,6 +155,53 @@ struct RoomPreparedPublication {
         }
         editor = next
     }
+    func decideAdmission(_ id: String, approve: Bool) {
+        guard !stopping, connected, editor.owner else { return }
+        approvals?.decide(id, approve: approve)
+    }
+    private var invitationCopyBusy = false
+    private var invitationCopyRevision = UUID()
+    func invitationForCopy() async -> RoomInvitationTransfer? {
+        guard !invitationCopyBusy, !stopping, connected, editor.owner, let session, let admission else { return nil }
+        invitationCopyBusy = true
+        defer { invitationCopyBusy = false }
+        let revision = UUID()
+        invitationCopyRevision = revision
+        do {
+            let invitation: RoomInvitation
+            if accountAuthority != nil {
+                invitation = try await session.invitation()
+            } else {
+                guard let credential = admission.invitation else { throw RoomProtocolFailure.malformed }
+                invitation = try RoomInvitation(roomID: admission.roomID, credential: credential)
+            }
+            let transfer = RoomInvitationTransfer(owner: session, invitation: invitation, revision: revision)
+            return canCopy(transfer) ? transfer : nil
+        } catch {
+            if connected && self.session === session { editor.status = "roomInvitationCopyFailed" }
+            return nil
+        }
+    }
+    func canCopy(_ transfer: RoomInvitationTransfer) -> Bool {
+        !stopping && connected && editor.owner && session === transfer.owner
+            && invitationCopyRevision == transfer.revision
+    }
+    func invitationCopyCompleted(_ copied: Bool, transfer: RoomInvitationTransfer) {
+        guard canCopy(transfer) else { return }
+        invitationCopyCompleted(copied)
+    }
+    private func startApprovals(_ owner: RoomMembershipSession) {
+        guard approvals == nil, connected, editor.owner, accountAuthority != nil else { return }
+        let controller = RoomApprovalController(membership: owner) { [weak self] value in
+            guard let self, !stopping, connected, session === owner else { return }
+            editor.pendingRequests = value.rows
+            editor.pendingAvailable = value.available
+            editor.deciding = value.deciding
+            editor.pendingStatus = value.notice
+        }
+        approvals = controller
+        controller.start()
+    }
     func invitationToCopy() -> String? {
         guard connected, let admission, let invitation = admission.invitation else { return nil }
         return try? RoomInvitation(roomID: admission.roomID, credential: invitation).copyText()
@@ -169,13 +249,23 @@ struct RoomPreparedPublication {
         startPublisher()
         startMissingReport()
     }
+    func callMembership() -> RoomCallMembership? {
+        guard accountAuthority != nil, !stopping, connected, let session, let admission else { return nil }
+        return RoomCallMembership(
+            owner: session, memberID: admission.memberID, epoch: admission.bootstrap.snapshot.epoch,
+            isOwner: editor.owner)
+    }
+    func isCurrent(_ membership: RoomCallMembership) -> Bool {
+        accountAuthority != nil && !stopping && connected && session === membership.owner
+            && admission?.memberID == membership.memberID && admission?.bootstrap.snapshot.epoch == membership.epoch
+    }
     func isCurrent(_ membership: RoomWatchMembership) -> Bool {
         !stopping && connected && session === membership.owner && admission?.memberID == membership.memberID
             && admission?.bootstrap.snapshot.epoch == membership.epoch
     }
     // An admitted native scope survives metadata transport loss. New starts still require isCurrent.
     func canContinuePlayback(_ membership: RoomWatchMembership) -> Bool {
-        !stopping && playbackSession === membership.owner && playbackEpoch == membership.epoch
+        !stopping && currentAccount && playbackSession === membership.owner && playbackEpoch == membership.epoch
     }
     static func isMetadataInterruption(_ error: any Error) -> Bool {
         if error is URLError { return true }
@@ -185,6 +275,33 @@ struct RoomPreparedPublication {
             return true
         default: return false
         }
+    }
+    func canRenewWatchAdmission(_ membership: RoomWatchMembership) -> Bool {
+        isCurrent(membership)
+            || (editor.state == "reconnecting" && canContinuePlayback(membership) && session === membership.owner
+                && admission?.memberID == membership.memberID
+                && admission?.bootstrap.snapshot.epoch == membership.epoch)
+    }
+    func syncAdmission(
+        _ membership: RoomWatchMembership, expected: RoomWatchContext, validate: (RoomWatchContext) throws -> Void
+    ) async throws
+        -> RoomSyncTicket
+    {
+        guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
+        // Fresh server state authorizes the transport; event-stream backoff does not.
+        let context = try await membership.owner.admissionContext(expected.bootstrap)
+        try Task.checkCancellation()
+        guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
+        try validate(context)
+        let ticket = try await membership.owner.syncTicket()
+        try Task.checkCancellation()
+        guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
+        // Events can still be absent when ticket issuance races a generation change.
+        let confirmed = try await membership.owner.admissionContext(expected.bootstrap)
+        try Task.checkCancellation()
+        guard accountAuthority != nil, canRenewWatchAdmission(membership) else { throw RoomProtocolFailure.closed }
+        try validate(confirmed)
+        return ticket
     }
     func beginWatch() async throws -> (membership: RoomWatchMembership, context: RoomWatchContext) {
         guard let session, let admission,
@@ -286,30 +403,49 @@ struct RoomPreparedPublication {
     private func recordWatch(_ bootstrap: RoomBootstrap) {
         if bootstrap.snapshot.sequence >= (watchBootstrap?.snapshot.sequence ?? 0) { watchBootstrap = bootstrap }
     }
-    private func run(_ values: [String: String], owner: Bool) async {
+    private func run(_ values: [String: String], owner: Bool, authority: RoomAccountAuthority?) async {
         var current: RoomClient?
         var admitted: RoomAdmission?
         var failed = false
         var interrupted = false
+        var pending: AccountRoomAdmission?
+        var failureNotice = authority == nil ? "roomConnectionFailed" : "roomRequestUnavailable"
         do {
-            let next = try RoomClient(address: RoomAddress(values["serviceAddress"] ?? ""))
+            let next =
+                try authority.map { RoomClient(authority: $0) }
+                ?? RoomClient(address: RoomAddress(values["serviceAddress"] ?? ""))
             current = next
-            let identity = try RoomIdentity(
-                clientRunID: "run-" + UUID().uuidString, syncplayUsername: values["username"] ?? "")
             let value: RoomAdmission
-            if owner {
-                guard let port = Int(values["syncplayPort"] ?? "") else { throw RoomProtocolFailure.malformed }
-                value = try await next.create(
-                    identity: identity,
-                    connection: RoomConnection(
-                        host: values["syncplayHost"] ?? "", port: port, room: values["roomName"] ?? ""),
-                    creationKey: RoomSecret(values["creationKey"] ?? ""))
+            let identity: RoomIdentity
+            if authority != nil {
+                let attempt = try AccountRoomAdmission(client: next, owner: owner, values: values)
+                pending = attempt
+                value = try await attempt.perform { self.editor.state = "awaitingApproval" }
+                guard let member = value.bootstrap.snapshot.members.first(where: { $0.memberID == value.memberID })
+                else {
+                    throw RoomProtocolFailure.malformed
+                }
+                identity = member.identity
             } else {
-                value = try await next.join(
-                    roomID: values["roomID"] ?? "", invitation: RoomSecret(values["invitation"] ?? ""),
-                    identity: identity)
+                identity = try RoomIdentity(
+                    clientRunID: "run-" + UUID().uuidString, syncplayUsername: values["username"] ?? "")
+                if owner {
+                    guard let port = Int(values["syncplayPort"] ?? "") else { throw RoomProtocolFailure.malformed }
+                    value = try await next.create(
+                        identity: identity,
+                        connection: RoomConnection(
+                            host: values["syncplayHost"] ?? "", port: port, room: values["roomName"] ?? ""),
+                        creationKey: RoomSecret(values["creationKey"] ?? ""))
+                } else {
+                    value = try await next.join(
+                        roomID: values["roomID"] ?? "", invitation: RoomSecret(values["invitation"] ?? ""),
+                        identity: identity)
+                }
             }
             admitted = value
+            pending = nil
+            try Task.checkCancellation()
+            guard currentAccount else { throw RoomProtocolFailure.closed }
             admission = value
             editor.clearSecrets()
             let ownerSession = RoomMembershipSession(client: next, admission: value, identity: identity)
@@ -319,7 +455,7 @@ struct RoomPreparedPublication {
             acknowledgedPrepared = nil
             acknowledgedRevision = nil
             try await RoomEventMonitor.run(
-                address: next.address, membership: ownerSession,
+                address: next.address, membership: ownerSession, authority: authority,
                 reconnecting: { self.editor.state = "reconnecting" },
                 accepted: { view in
                     self.playbackSession = ownerSession
@@ -328,9 +464,11 @@ struct RoomPreparedPublication {
                     self.editor.roomID = value.roomID
                     self.editor.owner = owner
                     self.accept(view)
+                    self.startApprovals(ownerSession)
                     self.startPublisher()
                 })
         } catch {
+            if let error = error as? RoomAdmissionFailure { failureNotice = error.notice }
             failed = !Task.isCancelled
             interrupted = failed && Self.isMetadataInterruption(error) && playbackSession != nil
             if !interrupted {
@@ -339,6 +477,12 @@ struct RoomPreparedPublication {
             }
             editor.state = "connecting"
         }
+        await approvals?.close()
+        approvals = nil
+        editor.pendingRequests = []
+        editor.pendingStatus = ""
+        editor.deciding = false
+        editor.pendingAvailable = false
         missingReport?.cancel()
         await missingReport?.value
         missingReport = nil
@@ -353,8 +497,16 @@ struct RoomPreparedPublication {
         acknowledgedPrepared = nil
         if let current {
             // Cleanup work is owned and bounded even when the attempt's caller was cancelled.
-            if let admitted, !interrupted {
-                let leaving = Task { try? await current.leave(admitted) }
+            if !interrupted {
+                let cleanupAdmission = admitted
+                let cleanupPending = pending
+                let leaving = Task {
+                    if let cleanupAdmission {
+                        try? await current.leave(cleanupAdmission)
+                    } else {
+                        try? await cleanupPending?.cancel()
+                    }
+                }
                 let deadline = Task {
                     try? await Task.sleep(for: .seconds(3))
                     leaving.cancel()
@@ -373,7 +525,7 @@ struct RoomPreparedPublication {
         work = nil
         if failed {
             editor.state = "failed"
-            editor.status = "roomConnectionFailed"
+            editor.status = failureNotice
         }
     }
 }

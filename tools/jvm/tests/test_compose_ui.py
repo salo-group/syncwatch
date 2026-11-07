@@ -1,6 +1,7 @@
 """Reject substituted UI bytecode, changed generation and incomplete legal inputs."""
 
 import copy
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -14,6 +15,22 @@ from build_support import digest, jar_bytes
 
 
 class ComposeUiArtifactTests(unittest.TestCase):
+    def test_admission_fixture_is_recorded_as_current_consumer_input(self):
+        registry = json.loads((compose_ui.ROOT / "tools/dependencies/components.json").read_text())
+        self.assertIn("tools/consumers/admission_fixture.py",
+                      registry["components"][compose_ui.COMPONENT]["verificationInputs"])
+
+    @unittest.skipUnless(sys.platform == "linux", "Linux consumer must run on Linux")
+    def test_linux_consumer_loads_fixture_from_clean_script_path(self):
+        consumer_directory = str(compose_ui.ROOT / "tools/consumers")
+        clean_path = [path for path in sys.path if path != consumer_directory]
+        with patch.object(sys, "path", clean_path.copy()), patch.dict(sys.modules):
+            sys.modules.pop("admission_fixture", None)
+            with patch.object(compose_ui.stdlib, "javac", side_effect=RuntimeError("native consumer reached")):
+                with self.assertRaisesRegex(RuntimeError, "native consumer reached"):
+                    compose_ui.probe(self.payload, self.profile, None, None)
+            self.assertEqual(sys.path, clean_path)
+
     def test_linux_application_consumer_rejects_foreign_hosts_before_sdk_access(self):
         for target in ("darwin", "win32"):
             with self.subTest(target=target), patch.object(compose_ui.sys, "platform", target):

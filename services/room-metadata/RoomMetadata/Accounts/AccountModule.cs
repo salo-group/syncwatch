@@ -6,13 +6,14 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.RateLimiting;
+using SyncWatch.RoomMetadata.Calls;
 
 namespace SyncWatch.RoomMetadata.Accounts;
 
 public static class AccountModule
 {
-    private const string Google = "google-account";
-    private const string TransactionKey = "syncwatch.transaction";
+    internal const string Google = "google-account";
+    internal const string TransactionKey = "syncwatch.transaction";
     private sealed record StartBody(int V, string Challenge);
     private sealed record ProofBody(int V, string Proof, string? RequestId = null, string? BrowserProof = null);
     private sealed record RefreshBody(int V, string RefreshToken, string RequestId);
@@ -33,6 +34,14 @@ public static class AccountModule
         builder.Services.AddRateLimiter(limiter =>
         {
             limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            limiter.OnRejected = async (context, cancellation) =>
+            {
+                var response = context.HttpContext.Response;
+                response.StatusCode = StatusCodes.Status429TooManyRequests;
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retry))
+                    response.Headers.RetryAfter = Math.Clamp(Math.Ceiling(retry.TotalSeconds), 1, 60).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                await response.WriteAsJsonAsync(new { v = 2, error = new { code = "queueFull" } }, AccountWire.Json, cancellation);
+            };
             limiter.AddPolicy("account", context => RateLimitPartition.GetFixedWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
                 { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
@@ -51,6 +60,11 @@ public static class AccountModule
             oauth.CorrelationCookie.SecurePolicy = options.PublicOrigin.Scheme == "https" ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
             oauth.BackchannelTimeout = TimeSpan.FromSeconds(20);
             oauth.BackchannelHttpHandler = new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(10) };
+            oauth.Events.OnRedirectToAuthorizationEndpoint = context =>
+            {
+                context.Response.Redirect(MeetAuthorizationModule.AuthorizationUri(context.RedirectUri, context.Properties));
+                return Task.CompletedTask;
+            };
             oauth.Events.OnCreatingTicket = async context =>
             {
                 // Use the reviewed OAuth code/PKCE/correlation handler and authenticated Google UserInfo.
@@ -71,10 +85,17 @@ public static class AccountModule
                     && AccountWire.Text(subject, 255) && AccountWire.Text(name, 128) && AccountWire.Text(email, 320), "providerIdentityInvalid", 502);
                 context.Identity!.AddClaim(new(ClaimTypes.NameIdentifier, subject));
                 context.Identity.AddClaim(new(ClaimTypes.Name, name)); context.Identity.AddClaim(new(ClaimTypes.Email, email));
+                MeetAuthorizationModule.Propose(context, subject, user);
             };
             oauth.Events.OnTicketReceived = async context =>
             {
                 string id = context.Properties!.Items[TransactionKey]!;
+                if (MeetAuthorizationModule.Requested(context.Properties))
+                {
+                    string? proof = MeetAuthorizationModule.Complete(context.HttpContext, id);
+                    context.HandleResponse(); await BrowserResult(context.HttpContext, proof is not null, proof, meet: true);
+                    return;
+                }
                 ClaimsPrincipal principal = context.Principal!;
                 string browserProof = context.HttpContext.RequestServices.GetRequiredService<SignInTransactions>().CompleteBrowser(id,
                     principal.FindFirstValue(ClaimTypes.NameIdentifier)!, principal.FindFirstValue(ClaimTypes.Name)!,
@@ -85,8 +106,11 @@ public static class AccountModule
             oauth.Events.OnRemoteFailure = async context =>
             {
                 if (context.Properties?.Items.TryGetValue(TransactionKey, out string? id) == true && id is not null)
-                    context.HttpContext.RequestServices.GetRequiredService<SignInTransactions>().FailBrowser(id);
-                context.HandleResponse(); await BrowserResult(context.HttpContext, success: false);
+                {
+                    if (MeetAuthorizationModule.Requested(context.Properties)) context.HttpContext.RequestServices.GetService<MeetAuthorizationTransactions>()?.FailBrowser(id);
+                    else context.HttpContext.RequestServices.GetRequiredService<SignInTransactions>().FailBrowser(id);
+                }
+                context.HandleResponse(); await BrowserResult(context.HttpContext, success: false, meet: MeetAuthorizationModule.Requested(context.Properties));
             };
         });
     }
@@ -151,7 +175,7 @@ public static class AccountModule
         context.Response.Headers.XFrameOptions = "DENY";
     }
     private static void Version(int version) => AccountWire.Need(version == 2, "unsupportedVersion");
-    private static string Bearer(HttpContext context)
+    internal static string Bearer(HttpContext context)
     {
         string value = context.Request.Headers.Authorization.ToString();
         AccountWire.Need(value.StartsWith("Bearer ", StringComparison.Ordinal) && AccountWire.Token(value[7..]), "unauthorized", 401);
@@ -173,15 +197,17 @@ public static class AccountModule
         }
         catch (JsonException) { throw new AccountException("malformed"); }
     }
-    private static Task Reply(HttpContext context, object value) => context.Response.WriteAsJsonAsync(new { v = 2, result = value }, AccountWire.Json, context.RequestAborted);
-    private static async Task BrowserResult(HttpContext context, bool success, string? browserProof = null)
+    internal static Task Reply(HttpContext context, object value) => context.Response.WriteAsJsonAsync(new { v = 2, result = value }, AccountWire.Json, context.RequestAborted);
+    private static async Task BrowserResult(HttpContext context, bool success, string? browserProof = null, bool meet = false)
     {
         context.Response.ContentType = "text/html; charset=utf-8";
         context.Response.StatusCode = success ? 200 : 400;
         await context.Response.WriteAsync("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>SyncWatch</title><h1>SyncWatch</h1><p>"
-            + (success ? "Return to the SyncWatch window where you started sign-in. Enter this one-time confirmation code there, check the account, and confirm. Do not send this code to another person or enter it into another website.</p><code>"
+            + (success ? (meet ? "Return to the SyncWatch call authorization window. Enter this one-time code there, check the account and confirm permission to create calls. "
+                : "Return to the SyncWatch window where you started sign-in. Enter this one-time confirmation code there, check the account, and confirm. ")
+                + "Do not send this code to another person or enter it into another website.</p><code>"
                 + System.Net.WebUtility.HtmlEncode(browserProof) + "</code><p>You can close this tab after confirming in SyncWatch."
-                : "Sign-in did not finish. Return to SyncWatch to try again.") + "</p></html>", context.RequestAborted);
+                : meet ? "Call authorization did not finish. Return to SyncWatch to try again." : "Sign-in did not finish. Return to SyncWatch to try again.") + "</p></html>", context.RequestAborted);
     }
 }
 

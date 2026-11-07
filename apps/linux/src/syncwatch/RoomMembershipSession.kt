@@ -10,6 +10,20 @@ internal data class RoomWatchContext(val bootstrap: RoomBootstrap, val definitio
 
 /** One application-owned membership serializes bootstrap walks and command numbering. */
 internal class RoomMembershipSession(private val client: RoomClient, private val admission: RoomAdmission, private val identity: RoomIdentity) {
+    suspend fun invitation(): RoomInvitation = client.invite(admission)
+    suspend fun pendingAdmissions(): List<RoomAdmissionRequest> = client.pending(admission)
+    suspend fun decideAdmission(id: String, approve: Boolean) { client.decide(admission, id, approve) }
+    suspend fun syncTicket(): RoomSyncTicket = client.syncTicket(admission)
+    // Calls are independent of ordered catalog/watch work.
+    suspend fun callStatus(): RoomCallStatus = client.callStatus(admission)
+    fun callStartOperation(): RoomCallOperation = client.callStartOperation(admission)
+    fun callEndOperation(status: RoomCallStatus): RoomCallOperation = client.callEndOperation(admission, status)
+    suspend fun requestCall(operation: RoomCallOperation): RoomCallStatus = client.requestCall(operation, admission)
+    suspend fun beginMeetAuthorization(): RoomMeetAuthorization = client.beginMeetAuthorization(admission)
+    suspend fun meetAuthorizationStatus(flow: RoomMeetAuthorization): RoomMeetAuthorizationStatus = client.meetAuthorizationStatus(flow, admission)
+    suspend fun verifyMeetAuthorization(flow: RoomMeetAuthorization, code: String): RoomMeetAuthorizationStatus = client.verifyMeetAuthorization(flow, admission, code)
+    suspend fun confirmMeetAuthorization(flow: RoomMeetAuthorization, code: String): RoomMeetAuthorizationStatus = client.confirmMeetAuthorization(flow, admission, code)
+    suspend fun cancelMeetAuthorization(flow: RoomMeetAuthorization): RoomMeetAuthorizationStatus = client.cancelMeetAuthorization(flow, admission)
     private val gate = Mutex()
     private var minimumSequence = admission.bootstrap.snapshot.sequence
     private var number = 0L
@@ -50,6 +64,17 @@ internal class RoomMembershipSession(private val client: RoomClient, private val
         if (unresolved != null) acknowledge()
         readWatchContext()
     }
+    suspend fun admissionContext(expected: RoomBootstrap): RoomWatchContext {
+        validateBinding(expected)
+        if (expected.snapshot.watchStatus != "active" || expected.snapshot.mediaId == null) throw RoomProtocolException("malformed")
+        // Selection reauthorizes this generation without replacing a catalog cursor or taking its gate.
+        repeat(2) {
+            val definition = client.selection(admission, expected)
+            currentCoroutineContext().ensureActive()
+            if (definition.sequence >= minimumSequence) return RoomWatchContext(expected, definition)
+        }
+        throw RoomProtocolException("malformed")
+    }
     /** A peer generation change requires an explicit new user decision. */
     suspend fun perform(action: RoomCommandAction, expected: RoomWatchContext): RoomWatchContext = gate.withLock {
         if (unresolved != null) acknowledge()
@@ -83,11 +108,15 @@ internal class RoomMembershipSession(private val client: RoomClient, private val
     }
     private suspend fun validatedSnapshot(initial: RoomBootstrap? = null): RoomBootstrap {
         val value = initial ?: client.snapshot(admission)
+        validateBinding(value)
+        if (value.snapshot.sequence < minimumSequence) throw RoomProtocolException("malformed")
+        return value
+    }
+    private fun validateBinding(value: RoomBootstrap) {
         val expected = admission.bootstrap.connection
-        if (value.snapshot.epoch != admission.bootstrap.snapshot.epoch || value.snapshot.sequence < minimumSequence ||
+        if (value.snapshot.epoch != admission.bootstrap.snapshot.epoch ||
             value.connection.host != expected.host || value.connection.port != expected.port || value.connection.room != expected.room ||
             value.snapshot.members.none { it.memberId == admission.memberId && it.identity == identity }) throw RoomProtocolException("malformed")
-        return value
     }
     private suspend fun read(initial: RoomBootstrap?): RoomCatalogView {
         val bootstrap = validatedSnapshot(initial)

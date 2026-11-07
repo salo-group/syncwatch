@@ -3,6 +3,8 @@ package syncwatch
 import androidx.compose.runtime.*
 import java.util.UUID
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import syncwatch.bridge.*
 import syncwatch.design.*
 import syncwatch.library.LocalMediaFile
@@ -131,7 +133,10 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                 val connection = current.bootstrap.connection; val remote = checkNotNull(current.definition.selection).media
                 player.connectShared(checkNotNull(transport), SyncplayEndpoint(connection.host, connection.port, connection.room, ticket.identity.syncplayUsername),
                     SharedMedia("loaded-" + UUID.randomUUID(), remote.title, checkNotNull(local.durationMs), local.fileSizeBytes),
-                    runtime.revision, requireDeclaredIdentity = true, authority = ::authorized)
+                    runtime.revision, requireDeclaredIdentity = true, authority = ::authorized,
+                    admissionProvider = if (room.accountAuthority == null) null else suspend {
+                        transportAdmission(ticket, current, local)
+                    })
                 transport = null
             } finally { withContext(NonCancellable + Dispatchers.IO) { transport?.close() } }
             val readyDeadline = System.nanoTime() + 20_000_000_000L
@@ -179,14 +184,17 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                 delay(100)
             }
         } catch (_: CancellationException) {
-        } catch (error: RoomProtocolException) {
-            if (error.code == "staleGeneration") follow = true
-            else { errorKey = failureKey(error, owned?.sharedState?.identityRejected == true); status = checkNotNull(errorKey) }
         } catch (error: Exception) {
-            val key = failureKey(error, owned?.sharedState?.identityRejected == true)
-            // Fixed vocabulary only; exception text can contain private local or room data.
-            System.err.println("syncwatch.shared-watch failure stage=$stage key=$key")
-            errorKey = key; status = key
+            // Native and helper adapters can report transport errors after cancellation.
+            if (!closing && currentCoroutineContext().isActive) {
+                if (error is RoomProtocolException && error.code == "staleGeneration") follow = true
+                else {
+                    val key = failureKey(error, owned?.sharedState?.identityRejected == true)
+                    // Fixed vocabulary only; exception text can contain private local or room data.
+                    System.err.println("syncwatch.shared-watch failure stage=$stage key=$key")
+                    errorKey = key; status = key
+                }
+            }
         }
         finally {
             withContext(NonCancellable) {
@@ -230,7 +238,11 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                     delay(100)
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { watch.end(); errorKey = failureKey(error, false); status = checkNotNull(errorKey) }
+            catch (error: Exception) {
+                if (!closing && currentCoroutineContext().isActive) {
+                    watch.end(); errorKey = failureKey(error, false); status = checkNotNull(errorKey)
+                }
+            }
         }
         return null
     }
@@ -299,11 +311,50 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
         }
         watch.end(); status = ""
     }
+    private var accountBinding = 0L
+    private val accountBindingLock = Mutex()
+    suspend fun bindAccount(authority: RoomAccountAuthority?, name: String) {
+        if (closing) return
+        val revision = ++accountBinding
+        // Compose may cancel the caller when its account key changes. Finish owned revocation first.
+        withContext(NonCancellable) {
+            accountBindingLock.withLock {
+                if (closing || accountBinding != revision) return@withLock
+                if (room.accountAuthority !== authority && room.hasRoomScope) leave()
+                if (!closing && accountBinding == revision) room.bindAccount(authority, name)
+            }
+        }
+    }
     suspend fun leave() {
         stop(); room.close(); watch.player?.revokeShared(releaseAdmission = true)
         status = ""; seenMembership = false
     }
-    suspend fun close() = withContext(NonCancellable) { closing = true; stop() }
+    suspend fun close() = withContext(NonCancellable) {
+        closing = true; accountBinding++
+        accountBindingLock.withLock { stop() }
+    }
+    private fun canAdmitTransport(): Boolean {
+        val current = active ?: return false; val latest = room.watchBootstrap ?: return false
+        return authorized() && (room.isCurrent(current.membership) || admitted && room.canRenewWatchAdmission(current.membership)) && latest.snapshot.epoch == current.context.bootstrap.snapshot.epoch &&
+            latest.snapshot.watchGeneration == current.context.bootstrap.snapshot.watchGeneration && latest.snapshot.watchStatus == "active" &&
+            latest.snapshot.mediaId == current.context.bootstrap.snapshot.mediaId
+    }
+    private suspend fun transportAdmission(membership: RoomWatchMembership, expected: RoomWatchContext, local: MediaDescriptor): SyncplayAdmission {
+        // The helper bounds retries. Only an established scope may outlive the event transport.
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            check(canAdmitTransport()) { "watch-revoked" }
+            try {
+                val ticket = room.syncAdmission(membership, expected) { fresh -> requireSameGeneration(expected, fresh); requireMatch(local, fresh) }
+                check(canAdmitTransport()) { "watch-revoked" }
+                return SyncplayAdmission(ticket.admissionCredential(), membership.identity.clientRunId)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                if (!admitted || !authorized() || room.editor.state != "reconnecting" || !RoomController.isMetadataInterruption(error)) throw error
+                delay(100)
+            }
+        }
+    }
     companion object {
         fun completedPlaylistAvailable(expected: RoomSnapshot, latest: RoomSnapshot): Boolean {
             if (expected.epoch != latest.epoch || expected.watchStatus != "active" || expected.mediaId == null || expected.mediaId != latest.mediaId) return false

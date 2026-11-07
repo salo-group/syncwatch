@@ -54,6 +54,8 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
     private string roomNotice = "";
     private int? skipSeconds;
     private Action? openPlayerSettings;
+    private Action? openCall;
+    internal void ConfigureCall(Action open) { openCall = open; RenderChrome(); }
     internal void ConfigurePlayerSettings(int seconds, Action open)
     {
         skipSeconds = seconds; openPlayerSettings = open; RenderChrome();
@@ -65,6 +67,8 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         if (skipSeconds is int seconds) configured = configured with { SkipSeconds = seconds };
         if (!closing && openPlayerSettings is not null)
             configured = configured with { EnabledActions = configured.EnabledActions.Append("openPlayerSettings").ToHashSet() };
+        if (!closing && openCall is not null)
+            configured = configured with { EnabledActions = configured.EnabledActions.Append("openCall").ToHashSet() };
         chrome.Render(configured, language);
     }
     private void RefreshPlaylist() { onPlaylistUpdate?.Invoke(playlist); presentation = playlist.Presentation(presentation); }
@@ -128,7 +132,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         sharedMediaPreparation = new(); requiresSharedAdmission = !releaseAdmission;
     }
     // Transfer only after the room coordinator admits the selected local media.
-    internal async Task ConnectSharedAsync(IHelperTransport transport, SyncplayEndpoint endpoint, SharedMedia media, string revision, bool requireDeclaredIdentity = false, Func<bool>? authority = null)
+    internal async Task ConnectSharedAsync(IHelperTransport transport, SyncplayEndpoint endpoint, SharedMedia media, string revision, bool requireDeclaredIdentity = false, Func<bool>? authority = null, Func<CancellationToken, Task<SyncplayAdmission>>? admissionProvider = null)
     {
         try
         {
@@ -137,7 +141,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
             await sharedMediaPreparation.ValidateAsync(player, scope);
             if (closing || !attached || sharedSession is not null || authority?.Invoke() == false) throw new InvalidOperationException("Shared playback unavailable");
             var session = new HelperSession(transport, player, scope, endpoint, media, revision, state =>
-            { if (state.Connection == HelperConnection.Reconnecting) checkpoint.Interrupt(); SharedState = state; GateSharedActions(); RenderChrome(); }, requiresSharedAdmission || requireDeclaredIdentity);
+            { if (state.Connection == HelperConnection.Reconnecting) checkpoint.Interrupt(); SharedState = state; GateSharedActions(); RenderChrome(); }, requiresSharedAdmission || requireDeclaredIdentity, admissionProvider: admissionProvider);
             sharedSession = session; SharedState = session.State; GateSharedActions(); RenderChrome();
             session.Start();
         }
@@ -276,6 +280,7 @@ internal sealed class PlaybackWorkspace : UserControl, IAsyncDisposable
         if (closing || cancellation.IsCancellationRequested) return;
         GateSharedActions(); RefreshPlaylist();
         if (action == "openPlayerSettings" && openPlayerSettings is not null) { DismissMenu(); openPlayerSettings(); return; }
+        if (action == "openCall" && openCall is not null) { DismissMenu(); openCall(); return; }
         if (!presentation.EnabledActions.Contains(action)) return;
         if (action is "restoreSharedPosition" or "dismissSharedPosition")
         {

@@ -162,7 +162,7 @@ class Registry:
                 self.check_playback(value["payload"])
             elif value["type"] == "bridge.hello":
                 reject(any(type(version) is not int for version in value["payload"]["supportedVersions"]), "malformed")
-            events = {"player.state", "sync.connection", "sync.participants", "sync.readiness", "sync.identity"}
+            events = {"player.state", "sync.connection", "sync.participants", "sync.readiness", "sync.identity", "sync.admissionRequired"}
             if value["type"] not in events:
                 command = value.get("replyTo", value.get("id"))
                 reject(int(command[4:]) > 9007199254740991, "malformed")

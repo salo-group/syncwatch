@@ -467,6 +467,46 @@ object SyncWatchCopy {
         "en" to "accountSignInRequired" -> "Saved sign-in expired or was revoked. Sign in again."
         "en" to "accountMemoryWithSaved" -> "This sign-in stays in memory. Any previous saved sign-in remains unchanged."
         "en" to "accountUnavailable" -> "The account service is unavailable. Retrying…"
+        "en" to "roomAccountRequired" -> "Sign in with Google to create a room or request admission. Local playback remains available without signing in."
+        "en" to "roomAdmissionPending" -> "Waiting for the room owner to approve your request."
+        "en" to "roomAdmissionDenied" -> "The owner declined this request. Ask for a new invitation to try again."
+        "en" to "roomAdmissionExpired" -> "This request expired or the room closed. Ask for a new invitation."
+        "en" to "roomRequestUnavailable" -> "The request could not complete. Check your account and connection, or ask the owner for a new invitation."
+        "en" to "roomApprovalRequests" -> "Admission requests"
+        "en" to "approveRoomAdmission" -> "Approve"
+        "en" to "denyRoomAdmission" -> "Deny"
+        "en" to "roomPendingUnavailable" -> "Requests could not be refreshed. Approval is paused until the connection returns."
+        "en" to "roomAdmissionChanged" -> "This request changed or expired. The list is being refreshed."
+        "en" to "roomCancelRequest" -> "Cancel request"
+        "en" to "meetTitle" -> "Google Meet"
+        "en" to "meetExternalOwnership" -> "Meet opens in its own browser or app window. Choose devices and join there. Leaving SyncWatch does not stop that window’s microphone or camera."
+        "en" to "meetAuthorize" -> "Allow SyncWatch to create calls"
+        "en" to "meetConfirm" -> "Allow calls for this account"
+        "en" to "meetCancelAuthorization" -> "Cancel permission request"
+        "en" to "meetRoomRequired" -> "Join a room to use its call."
+        "en" to "meetIdle" -> "No call in this room yet."
+        "en" to "meetWorking" -> "Connecting to Google Meet…"
+        "en" to "meetAuthorizing" -> "Finish the permission request in your browser."
+        "en" to "meetBrowserCode" -> "Enter the SyncWatch confirmation code shown in your browser."
+        "en" to "meetPermissionConfirmation" -> "Check the account before allowing SyncWatch to create calls."
+        "en" to "meetReady" -> "The room’s call is ready. Join in Meet."
+        "en" to "meetHandedOff" -> "Meet was opened. Choose your devices and join there."
+        "en" to "meetUnavailable" -> "The call is unavailable. Your movie can continue."
+        "en" to "meetUnknown" -> "Google’s result could not be confirmed. The request will not be repeated automatically."
+        "en" to "meetEnded" -> "Meet confirmed the end request. Check the Meet window for local audio and camera."
+        "en" to "meetFailed" -> "The call action failed. You can keep watching."
+        "en" to "meetEndForEveryone" -> "End call for everyone"
+        "en" to "meetStart" -> "Start room call"
+        "en" to "meetOpen" -> "Open in Google Meet"
+        "en" to "meetRetry" -> "Check again"
+        "en" to "meetInvalidConfirmation" -> "The code could not be verified. Check it or cancel the permission request."
+        "en" to "meetAccountMismatch" -> "Use the Google account already signed in to SyncWatch."
+        "en" to "meetPermissionUnavailable" -> "Google did not grant permission to create calls. You can keep watching."
+        "en" to "meetPermissionExpired" -> "The permission request expired. Allow calls again to start a new request. You can keep watching."
+        "en" to "meetBrowserUnavailable" -> "Could not open your browser. Check the default browser setting and try again."
+        "en" to "meetEndConfirmation" -> "End this room’s call for everyone?"
+        "en" to "meetKeepCall" -> "Keep call"
+        "en" to "meetEndConsequences" -> "Meet will end the active conference for everyone. The movie can continue."
         "ru" to "brand" -> "SyncWatch"
         "ru" to "room" -> "Смотрим вместе"
         "ru" to "library" -> "Библиотека фильмов"
@@ -741,6 +781,46 @@ object SyncWatchCopy {
         "ru" to "accountSignInRequired" -> "Сохранённый вход истёк или отозван. Войдите снова."
         "ru" to "accountMemoryWithSaved" -> "Этот вход хранится в памяти. Прежний сохранённый вход остаётся без изменений."
         "ru" to "accountUnavailable" -> "Сервис аккаунтов недоступен. Повторяем попытку…"
+        "ru" to "roomAccountRequired" -> "Войдите через Google, чтобы создать комнату или запросить допуск. Локальный просмотр доступен без входа."
+        "ru" to "roomAdmissionPending" -> "Ожидание одобрения владельца комнаты."
+        "ru" to "roomAdmissionDenied" -> "Владелец отклонил запрос. Для повторной попытки попросите новое приглашение."
+        "ru" to "roomAdmissionExpired" -> "Срок запроса истёк или комната закрыта. Попросите новое приглашение."
+        "ru" to "roomRequestUnavailable" -> "Не удалось завершить запрос. Проверьте аккаунт и соединение или попросите владельца выдать новое приглашение."
+        "ru" to "roomApprovalRequests" -> "Запросы на допуск"
+        "ru" to "approveRoomAdmission" -> "Разрешить"
+        "ru" to "denyRoomAdmission" -> "Отказать"
+        "ru" to "roomPendingUnavailable" -> "Не удалось обновить запросы. Одобрение приостановлено до восстановления связи."
+        "ru" to "roomAdmissionChanged" -> "Запрос изменился или истёк. Список обновляется."
+        "ru" to "roomCancelRequest" -> "Отменить запрос"
+        "ru" to "meetTitle" -> "Google Meet"
+        "ru" to "meetExternalOwnership" -> "Meet откроется в отдельном окне браузера или приложения. Выберите устройства и войдите там. Выход из SyncWatch не выключает микрофон или камеру в этом окне."
+        "ru" to "meetAuthorize" -> "Разрешить SyncWatch создавать звонки"
+        "ru" to "meetConfirm" -> "Разрешить звонки для этого аккаунта"
+        "ru" to "meetCancelAuthorization" -> "Отменить запрос разрешения"
+        "ru" to "meetRoomRequired" -> "Войдите в комнату, чтобы использовать её звонок."
+        "ru" to "meetIdle" -> "В этой комнате пока нет звонка."
+        "ru" to "meetWorking" -> "Подключение к Google Meet…"
+        "ru" to "meetAuthorizing" -> "Завершите запрос разрешения в браузере."
+        "ru" to "meetBrowserCode" -> "Введите код подтверждения SyncWatch из браузера."
+        "ru" to "meetPermissionConfirmation" -> "Проверьте аккаунт перед разрешением создавать звонки."
+        "ru" to "meetReady" -> "Звонок комнаты готов. Войдите в Meet."
+        "ru" to "meetHandedOff" -> "Meet открыт. Выберите устройства и войдите там."
+        "ru" to "meetUnavailable" -> "Звонок недоступен. Просмотр фильма можно продолжить."
+        "ru" to "meetUnknown" -> "Не удалось подтвердить результат Google. Запрос не будет повторён автоматически."
+        "ru" to "meetEnded" -> "Meet подтвердил запрос завершения. Проверьте звук и камеру в окне Meet."
+        "ru" to "meetFailed" -> "Действие со звонком не выполнено. Просмотр можно продолжить."
+        "ru" to "meetEndForEveryone" -> "Завершить звонок для всех"
+        "ru" to "meetStart" -> "Начать звонок комнаты"
+        "ru" to "meetOpen" -> "Открыть в Google Meet"
+        "ru" to "meetRetry" -> "Проверить снова"
+        "ru" to "meetInvalidConfirmation" -> "Не удалось проверить код. Проверьте его или отмените запрос разрешения."
+        "ru" to "meetAccountMismatch" -> "Используйте аккаунт Google, с которым вы вошли в SyncWatch."
+        "ru" to "meetPermissionUnavailable" -> "Google не предоставил разрешение создавать звонки. Просмотр можно продолжить."
+        "ru" to "meetPermissionExpired" -> "Запрос разрешения истёк. Снова разрешите звонки, чтобы начать новый запрос. Просмотр можно продолжить."
+        "ru" to "meetBrowserUnavailable" -> "Не удалось открыть браузер. Проверьте браузер по умолчанию и повторите попытку."
+        "ru" to "meetEndConfirmation" -> "Завершить звонок этой комнаты для всех?"
+        "ru" to "meetKeepCall" -> "Оставить звонок"
+        "ru" to "meetEndConsequences" -> "Meet завершит активную конференцию для всех. Просмотр фильма можно продолжить."
         else -> if (language != "en") text(key, "en") else key
     }
     val galleryStates = listOf("empty", "scanning", "selected", "missingMedia", "reconnecting")
@@ -787,7 +867,18 @@ data class SyncWatchRoomFormField(val id: String, val section: String, val kind:
 
 object SyncWatchRoomForm {
     val sections = listOf("connection", "createRoom", "joinRoom")
-    val states = listOf("disconnected", "connecting", "connected", "failed")
+    val states = listOf("disconnected", "connecting", "connected", "failed", "reconnecting", "awaitingApproval")
+    const val defaultFlow = "account"
+    val flows = mapOf(
+        "legacy" to listOf("serviceAddress", "username", "creationKey", "syncplayHost", "syncplayPort", "roomName", "roomID", "invitation"),
+        "account" to listOf("roomID", "invitation"),
+    )
+    val signInFlows = listOf("account")
+    val statusCopy = mapOf(
+        "connecting" to "roomConnecting",
+        "reconnecting" to "reconnecting",
+        "awaitingApproval" to "roomAdmissionPending",
+    )
     val defaults = mapOf(
         "serviceAddress" to "",
         "username" to "",
@@ -955,7 +1046,7 @@ object SyncWatchSelectionMenu {
 }
 
 object SyncWatchLayouts {
-    const val sourceDigest = "707cb5c1d1654f6e6ce40dc722e0fd9d5e491446a79dfc7b0404f6bc3510a2e1"
+    const val sourceDigest = "d2a04f439b8a5ed83b9bc23da51ab977907383bf32605cd4cb2cea72d090b4e2"
     const val coordinateSize = 20.0f
     fun themeColor(role: String, theme: SyncWatchTheme): Long? = when (role) {
         "background" -> theme.background
@@ -1168,6 +1259,7 @@ object SyncWatchLayouts {
         "Application" to makeApplication(),
         "Room" to makeRoom(),
         "Account" to makeAccount(),
+        "Meet" to makeMeet(),
     )
     private fun makeLibrary(): DesignNode {
         val node62 = DesignNode("node62", "icon", mapOf(
@@ -5581,6 +5673,84 @@ object SyncWatchLayouts {
             "align" to "leading",
             "text" to "~roomConnectionHint",
         ), listOf())
+        val roomAccountRequiredText = DesignNode("roomAccountRequiredText", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~roomAccountRequired",
+        ), listOf())
+        val roomAccountSignInLabel = DesignNode("roomAccountSignInLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountSignIn",
+        ), listOf())
+        val roomAccountSignIn = DesignNode("roomAccountSignIn", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "openAccount",
+            "automation" to "{namespace}.openAccount",
+            "enabled" to "\$can.openAccount",
+            "label" to "~accountSignIn",
+        ), listOf(roomAccountSignInLabel))
+        val roomAccountRequired = DesignNode("roomAccountRequired", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "when" to "\$needsAccount",
+            "gap" to "@control.compactGap",
+        ), listOf(roomAccountRequiredText, roomAccountSignIn))
+        val roomAccountName = DesignNode("roomAccountName", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{~openAccount}: {accountName}",
+        ), listOf())
+        val roomAccountService = DesignNode("roomAccountService", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{~roomService}: {accountService}",
+        ), listOf())
+        val roomAccountIdentity = DesignNode("roomAccountIdentity", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "when" to "\$showAccountIdentity",
+            "gap" to "@control.compactGap",
+        ), listOf(roomAccountName, roomAccountService))
         val roomCreateModeLabel = DesignNode("roomCreateModeLabel", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5745,6 +5915,143 @@ object SyncWatchLayouts {
             "when" to "\$connected",
             "gap" to "@control.compactGap",
         ), listOf(roomConnectedLabel, roomIdFact, roomMembersFact))
+        val roomPendingHeading = DesignNode("roomPendingHeading", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~roomApprovalRequests",
+        ), listOf())
+        val roomPendingName = DesignNode("roomPendingName", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{name}",
+        ), listOf())
+        val roomPendingEmail = DesignNode("roomPendingEmail", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{email}",
+        ), listOf())
+        val roomPendingPerson = DesignNode("roomPendingPerson", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "width" to "fill",
+            "gap" to "@control.compactGap",
+        ), listOf(roomPendingName, roomPendingEmail))
+        val roomApproveAdmissionLabel = DesignNode("roomApproveAdmissionLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~approveRoomAdmission",
+        ), listOf())
+        val roomApproveAdmission = DesignNode("roomApproveAdmission", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "approveRoomAdmission",
+            "automation" to "{namespace}.approveRoomAdmission.{requestID}",
+            "enabled" to "\$can.decide",
+            "label" to "{~approveRoomAdmission}: {name}",
+            "payload" to "\$requestID",
+        ), listOf(roomApproveAdmissionLabel))
+        val roomDenyAdmissionLabel = DesignNode("roomDenyAdmissionLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~denyRoomAdmission",
+        ), listOf())
+        val roomDenyAdmission = DesignNode("roomDenyAdmission", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "denyRoomAdmission",
+            "automation" to "{namespace}.denyRoomAdmission.{requestID}",
+            "enabled" to "\$can.decide",
+            "label" to "{~denyRoomAdmission}: {name}",
+            "payload" to "\$requestID",
+        ), listOf(roomDenyAdmissionLabel))
+        val roomPendingRow = DesignNode("roomPendingRow", "row", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "gap" to "@control.compactGap",
+            "paddingY" to "@control.compactGap",
+        ), listOf(roomPendingPerson, roomApproveAdmission, roomDenyAdmission))
+        val roomPendingRows = DesignNode("roomPendingRows", "repeat", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "items" to "pendingRequests",
+        ), listOf(roomPendingRow))
+        val roomPendingStatus = DesignNode("roomPendingStatus", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~{pendingStatus}",
+        ), listOf())
+        val roomPendingRequests = DesignNode("roomPendingRequests", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "when" to "\$showPendingRequests",
+            "gap" to "@control.compactGap",
+        ), listOf(roomPendingHeading, roomPendingRows, roomPendingStatus))
         val roomStatus = DesignNode("roomStatus", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5763,7 +6070,7 @@ object SyncWatchLayouts {
             "align" to "leading",
             "padding" to "@layout.settingsCardPadding",
             "gap" to "@layout.settingsCardPadding",
-        ), listOf(roomHint, roomModeSelector, roomFields, roomConnectedFacts, roomStatus))
+        ), listOf(roomHint, roomAccountRequired, roomAccountIdentity, roomModeSelector, roomFields, roomConnectedFacts, roomPendingRequests, roomStatus))
         val roomBody = DesignNode("roomBody", "scroll", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5881,6 +6188,38 @@ object SyncWatchLayouts {
             "label" to "~leaveRoom",
             "when" to "\$can.leaveRoom",
         ), listOf(roomLeaveLabel))
+        val roomCancelAdmissionLabel = DesignNode("roomCancelAdmissionLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~roomCancelRequest",
+        ), listOf())
+        val roomCancelAdmission = DesignNode("roomCancelAdmission", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "leaveRoom",
+            "automation" to "{namespace}.leaveRoom",
+            "enabled" to "\$can.cancelRequest",
+            "label" to "~roomCancelRequest",
+            "when" to "\$can.cancelRequest",
+        ), listOf(roomCancelAdmissionLabel))
         val roomConnectLabel = DesignNode("roomConnectLabel", "text", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -5922,7 +6261,7 @@ object SyncWatchLayouts {
             "focusWidth" to "@control.borderWidth",
             "padding" to "@layout.settingsCardPadding",
             "gap" to "@control.compactGap",
-        ), listOf(roomFooterSpace, roomPaste, roomCopy, roomLeave, roomConnect))
+        ), listOf(roomFooterSpace, roomPaste, roomCopy, roomLeave, roomCancelAdmission, roomConnect))
         val roomDialog = DesignNode("roomDialog", "column", mapOf(
             "disabledOpacity" to "0.4",
             "pressedOpacity" to "0.75",
@@ -6446,5 +6785,596 @@ object SyncWatchLayouts {
             "cycleFocus" to "true",
         ), listOf(accountHeader, accountScroll, accountActions))
         return accountDialog
+    }
+    private fun makeMeet(): DesignNode {
+        val meetTitle = DesignNode("meetTitle", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "fontSize" to "@type.settingsTitleSize",
+            "weight" to "bold",
+            "text" to "~meetTitle",
+            "width" to "fill",
+        ), listOf())
+        val meetLabelclose = DesignNode("meetLabelclose", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~close",
+        ), listOf())
+        val meetButtonclose = DesignNode("meetButtonclose", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "close",
+            "enabled" to "\$can.close",
+            "automation" to "meet.close",
+            "label" to "~close",
+        ), listOf(meetLabelclose))
+        val meetHeader = DesignNode("meetHeader", "row", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "padding" to "@layout.settingsCardPadding",
+            "gap" to "@control.compactGap",
+        ), listOf(meetTitle, meetButtonclose))
+        val meetStatus = DesignNode("meetStatus", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~{status}",
+        ), listOf())
+        val meetOwnership = DesignNode("meetOwnership", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetExternalOwnership",
+        ), listOf())
+        val meetEndConsequences = DesignNode("meetEndConsequences", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetEndConsequences",
+            "when" to "\$can.meetConfirmEnd",
+        ), listOf())
+        val meetLabelmeetOpenAuthorization = DesignNode("meetLabelmeetOpenAuthorization", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountOpenBrowser",
+        ), listOf())
+        val meetButtonmeetOpenAuthorization = DesignNode("meetButtonmeetOpenAuthorization", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetOpenAuthorization",
+            "enabled" to "\$can.meetOpenAuthorization",
+            "automation" to "meet.meetOpenAuthorization",
+            "label" to "~accountOpenBrowser",
+            "when" to "\$can.meetOpenAuthorization",
+        ), listOf(meetLabelmeetOpenAuthorization))
+        val meetPendingState = DesignNode("meetPendingState", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "case" to "pending",
+        ), listOf(meetButtonmeetOpenAuthorization))
+        val meetProofLabel = DesignNode("meetProofLabel", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountBrowserProof",
+        ), listOf())
+        val meetProofInput = DesignNode("meetProofInput", "input", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accent",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "placeholderFill" to "theme.textSecondary",
+            "height" to "@control.fieldHeight",
+            "paddingX" to "@layout.panelPadding",
+            "radius" to "@control.fieldRadius",
+            "background" to "theme.inputFill",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "value" to "\$browserProof",
+            "action" to "editMeetBrowserProof",
+            "enabled" to "\$can.editMeetBrowserProof",
+            "automation" to "meet.browserProof",
+            "label" to "~accountBrowserProof",
+        ), listOf())
+        val meetLabelmeetVerify = DesignNode("meetLabelmeetVerify", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~accountVerifyBrowserProof",
+        ), listOf())
+        val meetButtonmeetVerify = DesignNode("meetButtonmeetVerify", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetVerify",
+            "enabled" to "\$can.meetVerify",
+            "automation" to "meet.meetVerify",
+            "label" to "~accountVerifyBrowserProof",
+            "when" to "\$can.meetVerify",
+        ), listOf(meetLabelmeetVerify))
+        val meetProofState = DesignNode("meetProofState", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "case" to "browserConfirmationRequired",
+            "gap" to "@control.compactGap",
+        ), listOf(meetProofLabel, meetProofInput, meetButtonmeetVerify))
+        val meetAccountName = DesignNode("meetAccountName", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{name}",
+        ), listOf())
+        val meetAccountEmail = DesignNode("meetAccountEmail", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "{email}",
+        ), listOf())
+        val meetLabelmeetConfirm = DesignNode("meetLabelmeetConfirm", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetConfirm",
+        ), listOf())
+        val meetButtonmeetConfirm = DesignNode("meetButtonmeetConfirm", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetConfirm",
+            "enabled" to "\$can.meetConfirm",
+            "automation" to "meet.meetConfirm",
+            "label" to "~meetConfirm",
+            "when" to "\$can.meetConfirm",
+        ), listOf(meetLabelmeetConfirm))
+        val meetConfirmState = DesignNode("meetConfirmState", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "case" to "confirmAuthorization",
+            "gap" to "@control.compactGap",
+        ), listOf(meetAccountName, meetAccountEmail, meetButtonmeetConfirm))
+        val meetAuthorization = DesignNode("meetAuthorization", "switch", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "value" to "\$authorizationState",
+        ), listOf(meetPendingState, meetProofState, meetConfirmState))
+        val meetLabelopenRoom = DesignNode("meetLabelopenRoom", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~openRoom",
+        ), listOf())
+        val meetButtonopenRoom = DesignNode("meetButtonopenRoom", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "openRoom",
+            "enabled" to "\$can.openRoom",
+            "automation" to "meet.openRoom",
+            "label" to "~openRoom",
+            "when" to "\$can.openRoom",
+        ), listOf(meetLabelopenRoom))
+        val meetLabelmeetAuthorize = DesignNode("meetLabelmeetAuthorize", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetAuthorize",
+        ), listOf())
+        val meetButtonmeetAuthorize = DesignNode("meetButtonmeetAuthorize", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetAuthorize",
+            "enabled" to "\$can.meetAuthorize",
+            "automation" to "meet.meetAuthorize",
+            "label" to "~meetAuthorize",
+            "when" to "\$can.meetAuthorize",
+        ), listOf(meetLabelmeetAuthorize))
+        val meetLabelmeetCancelAuthorization = DesignNode("meetLabelmeetCancelAuthorization", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetCancelAuthorization",
+        ), listOf())
+        val meetButtonmeetCancelAuthorization = DesignNode("meetButtonmeetCancelAuthorization", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetCancelAuthorization",
+            "enabled" to "\$can.meetCancelAuthorization",
+            "automation" to "meet.meetCancelAuthorization",
+            "label" to "~meetCancelAuthorization",
+            "when" to "\$can.meetCancelAuthorization",
+        ), listOf(meetLabelmeetCancelAuthorization))
+        val meetLabelmeetStart = DesignNode("meetLabelmeetStart", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetStart",
+        ), listOf())
+        val meetButtonmeetStart = DesignNode("meetButtonmeetStart", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetStart",
+            "enabled" to "\$can.meetStart",
+            "automation" to "meet.meetStart",
+            "label" to "~meetStart",
+            "when" to "\$can.meetStart",
+        ), listOf(meetLabelmeetStart))
+        val meetLabelmeetOpen = DesignNode("meetLabelmeetOpen", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetOpen",
+        ), listOf())
+        val meetButtonmeetOpen = DesignNode("meetButtonmeetOpen", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetOpen",
+            "enabled" to "\$can.meetOpen",
+            "automation" to "meet.meetOpen",
+            "label" to "~meetOpen",
+            "when" to "\$can.meetOpen",
+        ), listOf(meetLabelmeetOpen))
+        val meetLabelmeetEnd = DesignNode("meetLabelmeetEnd", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetEndForEveryone",
+        ), listOf())
+        val meetButtonmeetEnd = DesignNode("meetButtonmeetEnd", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetEnd",
+            "enabled" to "\$can.meetEnd",
+            "automation" to "meet.meetEnd",
+            "label" to "~meetEndForEveryone",
+            "when" to "\$can.meetEnd",
+        ), listOf(meetLabelmeetEnd))
+        val meetLabelmeetRetry = DesignNode("meetLabelmeetRetry", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetRetry",
+        ), listOf())
+        val meetButtonmeetRetry = DesignNode("meetButtonmeetRetry", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetRetry",
+            "enabled" to "\$can.meetRetry",
+            "automation" to "meet.meetRetry",
+            "label" to "~meetRetry",
+            "when" to "\$can.meetRetry",
+        ), listOf(meetLabelmeetRetry))
+        val meetLabelmeetCancelEnd = DesignNode("meetLabelmeetCancelEnd", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetKeepCall",
+        ), listOf())
+        val meetButtonmeetCancelEnd = DesignNode("meetButtonmeetCancelEnd", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetCancelEnd",
+            "enabled" to "\$can.meetCancelEnd",
+            "when" to "\$can.meetCancelEnd",
+            "automation" to "meet.meetCancelEnd",
+            "label" to "~meetKeepCall",
+        ), listOf(meetLabelmeetCancelEnd))
+        val meetLabelmeetConfirmEnd = DesignNode("meetLabelmeetConfirmEnd", "text", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "text" to "~meetEndForEveryone",
+        ), listOf())
+        val meetButtonmeetConfirmEnd = DesignNode("meetButtonmeetConfirmEnd", "button", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "paddingX" to "@layout.settingsCardPadding",
+            "minHeight" to "0",
+            "radius" to "@control.buttonRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "background" to "theme.surfaceRaised",
+            "foreground" to "theme.text",
+            "fontSize" to "@type.settingsBodySize",
+            "weight" to "normal",
+            "contentAlign" to "center",
+            "height" to "@layout.settingsControlHeight",
+            "action" to "meetConfirmEnd",
+            "enabled" to "\$can.meetConfirmEnd",
+            "when" to "\$can.meetConfirmEnd",
+            "automation" to "meet.meetConfirmEnd",
+            "label" to "~meetEndForEveryone",
+        ), listOf(meetLabelmeetConfirmEnd))
+        val meetBody = DesignNode("meetBody", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "gap" to "@layout.settingsCardPadding",
+            "padding" to "@layout.settingsCardPadding",
+        ), listOf(meetStatus, meetOwnership, meetEndConsequences, meetAuthorization, meetButtonopenRoom, meetButtonmeetAuthorize, meetButtonmeetCancelAuthorization, meetButtonmeetStart, meetButtonmeetOpen, meetButtonmeetEnd, meetButtonmeetRetry, meetButtonmeetCancelEnd, meetButtonmeetConfirmEnd))
+        val meetScroll = DesignNode("meetScroll", "scroll", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "barWidth" to "@control.compactGap",
+            "thumbMinimum" to "@control.iconSize",
+            "thumbRadius" to "@control.buttonRadius",
+            "thumbFill" to "theme.border",
+            "height" to "fill",
+            "minHeight" to "0",
+        ), listOf(meetBody))
+        val meetDialog = DesignNode("meetDialog", "column", mapOf(
+            "disabledOpacity" to "0.4",
+            "pressedOpacity" to "0.75",
+            "focusBorder" to "theme.accentSoft",
+            "hoverBorder" to "theme.accent",
+            "focusWidth" to "@control.borderWidth",
+            "align" to "leading",
+            "width" to "@layout.settingsWidth",
+            "height" to "@layout.settingsHeight",
+            "fontSize" to "@type.settingsBodySize",
+            "foreground" to "theme.text",
+            "background" to "theme.surface",
+            "radius" to "@control.compactDialogRadius",
+            "border" to "theme.border",
+            "borderWidth" to "@control.borderWidth",
+            "clip" to "true",
+            "cycleFocus" to "true",
+        ), listOf(meetHeader, meetScroll))
+        return meetDialog
     }
 }

@@ -70,6 +70,7 @@ Example acknowledgement:
 |---|---|
 | `bridge.hello / ready` | Negotiate IPC version, upstream revision, process run ID, and capabilities before accepting commands |
 | `sync.connect / disconnect / setReady` | Manage Syncplay connection and readiness |
+| `sync.admissionRequired / admit` | Obtain one native-owned ticket per verified TLS transport; nonce-bound IPC, no account credentials |
 | `player.loaded` | Authorize an opaque local handle and its filename/duration/size metadata |
 | `player.state` | Report actual time, pause, rate, duration, seekability, and loaded generation |
 | `player.setPaused / setPosition / setSpeed / openFile` | Execute BridgePlayer actions in the native adapter |
