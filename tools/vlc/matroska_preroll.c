@@ -5,8 +5,61 @@
 
 /* Bounded optional preroll: malformed/incomplete cues leave normal seeking intact. */
 #define SW_CUE_BLOCK_LIMIT (256 * 1024)
-#define SW_CUE_BYTE_LIMIT (4 * 1024 * 1024)
-#define SW_CUE_COUNT_LIMIT 64
+#include "libavutil/buffer_internal.h"
+
+_Static_assert(sizeof(PacketListEntry) + sizeof(AVBuffer) + sizeof(AVBufferRef) <=
+               SW_CUE_PACKET_OVERHEAD, "Review the pinned packet storage budget");
+
+static int sw_cue_block_budget(MatroskaTrack *track, const AVBufferRef *buf, int laces,
+                               const MatroskaBlockMore *more, int count, int64_t discard_padding)
+{
+    if (track->sw_preroll_remaining <= 0 || laces <= 0 || laces > 256 || count < 0)
+        return 0;
+    uint64_t per_packet = SW_CUE_PACKET_OVERHEAD;
+    if (!track->needs_decoding)
+        per_packet += buf->size;
+    if (track->stream->codecpar->codec_id == AV_CODEC_ID_WEBVTT) {
+        /* Identifier/settings split the input; each side buffer also has padding. */
+        per_packet += 2 * (sizeof(AVPacketSideData) + AV_INPUT_BUFFER_PADDING_SIZE);
+    } else {
+        for (int i = 0; i < count; i++) {
+            if (more[i].additional.size < 0)
+                return 0;
+            if (more[i].additional.size) {
+                const uint64_t side = FFMAX((uint64_t)more[i].additional.size + 8,
+                                            sizeof(AVDynamicHDRPlus));
+                per_packet += side + sizeof(AVPacketSideData) + AV_INPUT_BUFFER_PADDING_SIZE;
+            }
+        }
+        if (discard_padding)
+            per_packet += 10 + sizeof(AVPacketSideData) + AV_INPUT_BUFFER_PADDING_SIZE;
+    }
+    if (per_packet > (uint64_t)track->sw_preroll_remaining / laces)
+        return 0;
+    track->sw_preroll_remaining -= per_packet * laces;
+    if (!track->sw_preroll_remaining)
+        track->sw_preroll_remaining = -1;
+    return 1;
+}
+
+static int sw_cue_packet_bytes(const AVPacket *packet, uint64_t available, uint64_t *bytes)
+{
+    if (packet->size < 0 || packet->side_data_elems < 0)
+        return 0;
+    uint64_t size = SW_CUE_PACKET_OVERHEAD + (packet->buf ? packet->buf->size : (uint64_t)packet->size);
+    if (size > available || (uint64_t)packet->side_data_elems >
+        (available - size) / sizeof(*packet->side_data))
+        return 0;
+    size += (uint64_t)packet->side_data_elems * sizeof(*packet->side_data);
+    for (int i = 0; i < packet->side_data_elems; i++) {
+        if (available - size < AV_INPUT_BUFFER_PADDING_SIZE ||
+            packet->side_data[i].size > available - size - AV_INPUT_BUFFER_PADDING_SIZE)
+            return 0;
+        size += packet->side_data[i].size + AV_INPUT_BUFFER_PADDING_SIZE;
+    }
+    *bytes = size;
+    return 1;
+}
 
 static int sw_cue_element(MatroskaDemuxContext *m, int64_t end,
                           uint32_t *id, uint64_t *length)
@@ -117,7 +170,7 @@ static int sw_restore_indexed_subtitles(MatroskaDemuxContext *m, AVStream *strea
     AVPacket packet = { 0 };
     int64_t seen[SW_CUE_COUNT_LIMIT];
     unsigned count = 0, attempts = 0, packets = 0;
-    uint64_t bytes = 0;
+    uint64_t bytes = 0, retained = 0;
     int ret = 0, moved = 0;
     if (target < 0 || m->segment_start < 0 || !m->time_scale || m->time_scale > INT64_MAX)
         return 0;
@@ -154,7 +207,11 @@ static int sw_restore_indexed_subtitles(MatroskaDemuxContext *m, AVStream *strea
             seen[count++] = block_pos;
             bytes += block_bytes;
             matroska_clear_queue(m);
+            if (retained >= SW_CUE_BYTE_LIMIT)
+                goto restore;
+            track->sw_preroll_remaining = SW_CUE_BYTE_LIMIT - retained;
             ret = matroska_parse_cluster(m);
+            track->sw_preroll_remaining = 0;
             if (ret == AVERROR(ENOMEM))
                 goto restore;
             if (ret < 0) {
@@ -166,11 +223,15 @@ static int sw_restore_indexed_subtitles(MatroskaDemuxContext *m, AVStream *strea
                 if (packet.stream_index == track->stream->index && packet.pts != AV_NOPTS_VALUE) {
                     const int64_t pts = av_rescale_q(packet.pts, track->stream->time_base, AV_TIME_BASE_Q);
                     const int64_t length = av_rescale_q(packet.duration, track->stream->time_base, AV_TIME_BASE_Q);
+                    uint64_t packet_bytes;
                     if (pts >= 0 && pts <= target && length > 0 && target - pts < length &&
-                        packets++ < SW_CUE_COUNT_LIMIT) {
+                        packets < SW_CUE_COUNT_LIMIT &&
+                        sw_cue_packet_bytes(&packet, SW_CUE_BYTE_LIMIT - retained, &packet_bytes)) {
                         ret = avpriv_packet_list_put(&preroll, &packet, NULL, 0);
                         if (ret < 0)
                             goto restore;
+                        packets++;
+                        retained += packet_bytes;
                     }
                 }
                 av_packet_unref(&packet);

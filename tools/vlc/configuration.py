@@ -89,6 +89,10 @@ def ffmpeg_files(original):
     """Source-checked, disclosed Matroska subtitle preroll for a normal A/V seek."""
     source = original["libavformat/matroskadec.c"]
     replacements = [
+        (b"typedef struct MatroskaTrack {\n",
+         b"typedef struct MatroskaTrack {\n"
+         b"    /* SyncWatch: zero for ordinary playback; negative when optional budget is exhausted. */\n"
+         b"    int64_t sw_preroll_remaining;\n"),
         (b"    uint64_t pos;\n} MatroskaIndexPos;",
          b"    uint64_t pos;\n    uint64_t relative;\n    uint64_t duration;\n} MatroskaIndexPos;"),
         (b"    { MATROSKA_ID_CUERELATIVEPOSITION,EBML_NONE },",
@@ -96,8 +100,19 @@ def ffmpeg_files(original):
         (b"    { MATROSKA_ID_CUEDURATION,        EBML_NONE },",
          b"    { MATROSKA_ID_CUEDURATION, EBML_UINT, 0, 0, offsetof(MatroskaIndexPos, duration) },"),
         (b"static int matroska_read_seek(AVFormatContext *s, int stream_index,",
+         Path(__file__).with_name("preroll_limits.h").read_bytes() + b"\n" +
          Path(__file__).with_name("matroska_preroll.c").read_bytes() +
          b"\nstatic int matroska_read_seek(AVFormatContext *s, int stream_index,"),
+        (b"static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf, uint8_t *data,",
+         b"static int sw_cue_block_budget(MatroskaTrack *track, const AVBufferRef *buf, int laces,\n"
+         b"                               const MatroskaBlockMore *more, int count, int64_t discard_padding);\n\n"
+         b"static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf, uint8_t *data,"),
+        (b"    trust_default_duration = track->default_duration != 0;",
+         b"    /* SyncWatch: reserve all laced packet and side-data storage before parsing frames. */\n"
+         b"    if (track->sw_preroll_remaining &&\n"
+         b"        !sw_cue_block_budget(track, buf, laces, blockmore, nb_blockmore, discard_padding))\n"
+         b"        return 0;\n\n"
+         b"    trust_default_duration = track->default_duration != 0;"),
         (b"    avpriv_update_cur_dts(s, st, sti->index_entries[index].timestamp);\n    return 0;",
          b"    avpriv_update_cur_dts(s, st, sti->index_entries[index].timestamp);\n"
          b"    return sw_restore_indexed_subtitles(matroska, st, timestamp, sti->index_entries[index].pos);"),
@@ -106,4 +121,42 @@ def ffmpeg_files(original):
         if source.count(before) != 1:
             raise ValueError("Review the pinned FFmpeg Matroska seek before configuring subtitle preroll")
         source = source.replace(before, after)
+    start = source.index(b"static int matroska_decode_buffer(")
+    end = source.index(b"\nstatic void matroska_convert_tag(", start)
+    decoder = source[start:end]
+    bounded = [
+        (b"    if (pkt_size >= 10000000U)",
+         b"    /* SyncWatch: bound optional decompression before every allocation. */\n"
+         b"    const int copies = track->stream && track->stream->codecpar->codec_id == AV_CODEC_ID_WEBVTT ? 2 : 1;\n"
+         b"    const int max_size = track->sw_preroll_remaining ?\n"
+         b"        FFMAX(0, track->sw_preroll_remaining / copies - AV_INPUT_BUFFER_PADDING_SIZE - AV_LZO_OUTPUT_PADDING) : 10000000;\n"
+         b"    if ((unsigned)pkt_size >= (unsigned)max_size)"),
+        (b"        pkt_size = isize + header_size;",
+         b"        if (track->sw_preroll_remaining && (header_size < 0 || header_size > max_size - isize))\n"
+         b"            return AVERROR_INVALIDDATA;\n"
+         b"        pkt_size = isize + header_size;"),
+        (b"            olen       = pkt_size *= 3;",
+         b"            olen = pkt_size = track->sw_preroll_remaining ? FFMIN(pkt_size * 3, max_size) : pkt_size * 3;"),
+        (b"    memset(pkt_data + pkt_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);",
+         b"    if (track->sw_preroll_remaining) {\n"
+         b"        /* Shrink growth slack before the packet takes ownership. Laced packets share this budget. */\n"
+         b"        newpktdata = av_realloc(pkt_data, pkt_size + AV_INPUT_BUFFER_PADDING_SIZE);\n"
+         b"        if (!newpktdata) { result = AVERROR(ENOMEM); goto failed; }\n"
+         b"        pkt_data = newpktdata;\n"
+         b"        track->sw_preroll_remaining -= copies * (pkt_size + AV_INPUT_BUFFER_PADDING_SIZE);\n"
+         b"        if (!track->sw_preroll_remaining) track->sw_preroll_remaining = -1;\n"
+         b"    }\n"
+         b"    memset(pkt_data + pkt_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);"),
+    ]
+    for before, after in bounded:
+        if decoder.count(before) != 1:
+            raise ValueError("Review the pinned Matroska optional decompression budget")
+        decoder = decoder.replace(before, after)
+    for before, after, count in [
+            (b"            pkt_size  *= 3;", b"            pkt_size = track->sw_preroll_remaining ? FFMIN(pkt_size * 3, max_size) : pkt_size * 3;", 2),
+            (b"pkt_size < 10000000", b"pkt_size < max_size", 3)]:
+        if decoder.count(before) != count:
+            raise ValueError("Review the pinned Matroska decompression growth loops")
+        decoder = decoder.replace(before, after)
+    source = source[:start] + decoder + source[end:]
     return {"libavformat/matroskadec.c": source}
