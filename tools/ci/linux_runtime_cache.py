@@ -93,6 +93,17 @@ def verify(payload, request):
             raise ValueError("Cached Linux runtime uses a different verified media SDK")
 
 
+def smoke(payload, request):
+    ambient = {"JAVA_TOOL_OPTIONS", "JDK_JAVA_OPTIONS", "JDK_JAVAC_OPTIONS", "_JAVA_OPTIONS", "CLASSPATH",
+               "CFLAGS", "CXXFLAGS", "CPPFLAGS", "LDFLAGS", "LIBRARY_PATH", "CPATH", "LD_PRELOAD"}
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith(("ACTIONS_", "INPUT_")) and key != "GITHUB_TOKEN" and key not in ambient}
+    environment["LD_LIBRARY_PATH"] = os.pathsep.join((str(payload / "jvm/lib"),
+                                                     str(Path(request["context"]["media"]) / "lib")))
+    subprocess.run([str(payload / "jvm/bin/java"), "--list-modules"], cwd=payload / "jvm",
+                   env=environment, stdout=sys.stderr, check=True, timeout=180)
+
+
 def restore(path):
     request = read_request(path)
     archive = inside(ROOT, Path(request["archive"]).relative_to(ROOT))
@@ -104,6 +115,7 @@ def restore(path):
         staging = Path(temporary)
         manifest = dependencies.unpack(archive, staging, request)
         verify(staging / "payload", request)
+        smoke(staging / "payload", request)
         for name in ("jvm", "clients"):
             destination = directory / name
             if destination.exists() or destination.is_symlink():

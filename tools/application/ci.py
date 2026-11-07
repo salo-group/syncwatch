@@ -79,7 +79,6 @@ def linux_inputs(directory, media, desktop):
             and os.environ.get("GITHUB_REF") == "refs/heads/main"
         if cache and trusted:
             run(sys.executable, "tools/ci/linux_runtime_cache.py", "stage", request)
-            run("node", "tools/ci/linux_runtime_cache.mjs", "publish", request)
     run(sys.executable, "tools/application/build_linux.py", "--toolchain-root", ROOT,
         "--desktop-sdk", desktop, "--output", directory / "application")
     return jdk.home()

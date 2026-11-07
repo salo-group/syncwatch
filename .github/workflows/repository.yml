@@ -83,7 +83,7 @@
         },
         {
           "name": "Developer SDK cache regression tests",
-          "run": "node --test tools/ci/tests/sdk_cache.test.mjs"
+          "run": "node --test tools/ci/tests/sdk_cache.test.mjs tools/ci/tests/linux_runtime_cache.test.mjs"
         },
         {
           "name": "Dependency infrastructure tests",

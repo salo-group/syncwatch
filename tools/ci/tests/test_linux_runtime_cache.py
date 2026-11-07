@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -27,9 +28,11 @@ class LinuxRuntimeCacheTests(unittest.TestCase):
             clients = staticmethod(lambda path: receipts.checked_receipt(path, "clients-report.json"))
 
         self.inputs = {"mediaReceiptSha256": "a" * 64, "compiler": "original compiler", "sources": "pinned originals"}
+        self.original_smoke = cache.smoke
         for target, attribute, value in ((cache, "ROOT", self.root),
                                           (cache, "modules", lambda: (dependencies, Validators)),
                                           (cache, "snapshot", lambda context: copy.deepcopy(self.inputs)),
+                                          (cache, "smoke", lambda payload, request: None),
                                           (cache, "cold_requested", lambda: False)):
             patcher = patch.object(target, attribute, value)
             patcher.start()
@@ -61,7 +64,9 @@ class LinuxRuntimeCacheTests(unittest.TestCase):
         self.payloads()
         cache.stage(self.path)
         self.clear_outputs()
-        self.assertTrue(cache.restore(self.path))
+        with patch.object(cache, "smoke") as smoke:
+            self.assertTrue(cache.restore(self.path))
+            smoke.assert_called_once()
         for name in ("jvm", "clients"):
             executable = self.directory / name / "payload/engine"
             self.assertEqual(executable.read_bytes(), b"source-built fixture executable")
@@ -101,6 +106,18 @@ class LinuxRuntimeCacheTests(unittest.TestCase):
         self.path.write_text(json.dumps(request))
         with patch.object(cache, "verify", side_effect=AssertionError("a cold build cannot restore")):
             self.assertFalse(cache.restore(self.path))
+
+    def test_cached_jvm_smoke_executes_without_service_tokens_or_ambient_java_options(self):
+        payload = self.directory / "payload"
+        with patch.dict(os.environ, {"ACTIONS_RUNTIME_TOKEN": "secret", "GITHUB_TOKEN": "secret",
+                                     "JAVA_TOOL_OPTIONS": "-javaagent:unexpected.jar"}):
+            with patch("linux_runtime_cache.subprocess.run") as command:
+                self.original_smoke(payload, {"context": {"media": str(self.root / "media")}})
+        arguments, options = command.call_args
+        self.assertEqual(arguments[0], [str(payload / "jvm/bin/java"), "--list-modules"])
+        self.assertTrue(options["check"])
+        for name in ("ACTIONS_RUNTIME_TOKEN", "GITHUB_TOKEN", "JAVA_TOOL_OPTIONS"):
+            self.assertNotIn(name, options["env"])
 
 
 if __name__ == "__main__":
