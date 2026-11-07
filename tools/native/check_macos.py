@@ -48,8 +48,10 @@ def main() -> None:
     shutil.rmtree(ROOT / "artifacts/design/macos", ignore_errors=True)
     environment["SYNCWATCH_DESIGN_SCREENSHOTS"] = str(ROOT / "artifacts/design/macos")
     run("swift", "test", "--package-path", "packages/design", "-Xswiftc", "-warnings-as-errors", env=environment)
-    run(sys.executable, "tools/consumers/admission_fixture.py", "--",
-        "swift", "test", "--package-path", "apps/macos", "-Xswiftc", "-warnings-as-errors")
+    sys.path.insert(0, str(ROOT / "tools/consumers"))
+    from admission_fixture import environment as admission_environment
+    with admission_environment(ROOT):
+        run("swift", "test", "--package-path", "apps/macos", "-Xswiftc", "-warnings-as-errors")
     run("swift", "build", "--package-path", "apps/macos", "-Xswiftc", "-warnings-as-errors")
     binary_directory = subprocess.check_output(
         ["swift", "build", "--package-path", "apps/macos", "--show-bin-path"], cwd=ROOT, text=True,

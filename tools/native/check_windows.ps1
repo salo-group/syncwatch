@@ -34,8 +34,7 @@ Invoke-DotNet format SyncWatch.slnx --no-restore --verify-no-changes
 Invoke-DotNet build SyncWatch.slnx --no-restore --configuration Debug
 Invoke-DotNet run --project packages/windows-domain/SyncWatch.Domain.Tests --no-restore --no-build --configuration Debug
 Invoke-DotNet run --project packages/windows-room/SyncWatch.Room.Tests --no-restore --no-build --configuration Debug -- contracts/fixtures/room-client.json
-& python tools/consumers/admission_fixture.py -- $DotNet run --project apps/windows/SyncWatch.Tests --no-restore --no-build --configuration Debug
-if ($LASTEXITCODE -ne 0) { throw 'Native admission isolation or application checks failed' }
+& (Join-Path $PSScriptRoot 'check_admission_windows.ps1') -DotNet $DotNet
 Invoke-DotNet run --project packages/windows-bridge/SyncWatch.Bridge.Probe --no-restore --no-build --configuration Debug -- --player-correction-fixtures contracts/fixtures/helper-player.json
 Invoke-DotNet run --project packages/windows-library/SyncWatch.Library.Tests --no-restore --no-build --configuration Debug -- contracts/fixtures/library-catalog.json
 if (Test-Path $env:SYNCWATCH_DESIGN_SCREENSHOTS) { Remove-Item -Recurse -Force $env:SYNCWATCH_DESIGN_SCREENSHOTS }

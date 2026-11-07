@@ -6,8 +6,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
-import signal
-import subprocess
 import sys
 import tempfile
 import threading
@@ -16,6 +14,11 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 VARIABLE = "SYNCWATCH_ADMISSION_ISOLATION_FIXTURE"
+
+
+class OwnedServer(ThreadingHTTPServer):
+    daemon_threads = False
+    block_on_close = True
 
 
 @contextmanager
@@ -67,16 +70,19 @@ def environment(root=ROOT):
                 (directory / "unexpected-bootstrap").touch()
                 self.send_error(409)
 
-        server = ThreadingHTTPServer(("127.0.0.1", 0), Peer)
-        thread = threading.Thread(target=server.serve_forever, name="owned-admission-fixture")
+        server = OwnedServer(("127.0.0.1", 0), Peer)
+        thread = None
+        started = False
         previous = os.environ.get(VARIABLE)
         config = directory / "fixture.json"
-        config.write_text(json.dumps({"service": "http://127.0.0.1:" + str(server.server_port),
-            "identity": corpus["identity"], "admission": admission, "held": str(directory / "held"),
-            "invalidAnchors": invalid, "advancedAdmission": advanced,
-            "unexpectedBootstrap": str(directory / "unexpected-bootstrap")}), encoding="utf-8")
         try:
+            thread = threading.Thread(target=server.serve_forever, name="owned-admission-fixture")
+            config.write_text(json.dumps({"service": "http://127.0.0.1:" + str(server.server_port),
+                "identity": corpus["identity"], "admission": admission, "held": str(directory / "held"),
+                "invalidAnchors": invalid, "advancedAdmission": advanced, "ownerPid": os.getpid(),
+                "unexpectedBootstrap": str(directory / "unexpected-bootstrap")}), encoding="utf-8")
             thread.start()
+            started = True
             os.environ[VARIABLE] = str(config)
             yield
             if (directory / "unexpected-bootstrap").exists():
@@ -87,45 +93,38 @@ def environment(root=ROOT):
             else:
                 os.environ[VARIABLE] = previous
             stopped.set()
-            server.shutdown()
-            server.server_close()
-            thread.join(timeout=5)
-            if thread.is_alive():
-                raise AssertionError("Owned admission fixture did not stop")
-
-
-def run_native(command):
-    options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
-    process = subprocess.Popen(command, **options)
-    try:
-        return process.wait(timeout=180)
-    finally:
-        if process.poll() is None:
-            if os.name == "nt":
-                stopped = subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-                if stopped.returncode and process.poll() is None:
-                    process.kill()
-                    process.wait(timeout=10)
-                    raise RuntimeError("Owned native test tree did not stop")
-            else:
-                os.killpg(process.pid, signal.SIGTERM)
             try:
-                process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                if os.name == "nt":
-                    process.kill()
-                else:
-                    os.killpg(process.pid, signal.SIGKILL)
-                process.wait(timeout=10)
+                if started:
+                    server.shutdown()
+            finally:
+                try:
+                    server.server_close()
+                finally:
+                    if started:
+                        thread.join(timeout=5)
+                        if thread.is_alive():
+                            raise AssertionError("Owned admission fixture did not stop")
+
+
+def serve(output):
+    """Serve one native-driver scope. Closing its stdin releases this worker."""
+    output = Path(output).absolute()
+    pending = output.with_name(output.name + ".pending")
+    if output.exists() or pending.exists():
+        raise ValueError("Fixture output must be new")
+    try:
+        with environment():
+            data = Path(os.environ[VARIABLE]).read_bytes()
+            with pending.open("xb") as stream:
+                stream.write(data)
+            os.replace(pending, output)
+            sys.stdin.buffer.read(1)
+    finally:
+        pending.unlink(missing_ok=True)
+        output.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
-    command = sys.argv[1:]
-    if command[:1] == ["--"]:
-        command = command[1:]
-    if not command:
-        raise SystemExit("Pass a native test command after --")
-    with environment():
-        result = run_native(command)
-    raise SystemExit(result)
+    if len(sys.argv) != 3 or sys.argv[1] != "--serve":
+        raise SystemExit("Pass --serve and a new configuration file path")
+    serve(sys.argv[2])
