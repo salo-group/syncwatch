@@ -243,7 +243,7 @@ import SyncWatchRoom
                 }
                 guard generation == scope else {
                     try? await client.logout(session)
-                    try? await store?.forget()
+                    if !memoryOnly { try? await store?.forget() }
                     return
                 }
                 self.attempt = nil
