@@ -135,7 +135,7 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
                     SharedMedia("loaded-" + UUID.randomUUID(), remote.title, checkNotNull(local.durationMs), local.fileSizeBytes),
                     runtime.revision, requireDeclaredIdentity = true, authority = ::authorized,
                     admissionProvider = if (room.accountAuthority == null) null else suspend {
-                        check(canAdmitTransport()) { "watch-revoked" }
+                        waitForTransportAdmission()
                         val fresh = room.watchContext(ticket)
                         requireSameGeneration(current, fresh); requireMatch(local, fresh)
                         val admission = room.syncTicket(ticket)
@@ -336,6 +336,14 @@ internal class RoomWatchCoordinator(private val room: RoomController, private va
         return authorized() && room.isCurrent(current.membership) && latest.snapshot.epoch == current.context.bootstrap.snapshot.epoch &&
             latest.snapshot.watchGeneration == current.context.bootstrap.snapshot.watchGeneration && latest.snapshot.watchStatus == "active" &&
             latest.snapshot.mediaId == current.context.bootstrap.snapshot.mediaId
+    }
+    private suspend fun waitForTransportAdmission() {
+        // The helper bounds this wait. Only an established scope may await metadata recovery.
+        while (!canAdmitTransport()) {
+            currentCoroutineContext().ensureActive()
+            check(admitted && authorized() && room.editor.state == "reconnecting") { "watch-revoked" }
+            delay(100)
+        }
     }
     companion object {
         fun completedPlaylistAvailable(expected: RoomSnapshot, latest: RoomSnapshot): Boolean {

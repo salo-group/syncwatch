@@ -134,7 +134,7 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
                     runtime.Revision, requireDeclaredIdentity: true, authority: Authorized,
                     admissionProvider: room.AccountAuthority is null ? null : async cancellation =>
                     {
-                        if (!CanAdmitTransport()) throw new InvalidOperationException("watch-revoked");
+                        await WaitForTransportAdmissionAsync(cancellation);
                         var fresh = await room.WatchContextAsync(intent.Membership, cancellation);
                         RequireSameGeneration(current, fresh); RequireMatch(local, fresh);
                         var ticket = await room.SyncTicketAsync(intent.Membership, cancellation);
@@ -271,6 +271,16 @@ internal sealed class RoomWatchCoordinator(RoomController room, WatchSessionCoor
         && room.WatchBootstrap is { } latest && latest.Snapshot.Epoch == current.Context.Bootstrap.Snapshot.Epoch
         && latest.Snapshot.WatchGeneration == current.Context.Bootstrap.Snapshot.WatchGeneration
         && latest.Snapshot.WatchStatus == "active" && latest.Snapshot.MediaId == current.Context.Bootstrap.Snapshot.MediaId;
+    private async Task WaitForTransportAdmissionAsync(CancellationToken token)
+    {
+        // The helper bounds this wait. Only an established scope may await metadata recovery.
+        while (!CanAdmitTransport())
+        {
+            token.ThrowIfCancellationRequested();
+            if (!admitted || !Authorized() || room.Editor.State != "reconnecting") throw new InvalidOperationException("watch-revoked");
+            await Task.Delay(100, token);
+        }
+    }
     internal static string FailureKey(Exception error, bool identityRejected) => identityRejected ? "sharedWatchIdentityRejected"
         : error is RoomProtocolException { Message: "staleGeneration" } ? "sharedWatchRoomChanged"
         : error is SharedMediaUnavailableException ? "sharedWatchMediaMissing" : "sharedWatchFailed";

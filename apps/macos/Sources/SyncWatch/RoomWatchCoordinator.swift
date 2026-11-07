@@ -170,7 +170,8 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
                     admissionProvider = nil
                 } else {
                     admissionProvider = { [weak self] in
-                        guard let self, self.canAdmitTransport() else { throw HelperSessionFailure.unavailable }
+                        guard let self else { throw HelperSessionFailure.unavailable }
+                        try await self.waitForTransportAdmission()
                         let fresh = try await self.room.watchContext(intent.membership)
                         try Self.requireSameGeneration(current, fresh)
                         try Self.requireMatch(local, fresh)
@@ -352,6 +353,16 @@ enum SharedMediaAvailabilityFailure: Error { case unavailable }
             && latest.snapshot.watchGeneration == active.context.bootstrap.snapshot.watchGeneration
             && latest.snapshot.watchStatus == "active"
             && latest.snapshot.mediaID == active.context.bootstrap.snapshot.mediaID
+    }
+    private func waitForTransportAdmission() async throws {
+        // The helper bounds this wait. Only an established scope may await metadata recovery.
+        while !canAdmitTransport() {
+            try Task.checkCancellation()
+            guard admitted, authorized(), room.editor.state == "reconnecting" else {
+                throw HelperSessionFailure.unavailable
+            }
+            try await Task.sleep(for: .milliseconds(100))
+        }
     }
     static func failureKey(_ error: Error, identityRejected: Bool) -> String {
         if identityRejected { return "sharedWatchIdentityRejected" }
