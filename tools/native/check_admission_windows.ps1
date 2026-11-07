@@ -11,7 +11,7 @@ $admissionStarted = $false
 $admissionFailures = New-Object 'System.Collections.Generic.List[System.Exception]'
 
 try {
-    $admissionPeer.StartInfo.FileName = (Get-Command python -CommandType Application).Source
+    $admissionPeer.StartInfo.FileName = (Get-Command python -CommandType Application | Select-Object -First 1).Source
     $admissionPeer.StartInfo.Arguments = '"' + $admissionServer + '" --serve "' + $admissionConfig + '"'
     $admissionPeer.StartInfo.UseShellExecute = $false
     $admissionPeer.StartInfo.CreateNoWindow = $true
