@@ -11,19 +11,44 @@ function runGitCache({root, component, platform, cold}, operation, capture = fal
     const result = spawnSync(process.platform === 'win32' ? 'python' : 'python3',
         ['tools/ci/git_cache.py', operation, '--component', component, '--platform', platform,
             ...(cold ? ['--cold'] : [])], {cwd: root, env: environment, encoding: 'utf8',
-            stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit', timeout: 900000});
-    if (result.status !== 0) throw new Error('Pinned Git source cache validation failed');
+            stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit', timeout: 900000, maxBuffer: 16 * 1024**2});
+    if (result.status !== 0) {
+        const code = /^[A-Z_]+$/.test(result.error?.code || '') ? result.error.code : 'none';
+        console.error('Git cache ' + operation + ' subprocess failed: exit=' + result.status + '; code=' + code);
+        throw new Error('Pinned Git source cache validation failed');
+    }
     return result.stdout;
 }
 
-export async function warmGitSources(options, {restore = restoreCache, run = runGitCache} = {}) {
+function restoreGitCache(config) {
+    return restoreCache(config, async (...arguments_) => {
+        const response = await fetch(...arguments_);
+        if (!response.ok && response.status !== 302) {
+            console.error('Git cache transport returned HTTP ' + response.status);
+        }
+        return response;
+    });
+}
+
+export async function warmGitSources(options, {restore = restoreGitCache, run = runGitCache} = {}) {
+    console.log('Pinned Git object cache: preparing source identities');
     const selected = JSON.parse(run(options, 'plan', true));
     if (!selected.eligible || selected.cold || options.cold) return selected;
-    const result = await restore({
-        repository: process.env.GITHUB_REPOSITORY, repositoryId: Number(process.env.GITHUB_REPOSITORY_ID),
-        token: options.token, name: 'syncwatch-dependency-cache-' + selected.key,
-        destination: resolve(options.root, selected.archive),
-    });
+    console.log('Pinned Git object cache: looking up trusted main');
+    let result;
+    try {
+        result = await restore({
+            repository: process.env.GITHUB_REPOSITORY, repositoryId: Number(process.env.GITHUB_REPOSITORY_ID),
+            token: options.token, name: 'syncwatch-dependency-cache-' + selected.key,
+            destination: resolve(options.root, selected.archive),
+        });
+    } catch (error) {
+        // An unavailable lookup has supplied no Git objects. The normal source
+        // initializer still fetches exact pins and runs every original check.
+        if (error.message !== 'Cache API request failed') throw error;
+        console.log('Pinned Git object cache API unavailable; fetching exact source pins instead');
+        return selected;
+    }
     if (result.hit) {
         const restored = JSON.parse(run(options, 'restore', true));
         if (!restored.hit) throw new Error('Restored Git cache did not validate');

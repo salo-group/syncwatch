@@ -35,6 +35,23 @@ test('Git objects use the trusted-main transport and require fresh local verific
     }), /did not validate/);
 });
 
+test('an unavailable cache API retains fresh pinned source preparation', async () => {
+    const operations = [];
+    const result = await warmGitSources({root: '/fixture'}, {
+        run: (_options, operation) => { operations.push(operation); return JSON.stringify(selected); },
+        restore: async () => { throw new Error('Cache API request failed'); },
+    });
+    assert.deepEqual(result, selected);
+    assert.deepEqual(operations, ['plan']);
+});
+
+test('cache corruption remains fatal instead of falling back to source fetching', async () => {
+    await assert.rejects(warmGitSources({root: '/fixture'}, {
+        run: () => JSON.stringify(selected),
+        restore: async () => { throw new Error('Artifact checksum does not match'); },
+    }), /checksum does not match/);
+});
+
 test('only the designated publisher can publish after a real archive round trip', async () => {
     const root = await mkdtemp(join(tmpdir(), 'sw-git-cache-'));
     try {

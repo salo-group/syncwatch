@@ -59,3 +59,5 @@ Only successful canonical main workflows can supply these caches.
 One platform publishes each source key after its dependency checks succeed.
 Fresh cache archives pass an offline restore check before publication.
 Oversized optional object caches retain the fresh source build.
+If the cache API is unavailable, CI fetches the original pinned sources and performs the same checks.
+Corrupt archives, invalid metadata and failed Git verification remain fatal.
