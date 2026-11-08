@@ -30,6 +30,31 @@ class NativeJobChecks(unittest.TestCase):
             cwd=self.root, check=True,
         )
 
+    def test_current_run_dependency_can_seed_a_fresh_verified_build(self):
+        archive = self.root / "current-run.zip"
+        cache = self.root / ".local/dependency-cache/untrusted-123/fixture.zip"
+        request = {"key": "a" * 64, "inputs": {"compiler": "exact-sdk"}, "cacheFile": str(cache)}
+        with zipfile.ZipFile(archive, "w") as package:
+            package.writestr("build-manifest.json", json.dumps({**request, "result": "success"}))
+        self.assertTrue(native_job.seed_dependency_cache(self.root, archive, request))
+        self.assertEqual(cache.read_bytes(), archive.read_bytes())
+
+    def test_different_runner_or_dependency_inputs_require_a_cold_rebuild(self):
+        archive = self.root / "current-run.zip"
+        cache = self.root / ".local/dependency-cache/untrusted-123/fixture.zip"
+        request = {"key": "a" * 64, "inputs": {"compiler": "exact-sdk"}, "cacheFile": str(cache)}
+        for delta in ({"key": "b" * 64}, {"inputs": {"compiler": "other-sdk"}}, {"result": "failure"}):
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr("build-manifest.json", json.dumps({**request, "result": "success", **delta}))
+            self.assertFalse(native_job.seed_dependency_cache(self.root, archive, request))
+            self.assertFalse(cache.exists())
+
+    def test_dependency_reuse_preserves_explicit_cold_builds(self):
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "CI_COLD": "true"}):
+            with patch("native_job.subprocess.run") as command:
+                self.assertFalse(native_job.restore_current_dependency_cache("kotlin-stdlib", "linux-x64"))
+            command.assert_not_called()
+
     def report(self, with_service=False):
         report = native_job.Report()
         report.execute("Native checks", lambda: None)

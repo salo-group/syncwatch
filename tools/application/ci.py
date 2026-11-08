@@ -58,11 +58,29 @@ def linux_inputs(directory, media, desktop):
         run(sys.executable, "tools/application/jvm_sources.py", "--profile", profiles[1], "--output", client_sources)
         common = ["--media-package", media, "--autotools", autotools, "--xorg-macros", macros,
                   "--gnu-config", auxiliary]
-        run(sys.executable, "tools/application/jvm_runtime.py", "--sources", jvm_sources,
-            *common, "--boot-jdk", jdk.home(), "--pkg-config-macros", pkg_macros,
-            "--jobs", "2", "--output", directory / "jvm")
-        run(sys.executable, "tools/application/linux_clients.py", "--sources", client_sources,
-            *common, "--patchelf", shutil.which("patchelf"), "--output", directory / "clients")
+        cache = os.environ.get("GITHUB_ACTIONS") == "true"
+        request = directory / "runtime-cache-request.json"
+        hit = False
+        if cache:
+            run(sys.executable, "tools/ci/linux_runtime_cache.py", "prepare", directory,
+                "--media", media, "--autotools", autotools, "--xorg-macros", macros,
+                "--gnu-config", auxiliary, "--pkg-config-macros", pkg_macros,
+                "--jvm-sources", jvm_sources, "--client-sources", client_sources)
+            restored = subprocess.check_output(["node", "tools/ci/linux_runtime_cache.mjs", "restore", str(request)],
+                                               cwd=ROOT, text=True)
+            hit = json.loads(restored)["hit"]
+        if not hit:
+            run(sys.executable, "tools/application/jvm_runtime.py", "--sources", jvm_sources,
+                *common, "--boot-jdk", jdk.home(), "--pkg-config-macros", pkg_macros,
+                "--jobs", "2", "--output", directory / "jvm")
+            run(sys.executable, "tools/application/linux_clients.py", "--sources", client_sources,
+                *common, "--patchelf", shutil.which("patchelf"), "--output", directory / "clients")
+        trusted = os.environ.get("GITHUB_EVENT_NAME") in {"push", "schedule", "workflow_dispatch"} \
+            and os.environ.get("GITHUB_REF") == "refs/heads/main"
+        if cache and (trusted or not hit):
+            run(sys.executable, "tools/ci/linux_runtime_cache.py", "stage", request)
+            if not hit:
+                run(sys.executable, "tools/ci/linux_runtime_cache.py", "validate-staged", request)
     run(sys.executable, "tools/application/build_linux.py", "--toolchain-root", ROOT,
         "--desktop-sdk", desktop, "--output", directory / "application")
     return jdk.home()
