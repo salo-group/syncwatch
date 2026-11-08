@@ -61,3 +61,5 @@ Fresh cache archives pass an offline restore check before publication.
 Oversized optional object caches retain the fresh source build.
 If the cache API is unavailable, CI fetches the original pinned sources and performs the same checks.
 Corrupt archives, invalid metadata and failed Git verification remain fatal.
+Temporary connection failures can retry the same read-only cache request twice.
+Writes and received archive data are never replayed by this retry.

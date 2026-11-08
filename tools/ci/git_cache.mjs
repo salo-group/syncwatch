@@ -1,6 +1,7 @@
 import {spawnSync} from 'node:child_process';
 import {access} from 'node:fs/promises';
 import {resolve} from 'node:path';
+import {setTimeout as pause} from 'node:timers/promises';
 import {restoreCache} from '../dependencies/cache.mjs';
 import {main as upload} from './artifact_upload.mjs';
 
@@ -20,14 +21,31 @@ function runGitCache({root, component, platform, cold}, operation, capture = fal
     return result.stdout;
 }
 
-function restoreGitCache(config) {
-    return restoreCache(config, async (...arguments_) => {
-        const response = await fetch(...arguments_);
-        if (!response.ok && response.status !== 302) {
-            console.error('Git cache transport returned HTTP ' + response.status);
+const TRANSIENT_NETWORK = new Set(['UND_ERR_SOCKET', 'UND_ERR_CONNECT_TIMEOUT', 'ECONNRESET',
+    'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND']);
+
+export async function fetchGitCache(url, options, {request = fetch, wait = pause} = {}) {
+    for (let attempt = 0; ; attempt++) {
+        try {
+            const response = await request(url, options);
+            if (!response.ok && response.status !== 302) {
+                console.error('Git cache transport returned HTTP ' + response.status);
+            }
+            return response;
+        } catch (error) {
+            const code = error.cause?.code || error.code;
+            const retry = TRANSIENT_NETWORK.has(code) && (options.method || 'GET') === 'GET'
+                && !options.body && attempt < 2;
+            console.error('Git cache connection failed: ' + (TRANSIENT_NETWORK.has(code) ? code : 'unclassified')
+                + '; retry=' + retry);
+            if (!retry) throw error;
+            await wait(500 * (attempt + 1));
         }
-        return response;
-    });
+    }
+}
+
+function restoreGitCache(config) {
+    return restoreCache(config, fetchGitCache);
 }
 
 export async function warmGitSources(options, {restore = restoreGitCache, run = runGitCache} = {}) {
@@ -43,6 +61,13 @@ export async function warmGitSources(options, {restore = restoreGitCache, run = 
             destination: resolve(options.root, selected.archive),
         });
     } catch (error) {
+        const known = new Set(['Invalid cache request', 'Cache API request failed', 'Invalid cache inventory',
+            'Invalid cache identity', 'Invalid artifact digest or size', 'Artifact archive checksum does not match']);
+        console.error('Git cache lookup failed: ' + (known.has(error.message) ? error.message : 'unclassified'));
+        console.error('Git cache request checks: repository='
+            + /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(process.env.GITHUB_REPOSITORY)
+            + '; repositoryId=' + Number.isSafeInteger(Number(process.env.GITHUB_REPOSITORY_ID))
+            + '; token=' + Boolean(options.token) + '; key=' + /^[0-9a-f]{64}$/.test(selected.key));
         // An unavailable lookup has supplied no Git objects. The normal source
         // initializer still fetches exact pins and runs every original check.
         if (error.message !== 'Cache API request failed') throw error;
