@@ -16,9 +16,15 @@ Its initial surface is blank, with capture denied and no application credentials
 It must own its profile, windows, child processes and complete shutdown.
 Window dimensions come from the shared Design source.
 No existing browser profile may be imported.
+Each macOS experiment creates a unique OSCrypt service and account in Keychain.
+The profile records their identifiers for cleanup, without recording the encryption key.
+After all owned processes exit, remove only that experiment's Keychain item and profile.
 
 The initial policy explicitly disables ScreenAI OCR, ScreenAI extraction and MainNodeAnnotations.
 Normal component and certificate-data updating remains enabled.
+The host enables Chromium's network-service sandbox on Windows and Linux.
+macOS enables this sandbox independently of that feature switch.
+Native process observations must verify the applied restrictions and detect unsandboxed fallback.
 This is a candidate configuration; runtime behavior and persistent reuse remain unqualified.
 
 Preparation and compilation must not launch the browser engine.

@@ -207,8 +207,18 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override { return this; }
   CefRefPtr<CefClient> GetDefaultClient() override { return client_; }
 
-  void OnBeforeCommandLineProcessing(const CefString&,
+  void OnBeforeCommandLineProcessing(const CefString& process_type,
                                      CefRefPtr<CefCommandLine> command) override {
+#if !defined(OS_MAC)
+    if (process_type.empty()) {
+      // Chromium enables the macOS network sandbox independently of this feature.
+      std::string enabled = command->GetSwitchValue("enable-features");
+      if (!enabled.empty()) {
+        enabled += ",";
+      }
+      command->AppendSwitchWithValue("enable-features", enabled + "NetworkServiceSandbox");
+    }
+#endif
     // Keep normal component and certificate-data updates. Do not import a profile.
     std::string disabled = command->GetSwitchValue("disable-features");
     if (!disabled.empty()) {

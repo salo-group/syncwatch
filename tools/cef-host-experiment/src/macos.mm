@@ -1,4 +1,6 @@
 #import <Cocoa/Cocoa.h>
+#include <fstream>
+#include <filesystem>
 #include "experiment.h"
 #include "experiment_config.h"
 #include "include/cef_application_mac.h"
@@ -42,6 +44,20 @@ int main(int argc, char* argv[]) {
     NSApp.mainMenu = menu;
     CefSettings settings;
     if (!MatchesExperimentVersion() || !ConfigureExperiment(settings)) {
+      return 1;
+    }
+    // Each disposable profile owns its encryption key. Never access the
+    // default Chromium/Chrome Keychain item or reuse another browser's key.
+    const std::string service = "org.salo.syncwatch.cef-research." +
+        std::string([NSUUID UUID].UUIDString.UTF8String);
+    const std::string account = "SyncWatch CEF research";
+    CefString(&settings.keychain_service_name) = service;
+    CefString(&settings.keychain_account_name) = account;
+    const auto root = std::filesystem::path(CefString(&settings.root_cache_path).ToString());
+    std::ofstream ownership(root / "keychain-owner.json");
+    ownership << "{\"service\":\"" << service << "\",\"account\":\"" << account << "\"}\n";
+    ownership.close();
+    if (!ownership) {
       return 1;
     }
     CefMainArgs arguments(argc, argv);
