@@ -383,7 +383,7 @@ def initialize_export_source(root, path, specification, url):
              "checkout", "--detach", revision], cwd=source)
 
 
-def initialize_sources(root, sources, directory):
+def initialize_sources(root, sources, directory, *, reuse_prepared_sources=False):
     snapshots = {}
     config = configparser.ConfigParser(interpolation=None)
     config.read(root / ".gitmodules", encoding="utf-8")
@@ -429,12 +429,17 @@ def initialize_sources(root, sources, directory):
         arguments = ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "archive", "--format=tar", "--output", str(archive), "HEAD"]
         if exports is not None:
             arguments += ["--", *[":(literal)" + p for p in exports]]
-        if entries is None:
+        reused = reuse_prepared_sources and entries is not None and archive.exists()
+        if reused:
+            require(archive.is_file() and not archive.is_symlink(), "Prepared source archive must be a regular file")
+        elif entries is None:
             subprocess.run(arguments, cwd=source, check=True)
         else:
             export_original_blobs(source, archive, entries, specification["revision"])
         if exports is not None:
             verify_source_export(archive, entries, specification["revision"], specification["notices"])
+        if reused:
+            print(f"Reused original source export after fresh Git blob verification: {path}", flush=True)
         snapshots[path] = {
             "url": urls[path], "revision": specification["revision"], "tree": git(source, "rev-parse", "HEAD^{tree}").decode().strip(),
             "archiveSha256": digest(archive),
@@ -450,7 +455,7 @@ def workspace(root, name, target):
     return path
 
 
-def prepare(root, name, target):
+def prepare(root, name, target, *, reuse_prepared_sources=False):
     if os.environ.get("GITHUB_ACTIONS") == "true":
         subprocess.run(["git", "diff", "--exit-code", "HEAD", "--ignore-submodules=all"], cwd=root, check=True)
     components = registry(root)
@@ -460,7 +465,8 @@ def prepare(root, name, target):
     system, architectures, _ = PLATFORMS[target]
     require(platform.system() == system and platform.machine() in architectures, "Dependency runner OS or architecture mismatch")
     directory = workspace(root, name, target)
-    snapshots = initialize_sources(root, component["sources"], directory)
+    snapshots = initialize_sources(root, component["sources"], directory,
+                                   reuse_prepared_sources=reuse_prepared_sources)
     specification = component["targets"][target]
     versions = {}
     environment = build_environment(specification)
@@ -566,8 +572,8 @@ def pack(directory, manifest):
     return output
 
 
-def build(root, name, target, cold=False):
-    request = prepare(root, name, target)
+def build(root, name, target, cold=False, *, reuse_prepared_sources=False):
+    request = prepare(root, name, target, reuse_prepared_sources=reuse_prepared_sources and not cold)
     directory = workspace(root, name, target)
     payload = directory / "payload"
     if payload.exists():
@@ -733,6 +739,8 @@ def main():
     parser.add_argument("--component", default=os.environ.get("CI_COMPONENT"))
     parser.add_argument("--platform", default=os.environ.get("CI_PLATFORM"), choices=PLATFORMS)
     parser.add_argument("--cold", action="store_true", default=os.environ.get("CI_COLD") == "true")
+    parser.add_argument("--reuse-prepared-sources", action="store_true",
+                        help="Revalidate and reuse this job's existing explicit Git source exports")
     args = parser.parse_args()
     try:
         root = args.root.resolve()
@@ -746,7 +754,8 @@ def main():
             if args.operation == "prepare":
                 prepare(root, args.component, args.platform)
             else:
-                build(root, args.component, args.platform, args.cold)
+                build(root, args.component, args.platform, args.cold,
+                      reuse_prepared_sources=args.reuse_prepared_sources)
     except (OSError, ValueError, KeyError, subprocess.SubprocessError, tarfile.TarError, zipfile.BadZipFile):
         print("Dependency validation/build failed; consult the failing stage output", file=sys.stderr)
         return 1

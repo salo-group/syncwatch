@@ -1,5 +1,6 @@
 import contextlib
 import copy
+import hashlib
 import io
 import json
 import os
@@ -312,6 +313,217 @@ class DependencyBuildTests(unittest.TestCase):
         self.assertEqual((self.root / "artifacts/verifications").read_text(), "1")
         self.assertTrue(self.run_build()["cacheHit"])
         self.assertEqual((self.root / "artifacts/verifications").read_text(), "2")
+
+    def test_ci_cli_reuses_verified_source_archives_and_runs_each_fresh_verifier(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.add_verifier()
+        self.prepare()
+        archive = self.root / f"artifacts/dependencies/example/{TARGET}/example.tar"
+        original = archive.read_bytes()
+        timestamp = 1600000000000000000
+        os.utime(archive, ns=(timestamp, timestamp))
+        command = [sys.executable, "tools/dependencies/build.py", "build", "--component", "example",
+                   "--platform", TARGET, "--reuse-prepared-sources"]
+        for count in (1, 2):
+            result = subprocess.run(command, cwd=self.root, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(archive.read_bytes(), original)
+            self.assertEqual(archive.stat().st_mtime_ns, timestamp)
+            self.assertEqual((self.root / "artifacts/verifications").read_text(), str(count))
+            self.assertEqual((self.root / "artifacts/counter").read_text(), "1")
+
+    def prepared_build_cli(self, *flags):
+        return subprocess.run([sys.executable, "tools/dependencies/build.py", "build", "--component", "example",
+                               "--platform", TARGET, "--reuse-prepared-sources", *flags],
+                              cwd=self.root, capture_output=True, text=True)
+
+    def test_prepared_source_corruption_fails_before_the_build_command(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        archive = self.root / f"artifacts/dependencies/example/{TARGET}/example.tar"
+        archive.write_bytes(archive.read_bytes().replace(b"source payload\n", b"forged payload\n"))
+        result = self.prepared_build_cli()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Dependency validation/build failed", result.stderr)
+        self.assertFalse((self.root / "artifacts/counter").exists())
+
+    def test_prepared_sources_cannot_hide_a_dirty_source_checkout(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        (self.root / "3rdparty/example/library.txt").write_text("changed source\n", newline="\n")
+        result = self.prepared_build_cli()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Dependency validation/build failed", result.stderr)
+        self.assertFalse((self.root / "artifacts/counter").exists())
+
+    def test_cold_cli_recreates_sources_instead_of_reading_prepared_archives(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        archive = self.root / f"artifacts/dependencies/example/{TARGET}/example.tar"
+        original = archive.read_bytes()
+        archive.write_bytes(b"invalid prepared archive")
+        result = self.prepared_build_cli("--cold")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(archive.read_bytes(), original)
+        self.assertEqual((self.root / "artifacts/counter").read_text(), "1")
+
+    def test_prepared_source_reuse_still_discovers_changed_toolchains(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        first = self.prepared_build_cli()
+        self.assertEqual(first.returncode, 0, first.stderr)
+        request = self.root / f"artifacts/dependencies/example/{TARGET}/request.json"
+        before = json.loads(request.read_text())["key"]
+        self.component["targets"][TARGET]["toolchains"]["fixture"]["command"][-1] = "print('fixture-compiler-v2')"
+        self.write_manifest()
+        second = self.prepared_build_cli()
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertNotEqual(json.loads(request.read_text())["key"], before)
+        self.assertEqual((self.root / "artifacts/counter").read_text(), "2")
+
+    def git_cache_cli(self, operation, *flags):
+        return subprocess.run([sys.executable, str(REPOSITORY / "tools/ci/git_cache.py"), operation,
+                               "--root", str(self.root), "--component", "example", "--platform", TARGET, *flags],
+                              cwd=self.root, capture_output=True, text=True)
+
+    def test_git_object_cache_restores_exact_sources_without_the_remote(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        before = self.prepare()
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        source = self.root / "3rdparty/example"
+        self.remove_source_fixture(source)
+        restored = self.git_cache_cli("restore")
+        self.assertEqual(restored.returncode, 0, restored.stderr)
+        self.assertIn('"hit": true', restored.stdout)
+        self.assertEqual((source / "library.txt").read_bytes(), b"source payload\n")
+        self.assertEqual(self.prepare()["inputs"]["sources"], before["inputs"]["sources"])
+
+    def change_git_cache(self, name, contents):
+        plan = self.git_cache_cli("plan")
+        self.assertEqual(plan.returncode, 0, plan.stderr)
+        archive = self.root / json.loads(plan.stdout)["archive"]
+        with zipfile.ZipFile(archive) as package:
+            entries = {entry.filename: package.read(entry) for entry in package.infolist()}
+        manifest = json.loads(entries["build-manifest.json"])
+        if name is None:
+            name = next(iter(manifest["files"]))
+        entries[name] = contents
+        manifest["files"][name] = {"sha256": hashlib.sha256(contents).hexdigest(), "mode": 0o644}
+        entries["build-manifest.json"] = json.dumps(manifest).encode()
+        with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as package:
+            for name, data in entries.items():
+                package.writestr(name, data)
+
+    def test_git_object_cache_rejects_corrupt_objects_before_installing_sources(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        self.change_git_cache(None, b"invalid Git object")
+        source = self.root / "3rdparty/example"
+        self.remove_source_fixture(source)
+        result = self.git_cache_cli("restore")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(source.exists())
+
+    def test_git_object_cache_cannot_import_alternates_configuration_or_hooks(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        source = self.root / "3rdparty/example"
+        subprocess.run(["git", "config", "--local", "core.hooksPath", "/fixture/producer-only-hooks"], cwd=source, check=True)
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        self.remove_source_fixture(source)
+        restored = self.git_cache_cli("restore")
+        self.assertEqual(restored.returncode, 0, restored.stderr)
+        hooks = subprocess.run(["git", "config", "--local", "--get", "core.hooksPath"], cwd=source, capture_output=True)
+        self.assertNotEqual(hooks.returncode, 0)
+        self.remove_source_fixture(source)
+        self.change_git_cache("payload/0/info/alternates", b"/fixture/external-object-database")
+        rejected = self.git_cache_cli("restore")
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertFalse(source.exists())
+
+    def test_git_object_cache_cold_requests_do_not_restore_sources(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        source = self.root / "3rdparty/example"
+        self.remove_source_fixture(source)
+        restored = self.git_cache_cli("restore", "--cold")
+        self.assertEqual(restored.returncode, 0, restored.stderr)
+        self.assertEqual(json.loads(restored.stdout), {"hit": False, "restored": 0})
+        self.assertFalse(source.exists())
+
+    def test_git_object_cache_does_not_reuse_a_previous_source_pin(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        source = self.root / "3rdparty/example"
+        (source / "library.txt").write_text("updated pinned source\n", newline="\n")
+        self.update_source_pin()
+        self.remove_source_fixture(source)
+        restored = self.git_cache_cli("restore")
+        self.assertEqual(restored.returncode, 0, restored.stderr)
+        self.assertEqual(json.loads(restored.stdout), {"hit": False, "restored": 0})
+        self.assertFalse(source.exists())
+
+    def test_git_object_cache_preserves_an_existing_source_checkout(self):
+        self.set_exports(["LICENSE", "library.txt"])
+        self.prepare()
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        source = self.root / "3rdparty/example"
+        (source / "library.txt").write_text("existing local change\n", newline="\n")
+        restored = self.git_cache_cli("restore")
+        self.assertEqual(restored.returncode, 0, restored.stderr)
+        self.assertEqual(json.loads(restored.stdout), {"hit": True, "restored": 0})
+        self.assertEqual((source / "library.txt").read_text(), "existing local change\n")
+
+    def test_git_object_cache_restores_selected_long_paths(self):
+        source = self.root / "3rdparty/example"
+        subprocess.run(["git", "config", "--local", "core.longpaths", "true"], cwd=source, check=True)
+        name = "/".join("directory" + str(index) + "x" * 24 for index in range(8)) + "/selected.txt"
+        original = source / name
+        original.parent.mkdir(parents=True)
+        original.write_bytes(b"original long source path\n")
+        self.update_source_pin()
+        self.set_exports(sorted(["LICENSE", "library.txt", name]))
+        self.prepare()
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        self.remove_source_fixture(source)
+        restored = self.git_cache_cli("restore")
+        self.assertEqual(restored.returncode, 0, restored.stderr)
+        self.assertEqual((source / name).read_bytes(), b"original long source path\n")
+
+    def test_git_object_cache_round_trip_accepts_shallow_partial_clones(self):
+        source = self.root / "3rdparty/example"
+        (source / "unselected.txt").write_bytes(b"unselected original source\n" * 100)
+        self.update_source_pin()
+        self.set_exports(["LICENSE", "library.txt"])
+        remote = self.root / "remote.git"
+        subprocess.run(["git", "clone", "-q", "--bare", str(source), str(remote)], check=True)
+        subprocess.run(["git", "config", "uploadpack.allowFilter", "true"], cwd=remote, check=True)
+        self.remove_source_fixture(source)
+        rewrite = {"GIT_ALLOW_PROTOCOL": "file", "GIT_CONFIG_COUNT": "1",
+                   "GIT_CONFIG_KEY_0": "url." + remote.as_uri() + ".insteadOf",
+                   "GIT_CONFIG_VALUE_0": "https://example.invalid/source.git"}
+        with patch.dict(os.environ, rewrite):
+            before = self.prepare()
+        missing = build.git(source, "rev-parse", "HEAD:unselected.txt").decode().strip()
+        probe = subprocess.run(["git", "cat-file", "-e", missing], cwd=source,
+                               env=dict(os.environ, GIT_NO_LAZY_FETCH="1"), capture_output=True)
+        self.assertNotEqual(probe.returncode, 0, "Fixture must retain an uncached promisor blob")
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        self.remove_source_fixture(source)
+        restored = self.git_cache_cli("restore")
+        self.assertEqual(restored.returncode, 0, restored.stderr)
+        self.assertEqual(self.prepare()["inputs"]["sources"], before["inputs"]["sources"])
 
     def separate_consumer(self):
         self.add_verifier()

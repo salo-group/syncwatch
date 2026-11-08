@@ -4,6 +4,7 @@ import {delimiter, dirname, resolve} from 'node:path';
 import {restoreCache} from '../../../tools/dependencies/cache.mjs';
 import {main as upload} from '../../../tools/ci/artifact_upload.mjs';
 import {warmSdkArchives, publishSdkArchives} from '../../../tools/ci/sdk_cache.mjs';
+import {warmGitSources, publishGitSources} from '../../../tools/ci/git_cache.mjs';
 
 async function main() {
     const component = process.env.INPUT_COMPONENT;
@@ -26,7 +27,9 @@ async function main() {
         });
         return result.status === 0;
     }
-    const run = operation => runCommand([python, 'tools/dependencies/build.py', operation, '--component', component, '--platform', platform, ...(cold ? ['--cold'] : [])]);
+    const run = operation => runCommand([python, 'tools/dependencies/build.py', operation,
+        '--component', component, '--platform', platform, ...(cold ? ['--cold'] : []),
+        ...(operation === 'build' && !cold ? ['--reuse-prepared-sources'] : [])]);
     if (component === 'libvlc' && platform === 'windows-x64'
         && !runCommand([python, '-X', 'utf8=0', '-m', 'unittest', 'discover',
             '-s', 'tools/ci/tests', '-p', 'test_*cache.py', '-v'])) {
@@ -55,6 +58,7 @@ async function main() {
     if (['libvlc', 'skiko-native-objects'].includes(component) && !runCommand([python, 'tools/vlc/provision_sdks.py'])) {
         throw new Error('Native media developer SDK provisioning failed');
     }
+    const gitSelection = await warmGitSources({root, component, platform, cold, token: process.env['INPUT_CACHE-TOKEN']});
     if (!run('prepare')) throw new Error('Dependency preparation failed');
     const prepared = JSON.parse(await readFile(resolve(directory, 'request.json'), 'utf8'));
     const present = await access(prepared.cacheFile).then(() => true, () => false);
@@ -107,6 +111,7 @@ async function main() {
         await upload();
     }
     if (sdkSelection && !process.exitCode) await publishSdkArchives(sdkSelection, {root, component, platform, trusted});
+    if (!process.exitCode) await publishGitSources(gitSelection, {root, component, platform, cold, trusted});
     if (process.env.GITHUB_STEP_SUMMARY) {
         await appendFile(process.env.GITHUB_STEP_SUMMARY, `\nVerified dependency: ${component} / ${platform}\n\nInput key: \`${prepared.key}\`\n\nCold requested: ${cold}\n`);
     }

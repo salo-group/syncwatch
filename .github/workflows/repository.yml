@@ -83,7 +83,7 @@
         },
         {
           "name": "Developer SDK cache regression tests",
-          "run": "node --test tools/ci/tests/sdk_cache.test.mjs tools/ci/tests/linux_runtime_cache.test.mjs"
+          "run": "node --test tools/ci/tests/sdk_cache.test.mjs tools/ci/tests/linux_runtime_cache.test.mjs tools/ci/tests/git_cache.test.mjs"
         },
         {
           "name": "Dependency infrastructure tests",
@@ -227,7 +227,7 @@
         }
       ],
       "needs": [
-        "dependencies",
+        "dependencies-macos",
         "dependency-plan"
       ],
       "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
@@ -252,6 +252,229 @@
             "GITHUB_TOKEN": "${{ github.token }}"
           },
           "run": "python tools/ci/native_job.py windows"
+        },
+        {
+          "name": "Retain candidate and validation reports",
+          "if": "${{ always() }}",
+          "timeout-minutes": 5,
+          "uses": "./.github/actions/upload-native",
+          "with": {
+            "archive": "artifacts/native/windows/artifact.zip",
+            "name": "syncwatch-windows-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
+        }
+      ],
+      "needs": [
+        "dependencies-windows",
+        "dependency-plan"
+      ],
+      "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
+    },
+    "required": {
+      "name": "ci/required",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 5,
+      "if": "${{ always() }}",
+      "needs": [
+        "repository",
+        "tests",
+        "contracts",
+        "macos",
+        "windows",
+        "linux",
+        "metadata",
+        "dependency-plan",
+        "dependencies-linux",
+        "dependencies-macos",
+        "dependencies-windows",
+        "windows-regressions"
+      ],
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Require all selected jobs to succeed",
+          "env": {
+            "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
+          },
+          "run": "python3 tools/ci/required_status.py repository tests contracts macos windows linux metadata dependency-plan dependencies-linux dependencies-macos dependencies-windows windows-regressions"
+        }
+      ]
+    },
+    "dependency-plan": {
+      "name": "Dependency manifests and selection",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 10,
+      "outputs": {
+        "matrix": "${{ steps.plan.outputs.matrix }}",
+        "mode": "${{ steps.plan.outputs.mode }}",
+        "linux_matrix": "${{ steps.platforms.outputs.linux }}",
+        "macos_matrix": "${{ steps.platforms.outputs.macos }}",
+        "windows_matrix": "${{ steps.platforms.outputs.windows }}"
+      },
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Select registered dependency builds",
+          "id": "plan",
+          "run": "python3 tools/dependencies/build.py plan"
+        },
+        {
+          "name": "Partition every selected build by platform",
+          "id": "platforms",
+          "env": {
+            "CI_DEPENDENCY_MATRIX": "${{ steps.plan.outputs.matrix }}"
+          },
+          "run": "python3 tools/ci/dependency_plan.py"
+        }
+      ]
+    },
+    "metadata": {
+      "name": "Room metadata / win-x64",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 5,
+      "needs": [
+        "windows",
+        "windows-regressions",
+        "dependency-plan"
+      ],
+      "if": "${{ always() && needs.dependency-plan.outputs.mode == 'full' }}",
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Require Windows-native server and admitted Syncplay qualification",
+          "env": {
+            "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
+          },
+          "run": "python3 tools/ci/required_status.py windows windows-regressions dependency-plan"
+        }
+      ]
+    },
+    "linux": {
+      "name": "Native Linux x64",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 150,
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
+        },
+        {
+          "name": "Validate and build the native application",
+          "env": {
+            "CI_HEAD_COMMIT": "${{ github.event.pull_request.head.sha || github.sha }}",
+            "GITHUB_TOKEN": "${{ github.token }}"
+          },
+          "run": "python3 tools/ci/native_job.py linux"
+        },
+        {
+          "name": "Retain Linux validation scope and reports",
+          "if": "${{ always() }}",
+          "timeout-minutes": 5,
+          "uses": "./.github/actions/upload-native",
+          "with": {
+            "archive": "artifacts/native/linux/artifact.zip",
+            "name": "syncwatch-linux-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
+        }
+      ],
+      "needs": [
+        "dependencies-linux",
+        "dependency-plan"
+      ],
+      "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
+    },
+    "dependencies-linux": {
+      "name": "Dependency ${{ matrix.component }} / ${{ matrix.platform }}",
+      "needs": [
+        "dependency-plan"
+      ],
+      "strategy": {
+        "fail-fast": false,
+        "matrix": "${{ fromJSON(needs.dependency-plan.outputs.linux_matrix) }}"
+      },
+      "uses": "./.github/workflows/dependency-build.yml",
+      "with": {
+        "component": "${{ matrix.component }}",
+        "platform": "${{ matrix.platform }}",
+        "cold": "${{ matrix.cold }}"
+      },
+      "if": "${{ needs.dependency-plan.result == 'success' }}"
+    },
+    "dependencies-macos": {
+      "name": "Dependency ${{ matrix.component }} / ${{ matrix.platform }}",
+      "needs": [
+        "dependency-plan"
+      ],
+      "strategy": {
+        "fail-fast": false,
+        "matrix": "${{ fromJSON(needs.dependency-plan.outputs.macos_matrix) }}"
+      },
+      "uses": "./.github/workflows/dependency-build.yml",
+      "with": {
+        "component": "${{ matrix.component }}",
+        "platform": "${{ matrix.platform }}",
+        "cold": "${{ matrix.cold }}"
+      },
+      "if": "${{ needs.dependency-plan.result == 'success' }}"
+    },
+    "dependencies-windows": {
+      "name": "Dependency ${{ matrix.component }} / ${{ matrix.platform }}",
+      "needs": [
+        "dependency-plan"
+      ],
+      "strategy": {
+        "fail-fast": false,
+        "matrix": "${{ fromJSON(needs.dependency-plan.outputs.windows_matrix) }}"
+      },
+      "uses": "./.github/workflows/dependency-build.yml",
+      "with": {
+        "component": "${{ matrix.component }}",
+        "platform": "${{ matrix.platform }}",
+        "cold": "${{ matrix.cold }}"
+      },
+      "if": "${{ needs.dependency-plan.result == 'success' }}"
+    },
+    "windows-regressions": {
+      "name": "Windows native regression tests",
+      "runs-on": "windows-2025",
+      "timeout-minutes": 45,
+      "needs": [
+        "dependency-plan"
+      ],
+      "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}",
+      "steps": [
+        {
+          "name": "Check out the exact workflow revision",
+          "env": {
+            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
+            "CI_COMMIT": "${{ github.sha }}"
+          },
+          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
         },
         {
           "name": "Dependency infrastructure regression tests on Windows",
@@ -296,163 +519,8 @@
         {
           "name": "Owned bootstrap stdlib native fixture",
           "run": "python tools/python-stdlib/stdlib_probe.py --report artifacts/python-stdlib/native.json"
-        },
-        {
-          "name": "Retain candidate and validation reports",
-          "if": "${{ always() }}",
-          "timeout-minutes": 5,
-          "uses": "./.github/actions/upload-native",
-          "with": {
-            "archive": "artifacts/native/windows/artifact.zip",
-            "name": "syncwatch-windows-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
-          }
-        }
-      ],
-      "needs": [
-        "dependencies",
-        "dependency-plan"
-      ],
-      "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
-    },
-    "required": {
-      "name": "ci/required",
-      "runs-on": "ubuntu-24.04",
-      "timeout-minutes": 5,
-      "if": "${{ always() }}",
-      "needs": [
-        "repository",
-        "tests",
-        "contracts",
-        "macos",
-        "windows",
-        "linux",
-        "metadata",
-        "dependency-plan",
-        "dependencies"
-      ],
-      "steps": [
-        {
-          "name": "Check out the exact workflow revision",
-          "env": {
-            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
-            "CI_COMMIT": "${{ github.sha }}"
-          },
-          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
-        },
-        {
-          "name": "Require all selected jobs to succeed",
-          "env": {
-            "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
-          },
-          "run": "python3 tools/ci/required_status.py repository tests contracts macos windows linux metadata dependency-plan dependencies"
         }
       ]
-    },
-    "dependency-plan": {
-      "name": "Dependency manifests and selection",
-      "runs-on": "ubuntu-24.04",
-      "timeout-minutes": 10,
-      "outputs": {
-        "matrix": "${{ steps.plan.outputs.matrix }}",
-        "mode": "${{ steps.plan.outputs.mode }}"
-      },
-      "steps": [
-        {
-          "name": "Check out the exact workflow revision",
-          "env": {
-            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
-            "CI_COMMIT": "${{ github.sha }}"
-          },
-          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
-        },
-        {
-          "name": "Select registered dependency builds",
-          "id": "plan",
-          "run": "python3 tools/dependencies/build.py plan"
-        }
-      ]
-    },
-    "dependencies": {
-      "name": "Dependency ${{ matrix.component }} / ${{ matrix.platform }}",
-      "needs": [
-        "dependency-plan"
-      ],
-      "strategy": {
-        "fail-fast": false,
-        "matrix": "${{ fromJSON(needs.dependency-plan.outputs.matrix) }}"
-      },
-      "uses": "./.github/workflows/dependency-build.yml",
-      "with": {
-        "component": "${{ matrix.component }}",
-        "platform": "${{ matrix.platform }}",
-        "cold": "${{ matrix.cold }}"
-      },
-      "if": "${{ needs.dependency-plan.result == 'success' }}"
-    },
-    "metadata": {
-      "name": "Room metadata / win-x64",
-      "runs-on": "ubuntu-24.04",
-      "timeout-minutes": 5,
-      "needs": [
-        "windows",
-        "dependency-plan"
-      ],
-      "if": "${{ always() && needs.dependency-plan.outputs.mode == 'full' }}",
-      "steps": [
-        {
-          "name": "Check out the exact workflow revision",
-          "env": {
-            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
-            "CI_COMMIT": "${{ github.sha }}"
-          },
-          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
-        },
-        {
-          "name": "Require Windows-native server and admitted Syncplay qualification",
-          "env": {
-            "CI_NEEDS_JSON": "${{ toJSON(needs) }}"
-          },
-          "run": "python3 tools/ci/required_status.py windows dependency-plan"
-        }
-      ]
-    },
-    "linux": {
-      "name": "Native Linux x64",
-      "runs-on": "ubuntu-24.04",
-      "timeout-minutes": 150,
-      "steps": [
-        {
-          "name": "Check out the exact workflow revision",
-          "env": {
-            "CI_SOURCE_URL": "${{ github.server_url }}/${{ github.repository }}.git",
-            "CI_COMMIT": "${{ github.sha }}"
-          },
-          "run": "git init .\ngit remote add origin \"$CI_SOURCE_URL\"\ngit -c protocol.version=2 fetch --no-tags --depth=2 origin \"$CI_COMMIT\"\ngit -c advice.detachedHead=false checkout --detach FETCH_HEAD\ntest \"$(git rev-parse HEAD)\" = \"$CI_COMMIT\"\npython3 -c 'import sys; print(sys.version); assert sys.version_info >= (3, 12)'"
-        },
-        {
-          "name": "Validate and build the native application",
-          "env": {
-            "CI_HEAD_COMMIT": "${{ github.event.pull_request.head.sha || github.sha }}",
-            "GITHUB_TOKEN": "${{ github.token }}"
-          },
-          "run": "python3 tools/ci/native_job.py linux"
-        },
-        {
-          "name": "Retain Linux validation scope and reports",
-          "if": "${{ always() }}",
-          "timeout-minutes": 5,
-          "uses": "./.github/actions/upload-native",
-          "with": {
-            "archive": "artifacts/native/linux/artifact.zip",
-            "name": "syncwatch-linux-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
-          }
-        }
-      ],
-      "needs": [
-        "dependencies",
-        "dependency-plan"
-      ],
-      "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
     }
   }
 }
