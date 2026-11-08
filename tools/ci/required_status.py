@@ -5,7 +5,7 @@ import json
 import os
 import sys
 
-DOCUMENTATION_OMISSIONS = frozenset({"macos", "windows", "linux", "metadata"})
+DOCUMENTATION_OMISSIONS = frozenset({"macos", "windows", "linux", "metadata", "windows-regressions"})
 
 
 def validate_results(results: object, expected: list[str]) -> None:

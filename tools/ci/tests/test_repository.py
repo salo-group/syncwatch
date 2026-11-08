@@ -293,7 +293,7 @@ class WorkflowChecks(unittest.TestCase):
             ]}))
 
     def test_missing_python_startup_regressions_fail(self):
-        for job in ("tests", "windows"):
+        for job in ("tests", "windows-regressions"):
             with self.subTest(job=job), self.assertRaisesRegex(ValidationError, "CPython startup"):
                 self.validate(lambda data: data["jobs"][job].update({"steps": [
                     step for step in data["jobs"][job]["steps"] if "tools/python-runtime/tests" not in step.get("run", "")
@@ -301,28 +301,28 @@ class WorkflowChecks(unittest.TestCase):
 
     def test_windows_ci_regressions_cannot_be_removed(self):
         def remove(data):
-            for step in data["jobs"]["windows"]["steps"]:
+            for step in data["jobs"]["windows-regressions"]["steps"]:
                 if "tools/python-runtime/tests" in step.get("run", ""):
                     step["run"] = step["run"].replace("\npython -X utf8=0 -m unittest discover -s tools/ci/tests -v", "")
         with self.assertRaisesRegex(ValidationError, "CPython startup"):
             self.validate(remove)
 
     def test_native_startup_cannot_be_omitted_on_any_platform(self):
-        for job in ("tests", "macos", "windows"):
+        for job in ("tests", "macos", "windows-regressions"):
             with self.subTest(job=job), self.assertRaisesRegex(ValidationError, "Native CPython startup"):
                 self.validate(lambda data: data["jobs"][job].update({"steps": [
                     step for step in data["jobs"][job]["steps"] if "native_probe.py" not in step.get("run", "")
                 ]}))
 
     def test_native_hash_regressions_cannot_be_removed(self):
-        for job in ("tests", "windows"):
+        for job in ("tests", "windows-regressions"):
             with self.subTest(job=job), self.assertRaisesRegex(ValidationError, "Native hash regressions"):
                 self.validate(lambda data: data["jobs"][job].update({"steps": [
                     step for step in data["jobs"][job]["steps"] if "tools/hashing/tests" not in step.get("run", "")
                 ]}))
 
     def test_native_package_verification_cannot_be_omitted(self):
-        for job in ("tests", "macos", "windows"):
+        for job in ("tests", "macos", "windows-regressions"):
             with self.subTest(job=job), self.assertRaisesRegex(ValidationError, "Native Python package verification"):
                 self.validate(lambda data: data["jobs"][job].update({"steps": [
                     step for step in data["jobs"][job]["steps"] if "tools/python-package/package_probe.py" not in step.get("run", "")
@@ -333,14 +333,14 @@ class WorkflowChecks(unittest.TestCase):
             self.validate(lambda data: data["on"].pop("pull_request"))
 
     def test_owned_stdlib_native_fixture_cannot_be_omitted(self):
-        for job in ("tests", "macos", "windows"):
+        for job in ("tests", "macos", "windows-regressions"):
             with self.subTest(job=job), self.assertRaisesRegex(ValidationError, "Owned bootstrap stdlib"):
                 self.validate(lambda data: data["jobs"][job].update({"steps": [
                     step for step in data["jobs"][job]["steps"] if "tools/python-stdlib/stdlib_probe.py" not in step.get("run", "")
                 ]}))
 
     def test_bootstrap_stdlib_regressions_cannot_be_omitted(self):
-        for job in ("tests", "windows"):
+        for job in ("tests", "windows-regressions"):
             with self.subTest(job=job), self.assertRaisesRegex(ValidationError, "Bootstrap stdlib regressions"):
                 self.validate(lambda data: data["jobs"][job].update({"steps": [
                     step for step in data["jobs"][job]["steps"] if "tools/python-stdlib/tests" not in step.get("run", "")
@@ -419,7 +419,28 @@ class WorkflowChecks(unittest.TestCase):
     def test_native_jobs_cannot_omit_the_plan_dependency(self):
         for target in ("macos", "windows", "linux"):
             with self.subTest(target=target), self.assertRaisesRegex(ValidationError, "selection"):
-                self.validate(lambda data: data["jobs"][target].update({"needs": ["dependencies"]}))
+                self.validate(lambda data: data["jobs"][target].update({"needs": ["dependencies-" + target]}))
+
+    def test_windows_regressions_cannot_wait_for_the_application_or_ignore_selection(self):
+        for change in ({"needs": ["windows", "dependency-plan"]}, {"if": "false"}, {"needs": []}):
+            with self.subTest(change=change), self.assertRaisesRegex(ValidationError, "run independently"):
+                self.validate(lambda data: data["jobs"]["windows-regressions"].update(change))
+
+    def test_platform_partition_cannot_omit_the_validated_matrix(self):
+        def replace(data):
+            for step in data["jobs"]["dependency-plan"]["steps"]:
+                if step.get("id") == "platforms":
+                    step["env"] = {"CI_DEPENDENCY_MATRIX": '{"include":[]}'}
+        with self.assertRaisesRegex(ValidationError, "complete validated selection"):
+            self.validate(replace)
+
+    def test_git_object_cache_regressions_cannot_be_removed(self):
+        def remove(data):
+            for step in data["jobs"]["tests"]["steps"]:
+                if step.get("name") == "Developer SDK cache regression tests":
+                    step["run"] = step["run"].replace(" tools/ci/tests/git_cache.test.mjs", "")
+        with self.assertRaisesRegex(ValidationError, "Git object cache"):
+            self.validate(remove)
 
     def test_validation_mode_cannot_be_missing_or_replaced_by_a_constant(self):
         for mode in (None, "documentation", "${{ 'documentation' }}"):
@@ -447,7 +468,7 @@ class WorkflowChecks(unittest.TestCase):
 
     def test_windows_dependency_regressions_cannot_be_removed(self):
         with self.assertRaisesRegex(ValidationError, "Windows dependency regression tests"):
-            self.validate(lambda data: data["jobs"]["windows"]["steps"].pop(2))
+            self.validate(lambda data: data["jobs"]["windows-regressions"]["steps"].pop(1))
 
     def test_unicode_regressions_cannot_be_removed(self):
         def remove(data):
@@ -491,24 +512,32 @@ class WorkflowChecks(unittest.TestCase):
             self.validate(remove)
 
     def test_dependency_matrix_cannot_be_replaced_by_a_constant_subset(self):
-        with self.assertRaisesRegex(ValidationError, "complete selected matrix"):
-            self.validate(lambda data: data["jobs"]["dependencies"]["strategy"].update({"matrix": {"component": ["ignored"]}}))
+        for platform in ("linux", "macos", "windows"):
+            with self.subTest(platform=platform), self.assertRaisesRegex(ValidationError, "complete selected matrix"):
+                self.validate(lambda data: data["jobs"]["dependencies-" + platform]["strategy"].update({"matrix": {"component": ["ignored"]}}))
 
     def test_dependency_workflow_cannot_use_a_remote_reference(self):
-        with self.assertRaisesRegex(ValidationError, "repository-owned reusable"):
-            self.validate(lambda data: data["jobs"]["dependencies"].update({"uses": "other/repository/.github/workflows/build.yml@main"}))
+        for platform in ("linux", "macos", "windows"):
+            with self.subTest(platform=platform), self.assertRaisesRegex(ValidationError, "repository-owned reusable"):
+                self.validate(lambda data: data["jobs"]["dependencies-" + platform].update({"uses": "other/repository/.github/workflows/build.yml@main"}))
 
     def test_dependency_build_failures_cannot_be_masked(self):
-        with self.assertRaisesRegex(ValidationError, "failures must propagate"):
-            self.validate(lambda data: data["jobs"]["dependencies"].update({"continue-on-error": True}))
+        for platform in ("linux", "macos", "windows"):
+            with self.subTest(platform=platform), self.assertRaisesRegex(ValidationError, "failures must propagate"):
+                self.validate(lambda data: data["jobs"]["dependencies-" + platform].update({"continue-on-error": True}))
 
     def test_dependency_matrix_cannot_use_a_change_filter_outside_the_validated_plan(self):
-        with self.assertRaisesRegex(ValidationError, "matrix expansion"):
-            self.validate(lambda data: data["jobs"]["dependencies"].update({"if": "false"}))
+        for platform in ("linux", "macos", "windows"):
+            with self.subTest(platform=platform), self.assertRaisesRegex(ValidationError, "matrix expansion"):
+                self.validate(lambda data: data["jobs"]["dependencies-" + platform].update({"if": "false"}))
 
     def test_dependency_planner_cannot_be_replaced_by_a_success_stub(self):
+        def replace(data):
+            for step in data["jobs"]["dependency-plan"]["steps"]:
+                if step.get("id") == "plan":
+                    step["run"] = "true"
         with self.assertRaisesRegex(ValidationError, "real source manifests"):
-            self.validate(lambda data: data["jobs"]["dependency-plan"]["steps"][-1].update({"run": "true"}))
+            self.validate(replace)
 
     def test_reusable_dependency_job_cannot_be_unbounded(self):
         path = self.root / ".github/workflows/dependency-build.yml"

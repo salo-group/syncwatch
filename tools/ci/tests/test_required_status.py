@@ -8,7 +8,8 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from required_status import validate_results
 
-WORKFLOW_JOBS = ["repository", "tests", "contracts", "macos", "windows", "linux", "metadata", "dependency-plan", "dependencies"]
+WORKFLOW_JOBS = ["repository", "tests", "contracts", "macos", "windows", "linux", "metadata", "dependency-plan",
+                 "dependencies-linux", "dependencies-macos", "dependencies-windows", "windows-regressions"]
 
 
 class RequiredStatusChecks(unittest.TestCase):
@@ -20,7 +21,7 @@ class RequiredStatusChecks(unittest.TestCase):
     def workflow_results(self, mode):
         results = {name: {"result": "success"} for name in WORKFLOW_JOBS}
         if mode == "documentation":
-            for name in ("macos", "windows", "linux", "metadata"):
+            for name in ("macos", "windows", "linux", "metadata", "windows-regressions"):
                 results[name]["result"] = "skipped"
         results["dependency-plan"]["outputs"] = {"mode": mode}
         return results
@@ -62,7 +63,7 @@ class RequiredStatusChecks(unittest.TestCase):
 
     def test_documentation_cli_accepts_only_explicitly_unselected_native_jobs(self):
         results = {name: {"result": "success"} for name in WORKFLOW_JOBS}
-        for name in ("macos", "windows", "linux", "metadata"):
+        for name in ("macos", "windows", "linux", "metadata", "windows-regressions"):
             results[name]["result"] = "skipped"
         results["dependency-plan"]["outputs"] = {"mode": "documentation"}
         environment = dict(os.environ, CI_NEEDS_JSON=json.dumps(results))
@@ -85,7 +86,7 @@ class RequiredStatusChecks(unittest.TestCase):
                     self.assertIn("Required CI failed:", result.stderr)
 
     def test_documentation_cannot_skip_selected_jobs_or_omit_native_results(self):
-        for name in ("repository", "tests", "contracts", "dependency-plan", "dependencies"):
+        for name in ("repository", "tests", "contracts", "dependency-plan", "dependencies-linux", "dependencies-macos", "dependencies-windows"):
             with self.subTest(name=name):
                 results = self.workflow_results("documentation")
                 results[name]["result"] = "skipped"

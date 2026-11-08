@@ -216,24 +216,26 @@ def check_workflows(root: Path) -> None:
     require(events["workflow_dispatch"] == {"inputs": {"cold": {"description": "Rebuild dependencies without reading caches", "type": "boolean", "default": True}}}, "manual builds must support explicit cold validation")
     require(workflow.get("concurrency", {}).get("cancel-in-progress") is True, "superseded checks must cancel")
     jobs = workflow.get("jobs", {})
-    selected = ["repository", "tests", "contracts", "macos", "windows", "linux", "metadata", "dependency-plan", "dependencies"]
+    selected = ["repository", "tests", "contracts", "macos", "windows", "linux", "metadata", "dependency-plan",
+                "dependencies-linux", "dependencies-macos", "dependencies-windows", "windows-regressions"]
     require(set(jobs) == {*selected, "required"}, "unexpected repository job set")
     runners = {name: "ubuntu-24.04" for name in ("repository", "tests", "contracts", "required", "metadata", "dependency-plan")}
-    runners.update({"macos": "macos-15", "windows": "windows-2025", "linux": "ubuntu-24.04"})
-    require(jobs["metadata"].get("needs") == ["windows", "dependency-plan"] and jobs["metadata"].get("if") == "${{ always() && needs.dependency-plan.outputs.mode == 'full' }}"
+    runners.update({"macos": "macos-15", "windows": "windows-2025", "linux": "ubuntu-24.04", "windows-regressions": "windows-2025"})
+    require(jobs["metadata"].get("needs") == ["windows", "windows-regressions", "dependency-plan"] and jobs["metadata"].get("if") == "${{ always() && needs.dependency-plan.outputs.mode == 'full' }}"
             and "strategy" not in jobs["metadata"], "metadata gate must require the Windows service result even after failure")
     for name, job in jobs.items():
-        if name == "dependencies":
+        if name.startswith("dependencies-"):
+            platform = name.removeprefix("dependencies-")
             require(job.get("uses") == "./.github/workflows/dependency-build.yml", "dependency jobs must use the repository-owned reusable workflow")
             require(job.get("needs") == ["dependency-plan"] and job.get("strategy") == {
-                "fail-fast": False, "matrix": "${{ fromJSON(needs.dependency-plan.outputs.matrix) }}",
+                "fail-fast": False, "matrix": "${{ fromJSON(needs.dependency-plan.outputs." + platform + "_matrix) }}",
             }, "dependency jobs must execute the complete selected matrix")
             require(job.get("with") == {"component": "${{ matrix.component }}", "platform": "${{ matrix.platform }}", "cold": "${{ matrix.cold }}"}, "dependency jobs must preserve selected inputs")
             require(job.get("if") == "${{ needs.dependency-plan.result == 'success' }}", "only a failed dependency plan may prevent matrix expansion")
             require(not any(key in job for key in ("continue-on-error", "permissions", "secrets", "environment")), "dependency failures must propagate without privileged overrides")
             continue
         require(job.get("runs-on") == runners[name], f"{name}: use the declared runner image")
-        maximum = {"macos": 45, "windows": 45, "linux": 150}.get(name, 15)
+        maximum = {"macos": 45, "windows": 45, "windows-regressions": 45, "linux": 150}.get(name, 15)
         require(type(job.get("timeout-minutes")) is int and 0 < job["timeout-minutes"] <= maximum, f"{name}: require a bounded timeout")
         require(not job.get("continue-on-error"), f"{name}: failures must propagate")
         require("permissions" not in job and "secrets" not in job and "environment" not in job, f"{name}: no privileged job overrides")
@@ -253,7 +255,8 @@ def check_workflows(root: Path) -> None:
     for name, python in (("macos", "python3"), ("windows", "python"), ("linux", "python3")):
         steps = jobs[name].get("steps", [])
         require(any(step.get("run") == f"{python} tools/ci/native_job.py {name}" for step in steps), "native jobs must execute real native checks")
-        require(jobs[name].get("needs") == ["dependencies", "dependency-plan"], "native packaging must wait for all verified dependency producers and selection")
+        require(jobs[name].get("needs") == ["dependencies-" + name, "dependency-plan"],
+                "native packaging must wait for all verified dependency producers of its platform and selection")
         require(jobs[name].get("if") == "${{ needs.dependency-plan.outputs.mode == 'full' }}", "native jobs must use the validated validation mode")
         packaging = next(step for step in steps if step.get("run") == f"{python} tools/ci/native_job.py {name}")
         require(packaging.get("env", {}).get("GITHUB_TOKEN") == "${{ github.token }}", "native packaging must use the read-only same-run artifact transport")
@@ -266,7 +269,13 @@ def check_workflows(root: Path) -> None:
             "archive": f"artifacts/native/{name}/artifact.zip",
             "name": f"syncwatch-{name}-" + "${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
         }, "native artifacts must identify platform, commit, run, and attempt")
-    windows_commands = {step.get("run") for step in jobs["windows"]["steps"]}
+    regressions = jobs["windows-regressions"]
+    require(regressions.get("needs") == ["dependency-plan"]
+            and regressions.get("if") == "${{ needs.dependency-plan.outputs.mode == 'full' }}",
+            "Windows regressions must run independently under the validated selection")
+    require(regressions.get("steps", [])[0] == jobs["windows"]["steps"][0],
+            "Windows regressions must check out the exact workflow revision")
+    windows_commands = {step.get("run") for step in regressions["steps"]}
     require("python -m unittest discover -s tools/dependencies/tests -v\npython -m unittest discover -s tools/compression/tests -v" in windows_commands,
             "Windows dependency regression tests must execute on the native Windows runner")
     test_commands = {step.get("run") for step in jobs["tests"]["steps"]}
@@ -279,7 +288,7 @@ def check_workflows(root: Path) -> None:
         require(f"{python} tools/dependencies/build.py prepare --component hacl-hash --platform {target}\n"
                 f"{python} -m unittest discover -s tools/hashing/tests -v" in commands,
                 "Native hash regressions must prepare pinned sources and execute on Linux and Windows")
-    for name, python in (("tests", "python3"), ("macos", "python3"), ("windows", "python")):
+    for name, python in (("tests", "python3"), ("macos", "python3"), ("windows-regressions", "python")):
         commands = {step.get("run") for step in jobs[name]["steps"]}
         require(f"{python} tools/python-runtime/generate_policy.py --check\n"
                 f"{python} tools/python-runtime/native_probe.py --report artifacts/python-startup/native-sdk.json" in commands,
@@ -307,16 +316,24 @@ def check_workflows(root: Path) -> None:
     require("python3 -m unittest discover -s tools/jvm/tests -v" in test_commands, "offline JVM metadata audit tests must execute")
     require("python3 -m unittest discover -s tools/server/tests -v" in test_commands, "server SDK provisioning tests must execute")
     metadata_steps = jobs["metadata"]["steps"]
-    require(any(step.get("run") == "python3 tools/ci/required_status.py windows dependency-plan"
+    require(any(step.get("run") == "python3 tools/ci/required_status.py windows windows-regressions dependency-plan"
                 and step.get("env") == {"CI_NEEDS_JSON": "${{ toJSON(needs) }}"} for step in metadata_steps),
             "metadata gate must inspect the actual Windows service result")
     require("node --test tools/ci/tests/artifact_upload.test.mjs tools/ci/tests/artifact_download.test.mjs" in test_commands,
             "artifact transport tests must execute")
+    require("node --test tools/ci/tests/sdk_cache.test.mjs tools/ci/tests/linux_runtime_cache.test.mjs tools/ci/tests/git_cache.test.mjs" in test_commands,
+            "SDK, runtime and Git object cache tests must execute")
     require("python3 -m unittest discover -s tools/dependencies/tests -v\nnode --test tools/dependencies/tests/cache.test.mjs" in test_commands, "dependency infrastructure tests must execute")
     planner = jobs["dependency-plan"]
     require(any(step.get("id") == "plan" and step.get("run") == "python3 tools/dependencies/build.py plan" for step in planner["steps"]), "dependency planner must validate real source manifests")
-    require(planner.get("outputs") == {"matrix": "${{ steps.plan.outputs.matrix }}", "mode": "${{ steps.plan.outputs.mode }}"},
+    outputs = {"matrix": "${{ steps.plan.outputs.matrix }}", "mode": "${{ steps.plan.outputs.mode }}"}
+    outputs.update({name + "_matrix": "${{ steps.platforms.outputs." + name + " }}" for name in ("linux", "macos", "windows")})
+    require(planner.get("outputs") == outputs,
             "dependency matrix and validation mode must come from the validated plan")
+    require(any(step == {"name": "Partition every selected build by platform", "id": "platforms",
+                         "env": {"CI_DEPENDENCY_MATRIX": "${{ steps.plan.outputs.matrix }}"},
+                         "run": "python3 tools/ci/dependency_plan.py"} for step in planner["steps"]),
+            "platform matrices must partition the complete validated selection")
     action = load_json(root / ".github/actions/upload-native/action.yml")
     require(action.get("runs") == {"using": "node24", "main": "upload.mjs"}, "artifact action must use its declared runner runtime")
     reusable = load_json(root / ".github/workflows/dependency-build.yml")
