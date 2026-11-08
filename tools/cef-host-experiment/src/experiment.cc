@@ -1,17 +1,20 @@
 #include "experiment.h"
 
 #include <cstdlib>
+#include <cstdio>
 #include <filesystem>
 #include <memory>
 #include <set>
 #include <string>
 
 #include "experiment_config.h"
+#include "navigation_policy.h"
 #include "include/base/cef_bind.h"
 #include "include/base/cef_callback.h"
 #include "include/cef_browser.h"
 #include "include/cef_client.h"
 #include "include/cef_command_line.h"
+#include "include/cef_frame.h"
 #include "include/cef_task.h"
 #include "include/cef_version_info.h"
 #include "include/views/cef_browser_view.h"
@@ -52,6 +55,7 @@ std::weak_ptr<Lifetime> active;
 class BrowserClient final : public CefClient,
                             public CefLifeSpanHandler,
                             public CefRequestHandler,
+                            public CefLoadHandler,
                             public CefPermissionHandler,
                             public CefDownloadHandler,
                             public CefDialogHandler {
@@ -60,6 +64,7 @@ class BrowserClient final : public CefClient,
 
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
+  CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; }
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return this; }
   CefRefPtr<CefDialogHandler> GetDialogHandler() override { return this; }
@@ -101,7 +106,25 @@ class BrowserClient final : public CefClient,
 
   bool OnBeforeBrowse(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>,
                       CefRefPtr<CefRequest> request, bool, bool) override {
-    return request->GetURL() != kInitialNavigation;
+    const bool allowed = AllowsResearchNavigation(request->GetURL(), kGoogleNavigationEnabled
+        ? ResearchNavigationScope::GoogleMeet : ResearchNavigationScope::Blank);
+    if (!allowed) {
+      std::fprintf(stderr, "CEF research document navigation rejected\n");
+    }
+    return !allowed;
+  }
+
+  void OnLoadEnd(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame> frame, int status) override {
+    if (frame->IsMain()) {
+      std::fprintf(stderr, "CEF research main document HTTP status=%d\n", status);
+    }
+  }
+
+  void OnLoadError(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame> frame, cef_errorcode_t code,
+                   const CefString&, const CefString&) override {
+    if (frame->IsMain()) {
+      std::fprintf(stderr, "CEF research main document load error=%d\n", static_cast<int>(code));
+    }
   }
 
   bool OnOpenURLFromTab(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>,

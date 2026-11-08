@@ -1,6 +1,7 @@
 #pragma once
 inline constexpr char kDisabledFeatures[] = "@DISABLED_FEATURES@";
 inline constexpr char kInitialNavigation[] = "@INITIAL_NAVIGATION@";
+inline constexpr bool kGoogleNavigationEnabled = @GOOGLE_NAVIGATION_ENABLED@;
 inline constexpr char kWindowTitle[] = "@WINDOW_TITLE@";
 inline constexpr char kCloseLabel[] = "@CLOSE_LABEL@";
 inline constexpr int kInitialWidth = @INITIAL_WIDTH@;
