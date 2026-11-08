@@ -1,5 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #include "experiment.h"
+#include "experiment_config.h"
 #include "include/cef_application_mac.h"
 #include "include/wrapper/cef_helpers.h"
 #include "include/wrapper/cef_library_loader.h"
@@ -29,6 +30,16 @@ int main(int argc, char* argv[]) {
     if (![NSApp isKindOfClass:[SyncWatchExperimentApplication class]]) {
       return 1;
     }
+    NSMenu* menu = [[NSMenu alloc] initWithTitle:@""];
+    NSMenuItem* application = [[NSMenuItem alloc] initWithTitle:@"" action:nil keyEquivalent:@""];
+    NSMenu* actions = [[NSMenu alloc] initWithTitle:[NSString stringWithUTF8String:kWindowTitle]];
+    NSMenuItem* close = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:kCloseLabel]
+                                                 action:@selector(terminate:) keyEquivalent:@"q"];
+    close.target = NSApp;
+    [actions addItem:close];
+    application.submenu = actions;
+    [menu addItem:application];
+    NSApp.mainMenu = menu;
     CefSettings settings;
     if (!MatchesExperimentVersion() || !ConfigureExperiment(settings)) {
       return 1;

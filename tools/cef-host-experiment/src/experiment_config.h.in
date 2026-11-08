@@ -2,6 +2,7 @@
 inline constexpr char kDisabledFeatures[] = "@DISABLED_FEATURES@";
 inline constexpr char kInitialNavigation[] = "@INITIAL_NAVIGATION@";
 inline constexpr char kWindowTitle[] = "@WINDOW_TITLE@";
+inline constexpr char kCloseLabel[] = "@CLOSE_LABEL@";
 inline constexpr int kInitialWidth = @INITIAL_WIDTH@;
 inline constexpr int kInitialHeight = @INITIAL_HEIGHT@;
 inline constexpr int kMinimumWidth = @MINIMUM_WIDTH@;

@@ -92,7 +92,7 @@ class BrowserClient final : public CefClient,
   }
 
   bool OnBeforePopup(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, int,
-                     const CefString&, const CefString&, WindowOpenDisposition,
+                     const CefString&, const CefString&, cef_window_open_disposition_t,
                      bool, const CefPopupFeatures&, CefWindowInfo&,
                      CefRefPtr<CefClient>&, CefBrowserSettings&,
                      CefRefPtr<CefDictionaryValue>&, bool*) override {
@@ -105,7 +105,7 @@ class BrowserClient final : public CefClient,
   }
 
   bool OnOpenURLFromTab(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>,
-                        const CefString&, WindowOpenDisposition, bool) override {
+                        const CefString&, cef_window_open_disposition_t, bool) override {
     return true;
   }
 
@@ -163,6 +163,7 @@ class WindowDelegate final : public CefWindowDelegate {
       window->SetTitle(kWindowTitle);
       window->AddChildView(life->view);
       window->Show();
+      window->Activate();
     }
   }
 
