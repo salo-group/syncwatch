@@ -223,7 +223,9 @@ class WindowDelegate final : public CefWindowDelegate {
 
 class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
  public:
-  ExperimentApp() : lifetime_(std::make_shared<Lifetime>()), client_(new BrowserClient(lifetime_)) {
+  explicit ExperimentApp(const CefString& initial_url)
+      : initial_url_(initial_url), lifetime_(std::make_shared<Lifetime>()),
+        client_(new BrowserClient(lifetime_)) {
     active = lifetime_;
   }
 
@@ -254,7 +256,7 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
     CEF_REQUIRE_UI_THREAD();
     CefBrowserSettings settings;
     lifetime_->view = CefBrowserView::CreateBrowserView(
-        client_, kInitialNavigation, settings, nullptr, nullptr, new SurfaceDelegate);
+        client_, initial_url_, settings, nullptr, nullptr, new SurfaceDelegate);
     if (!lifetime_->view || !CefWindow::CreateTopLevelWindow(new WindowDelegate(lifetime_))) {
       lifetime_->view = nullptr;
       lifetime_->window_destroyed = true;
@@ -263,6 +265,7 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
   }
 
  private:
+  const CefString initial_url_;
   std::shared_ptr<Lifetime> lifetime_;
   CefRefPtr<BrowserClient> client_;
   IMPLEMENT_REFCOUNTING(ExperimentApp);
@@ -270,14 +273,34 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
 
 }  // namespace
 
-CefRefPtr<CefApp> CreateExperimentApp() { return new ExperimentApp; }
+CefRefPtr<CefApp> CreateExperimentApp(const CefString& initial_url) {
+  return new ExperimentApp(initial_url);
+}
 
-bool ConfigureExperiment(CefSettings& settings) {
+bool ConfigureExperiment(CefSettings& settings, CefString& initial_url) {
 #if defined(OS_WIN)
+  const wchar_t* meeting = _wgetenv(L"SYNCWATCH_CEF_EXPERIMENT_MEETING_URL");
   const wchar_t* value = _wgetenv(L"SYNCWATCH_CEF_EXPERIMENT_ROOT");
 #else
+  const char* meeting = std::getenv("SYNCWATCH_CEF_EXPERIMENT_MEETING_URL");
   const char* value = std::getenv("SYNCWATCH_CEF_EXPERIMENT_ROOT");
 #endif
+  initial_url = kInitialNavigation;
+  if (meeting) {
+    std::size_t length = 0;
+    while (length <= kResearchNavigationLimit && meeting[length]) {
+      ++length;
+    }
+    if (!length || length > kResearchNavigationLimit) {
+      return false;
+    }
+    const CefString candidate(meeting, length);
+    if (!AllowsResearchMeetingEntry(candidate, kGoogleNavigationEnabled
+        ? ResearchNavigationScope::GoogleMeet : ResearchNavigationScope::Blank)) {
+      return false;
+    }
+    initial_url = candidate;
+  }
   if (!value || !*value) {
     return false;
   }

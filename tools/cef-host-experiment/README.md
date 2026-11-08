@@ -65,6 +65,11 @@ Delete only the experiment-owned installation root after every child process exi
 The separate `SYNCWATCH_CEF_RESEARCH_GOOGLE_NAVIGATION` CMake option defaults off.
 After lifecycle and sandbox acceptance, an approved research run may enable this option.
 The host then opens the public Meet landing endpoint and its Google sign-in redirect.
+An approved launcher may set `SYNCWATCH_CEF_EXPERIMENT_MEETING_URL` to one canonical Meet meeting URL.
+Only HTTPS `meet.google.com` URLs with a lowercase `aaa-bbbb-ccc` code are accepted.
+Explicit ports, URL credentials, queries, fragments, escaped codes and other paths are rejected.
+An absent value preserves the configured page. An empty or invalid value fails before root creation and browser initialization.
+Blank-only builds reject this input. Keep its value outside arguments, packages, source and diagnostics.
 Document navigation permits only `about:blank` and HTTPS on `meet.google.com` or `accounts.google.com`.
 The public CEF URL parser validates origins, default ports and absent URL credentials.
 Document URLs longer than 8192 code units are rejected.

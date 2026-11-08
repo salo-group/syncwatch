@@ -41,6 +41,36 @@ int CheckPolicy() {
     }
   }
   std::cout << "Navigation policy failures: " << failures << '\n';
+  const std::vector<std::string> meetings = {
+      "https://meet.google.com/abc-defg-hij", "https://meet.google.com/zzz-zzzz-zzz",
+  };
+  const std::vector<std::string> invalid_entries = {
+      "", "about:blank", "https://meet.google.com/landing",
+      "https://accounts.google.com/abc-defg-hij", "http://meet.google.com/abc-defg-hij",
+      "https://meet.google.com:443/abc-defg-hij", "HTTPS://MEET.GOOGLE.COM/abc-defg-hij",
+      "https://meet.google.com/ABC-defg-hij", "https://meet.google.com/abc-de3g-hij",
+      "https://meet.google.com/%61bc-defg-hij", "https://meet.google.com/abc-defg-hij/",
+      "https://meet.google.com/abc-defg-hij?authuser=0",
+      "https://meet.google.com/abc-defg-hij#fragment",
+      "https://someone@meet.google.com/abc-defg-hij",
+      "https://meet.google.com.evil.example/abc-defg-hij",
+      "https://meet.google.com/abc-defg-hij\n",
+  };
+  int entry_failures = 0;
+  for (const auto scope : {ResearchNavigationScope::Blank, ResearchNavigationScope::GoogleMeet}) {
+    for (const auto& url : meetings) {
+      if (AllowsResearchMeetingEntry(url, scope) != (scope == ResearchNavigationScope::GoogleMeet)) {
+        ++entry_failures;
+      }
+    }
+    for (const auto& url : invalid_entries) {
+      if (AllowsResearchMeetingEntry(url, scope)) {
+        ++entry_failures;
+      }
+    }
+  }
+  std::cout << "Meeting entry failures: " << entry_failures << '\n';
+  failures += entry_failures;
   return failures ? 1 : 0;
 }
 

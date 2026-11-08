@@ -18,10 +18,11 @@ CEF_BOOTSTRAP_EXPORT int RunWinMain(HINSTANCE instance, LPWSTR, int,
     return child;
   }
   CefSettings settings;
-  if (!MatchesExperimentVersion() || !ConfigureExperiment(settings)) {
+  CefString initial_url;
+  if (!MatchesExperimentVersion() || !ConfigureExperiment(settings, initial_url)) {
     return 1;
   }
-  auto app = CreateExperimentApp();
+  auto app = CreateExperimentApp(initial_url);
   if (!CefInitialize(arguments, settings, app, sandbox_info)) {
     return CefGetExitCode();
   }

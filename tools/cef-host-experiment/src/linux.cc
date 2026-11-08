@@ -8,10 +8,11 @@ NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
     return child;
   }
   CefSettings settings;
-  if (!MatchesExperimentVersion() || !ConfigureExperiment(settings)) {
+  CefString initial_url;
+  if (!MatchesExperimentVersion() || !ConfigureExperiment(settings, initial_url)) {
     return 1;
   }
-  auto app = CreateExperimentApp();
+  auto app = CreateExperimentApp(initial_url);
   if (!CefInitialize(arguments, settings, app, nullptr)) {
     return CefGetExitCode();
   }

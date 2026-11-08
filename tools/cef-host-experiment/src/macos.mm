@@ -43,7 +43,8 @@ int main(int argc, char* argv[]) {
     [menu addItem:application];
     NSApp.mainMenu = menu;
     CefSettings settings;
-    if (!MatchesExperimentVersion() || !ConfigureExperiment(settings)) {
+    CefString initial_url;
+    if (!MatchesExperimentVersion() || !ConfigureExperiment(settings, initial_url)) {
       return 1;
     }
     // Each disposable profile owns its encryption key. Never access the
@@ -61,7 +62,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     CefMainArgs arguments(argc, argv);
-    auto app = CreateExperimentApp();
+    auto app = CreateExperimentApp(initial_url);
     if (!CefInitialize(arguments, settings, app, nullptr)) {
       return CefGetExitCode();
     }
