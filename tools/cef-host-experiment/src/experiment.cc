@@ -63,7 +63,12 @@ class BrowserClient final : public CefClient,
                             public CefDownloadHandler,
                             public CefDialogHandler {
  public:
-  explicit BrowserClient(std::weak_ptr<Lifetime> lifetime) : lifetime_(lifetime) {}
+  BrowserClient(std::weak_ptr<Lifetime> lifetime, [[maybe_unused]] const CefString& initial_url)
+      : lifetime_(lifetime)
+#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+      , verified_target_(kGoogleNavigationEnabled ? initial_url : CefString())
+#endif
+      {}
 
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
@@ -82,7 +87,7 @@ class BrowserClient final : public CefClient,
         return;
       }
 #if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
-      key_probe_ = std::make_unique<LinuxKeyProbe>(browser);
+      key_probe_ = std::make_unique<LinuxKeyProbe>(browser, verified_target_);
 #endif
     } else {
       browser->GetHost()->CloseBrowser(true);
@@ -177,6 +182,7 @@ class BrowserClient final : public CefClient,
  private:
   std::weak_ptr<Lifetime> lifetime_;
 #if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+  const CefString verified_target_;
   std::unique_ptr<LinuxKeyProbe> key_probe_;
 #endif
   IMPLEMENT_REFCOUNTING(BrowserClient);
@@ -238,7 +244,7 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
  public:
   explicit ExperimentApp(const CefString& initial_url)
       : initial_url_(initial_url), lifetime_(std::make_shared<Lifetime>()),
-        client_(new BrowserClient(lifetime_)) {
+        client_(new BrowserClient(lifetime_, initial_url)) {
     active = lifetime_;
   }
 
@@ -271,8 +277,12 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
   void OnContextInitialized() override {
     CEF_REQUIRE_UI_THREAD();
     CefBrowserSettings settings;
+    CefString startup_url = initial_url_;
+#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+    startup_url = "about:blank";
+#endif
     lifetime_->view = CefBrowserView::CreateBrowserView(
-        client_, initial_url_, settings, nullptr, nullptr, new SurfaceDelegate);
+        client_, startup_url, settings, nullptr, nullptr, new SurfaceDelegate);
     if (!lifetime_->view || !CefWindow::CreateTopLevelWindow(new WindowDelegate(lifetime_))) {
       lifetime_->view = nullptr;
       lifetime_->window_destroyed = true;

@@ -5,10 +5,11 @@
 
 #include "include/cef_browser.h"
 
-// Own one fixed, blank-page diagnostic. Destruction cancels all pending work.
+// Verify the private provider before closing or opening an approved Google target.
+// Destruction cancels all pending work.
 class LinuxKeyProbe final {
  public:
-  explicit LinuxKeyProbe(CefRefPtr<CefBrowser> browser);
+  LinuxKeyProbe(CefRefPtr<CefBrowser> browser, const CefString& verified_target);
   ~LinuxKeyProbe();
   LinuxKeyProbe(const LinuxKeyProbe&) = delete;
   LinuxKeyProbe& operator=(const LinuxKeyProbe&) = delete;

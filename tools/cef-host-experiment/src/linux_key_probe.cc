@@ -11,6 +11,7 @@
 #include "include/base/cef_bind.h"
 #include "include/base/cef_callback.h"
 #include "include/cef_devtools_message_observer.h"
+#include "include/cef_frame.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 
@@ -23,8 +24,9 @@ constexpr int kDeadlineMilliseconds = 15000;
 
 class LinuxKeyProbe::State final : public std::enable_shared_from_this<State> {
  public:
-  explicit State(CefRefPtr<CefBrowser> browser)
-      : browser_(browser), deadline_(std::chrono::steady_clock::now() +
+  State(CefRefPtr<CefBrowser> browser, const CefString& verified_target)
+      : browser_(browser), verified_target_(verified_target),
+        deadline_(std::chrono::steady_clock::now() +
                                     std::chrono::milliseconds(kDeadlineMilliseconds)) {}
 
   void Start() {
@@ -93,10 +95,19 @@ class LinuxKeyProbe::State final : public std::enable_shared_from_this<State> {
     complete_ = true;
     exit_code = status == 0 ? 0 : 1;
     std::fprintf(stderr, "CEF research Linux key provider status=%d attempts=%d\n", status, attempts_);
+    if (status == 0 && !verified_target_.empty()) {
+      if (const auto frame = browser_->GetMainFrame()) {
+        frame->LoadURL(verified_target_);
+        browser_ = nullptr;
+        return;
+      }
+      exit_code = 1;
+    }
     RequestExperimentClose();
   }
 
   CefRefPtr<CefBrowser> browser_;
+  const CefString verified_target_;
   const std::chrono::steady_clock::time_point deadline_;
   int pending_id_ = 0;
   int attempts_ = 0;
@@ -127,8 +138,8 @@ class LinuxKeyProbe::Observer final : public CefDevToolsMessageObserver {
   IMPLEMENT_REFCOUNTING(Observer);
 };
 
-LinuxKeyProbe::LinuxKeyProbe(CefRefPtr<CefBrowser> browser)
-    : state_(std::make_shared<State>(browser)) {
+LinuxKeyProbe::LinuxKeyProbe(CefRefPtr<CefBrowser> browser, const CefString& verified_target)
+    : state_(std::make_shared<State>(browser, verified_target)) {
   CEF_REQUIRE_UI_THREAD();
   registration_ = browser->GetHost()->AddDevToolsMessageObserver(new Observer(state_));
   state_->Start();

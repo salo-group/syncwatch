@@ -101,3 +101,10 @@ Responses are limited to4096 bytes, at most20 attempts and a15-second deadline.
 Provider success0 returns exit0 after normal close. Unknown, malformed, failed or interrupted results cannot qualify credential entry.
 The launcher must verify every owned process exits, then remove the private service, profile and temporary deployment.
 This initialization result does not qualify all data encryption, filesystem confinement, Google authentication or product adoption.
+
+Linux Google research automatically requires the same private environment and provider check.
+It starts blank and opens the validated target only after its own status0 result.
+Failed or unknown initialization closes the window before a Google credential page can appear.
+Success preserves the Google window until normal close or the approved launcher's lifetime limit.
+The standalone blank diagnostic option remains incompatible with Google navigation.
+Neither mode reads or imports a desktop browser profile.
