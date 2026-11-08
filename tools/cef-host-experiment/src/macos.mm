@@ -66,6 +66,11 @@ int main(int argc, char* argv[]) {
     if (!CefInitialize(arguments, settings, app, nullptr)) {
       return CefGetExitCode();
     }
+    if (@available(macOS 14.0, *)) {
+      [NSApp activate];
+    } else {
+      [NSApp activateIgnoringOtherApps:YES];
+    }
     CefRunMessageLoop();
     CefShutdown();
   }

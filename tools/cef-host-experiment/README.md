@@ -82,3 +82,7 @@ Provider rejection must remain visible; never bypass Google policy or change the
 The `navigation-policy` CTest exercises the same public policy on each native operating system.
 It uses CEF's URL parser without starting the browser engine.
 Run `ctest --test-dir BUILD -C Release --output-on-failure` after the native build.
+
+The macOS entrypoint requests normal application activation after CEF initializes.
+This supports keyboard and mouse input during an explicitly launched research session.
+It does not change desktop settings or add remote focus automation.
