@@ -483,6 +483,23 @@ class DependencyBuildTests(unittest.TestCase):
         self.assertEqual(json.loads(restored.stdout), {"hit": True, "restored": 0})
         self.assertEqual((source / "library.txt").read_text(), "existing local change\n")
 
+    def test_git_object_cache_restores_selected_long_paths(self):
+        source = self.root / "3rdparty/example"
+        subprocess.run(["git", "config", "--local", "core.longpaths", "true"], cwd=source, check=True)
+        name = "/".join("directory" + str(index) + "x" * 24 for index in range(8)) + "/selected.txt"
+        original = source / name
+        original.parent.mkdir(parents=True)
+        original.write_bytes(b"original long source path\n")
+        self.update_source_pin()
+        self.set_exports(sorted(["LICENSE", "library.txt", name]))
+        self.prepare()
+        staged = self.git_cache_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        self.remove_source_fixture(source)
+        restored = self.git_cache_cli("restore")
+        self.assertEqual(restored.returncode, 0, restored.stderr)
+        self.assertEqual((source / name).read_bytes(), b"original long source path\n")
+
     def test_git_object_cache_round_trip_accepts_shallow_partial_clones(self):
         source = self.root / "3rdparty/example"
         (source / "unselected.txt").write_bytes(b"unselected original source\n" * 100)

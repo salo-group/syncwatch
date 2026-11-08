@@ -37,7 +37,8 @@ def offline_git():
 
 
 def git(root, *arguments):
-    return subprocess.check_output(["git", *arguments], cwd=root, stderr=subprocess.PIPE, timeout=180)
+    return subprocess.check_output(["git", "-c", "core.longpaths=true", *arguments],
+                                   cwd=root, stderr=subprocess.PIPE, timeout=180)
 
 
 def selection(root, component, platform, cold=False):
