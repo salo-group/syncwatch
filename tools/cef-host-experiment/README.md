@@ -86,3 +86,18 @@ Run `ctest --test-dir BUILD -C Release --output-on-failure` after the native bui
 The macOS entrypoint requests normal application activation after CEF initializes.
 This supports keyboard and mouse input during an explicitly launched research session.
 It does not change desktop settings or add remote focus automation.
+
+## Linux encryption metadata research
+
+`SYNCWATCH_CEF_RESEARCH_LINUX_KEY_PROBE` defaults off and requires a native Linux blank-only build.
+It cannot run with Google navigation enabled. Its page remains blank and capture stays denied.
+An approved launcher must supply the separately verified private Secret Service environment.
+Before profile creation, startup requires private HOME/XDG/control paths and the exact scope-local Unix bus socket.
+The probe selects the supported `gnome-libsecret` backend. It cannot fall back to the desktop bus.
+The probe requests only the cumulative `OSCrypt.FreedesktopSecretKeyProvider.InitStatus` histogram through public CEF APIs.
+It uses no DevTools frontend, remote-debugging endpoint or page bridge.
+It accepts one structurally valid provider sample and logs only its numeric status and attempt count.
+Responses are limited to4096 bytes, at most20 attempts and a15-second deadline.
+Provider success0 returns exit0 after normal close. Unknown, malformed, failed or interrupted results cannot qualify credential entry.
+The launcher must verify every owned process exits, then remove the private service, profile and temporary deployment.
+This initialization result does not qualify all data encryption, filesystem confinement, Google authentication or product adoption.

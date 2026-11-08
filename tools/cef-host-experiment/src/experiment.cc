@@ -9,6 +9,9 @@
 
 #include "experiment_config.h"
 #include "navigation_policy.h"
+#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+#include "linux_key_probe.h"
+#endif
 #include "include/base/cef_bind.h"
 #include "include/base/cef_callback.h"
 #include "include/cef_browser.h"
@@ -76,7 +79,11 @@ class BrowserClient final : public CefClient,
       life->browsers.insert(browser->GetIdentifier());
       if (unexpected) {
         browser->GetHost()->CloseBrowser(true);
+        return;
       }
+#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+      key_probe_ = std::make_unique<LinuxKeyProbe>(browser);
+#endif
     } else {
       browser->GetHost()->CloseBrowser(true);
     }
@@ -84,6 +91,9 @@ class BrowserClient final : public CefClient,
 
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
     CEF_REQUIRE_UI_THREAD();
+#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+    key_probe_.reset();
+#endif
     if (auto life = lifetime_.lock()) {
       life->browsers.erase(browser->GetIdentifier());
       // Finish after CEF has returned from the final browser callback.
@@ -166,6 +176,9 @@ class BrowserClient final : public CefClient,
 
  private:
   std::weak_ptr<Lifetime> lifetime_;
+#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+  std::unique_ptr<LinuxKeyProbe> key_probe_;
+#endif
   IMPLEMENT_REFCOUNTING(BrowserClient);
 };
 
@@ -236,6 +249,9 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
                                      CefRefPtr<CefCommandLine> command) override {
 #if !defined(OS_MAC)
     if (process_type.empty()) {
+#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+      command->AppendSwitchWithValue("password-store", "gnome-libsecret");
+#endif
       // Chromium enables the macOS network sandbox independently of this feature.
       std::string enabled = command->GetSwitchValue("enable-features");
       if (!enabled.empty()) {
@@ -305,6 +321,11 @@ bool ConfigureExperiment(CefSettings& settings, CefString& initial_url) {
     return false;
   }
   const auto root = std::filesystem::path(value);
+#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+  if (!ValidateLinuxKeyProbeEnvironment(root)) {
+    return false;
+  }
+#endif
   std::error_code error;
   if (!root.is_absolute() || !std::filesystem::create_directory(root, error) || error) {
     return false;
