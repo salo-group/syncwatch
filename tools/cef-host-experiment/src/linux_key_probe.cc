@@ -43,7 +43,7 @@ class LinuxKeyProbe::State final : public std::enable_shared_from_this<State> {
     browser_ = nullptr;
   }
 
-  void Result(int message_id, bool success, const void* result, size_t size) {
+  void Result(int message_id, bool success, std::optional<int> status) {
     CEF_REQUIRE_UI_THREAD();
     if (complete_ || message_id != pending_id_) {
       return;
@@ -54,9 +54,6 @@ class LinuxKeyProbe::State final : public std::enable_shared_from_this<State> {
       return;
     }
     if (success) {
-      const auto status = result && size <= 4096
-          ? DecodeLinuxKeyStatus(std::string_view(static_cast<const char*>(result), size))
-          : std::nullopt;
       Finish(status.value_or(-1));
       return;
     }
@@ -112,9 +109,17 @@ class LinuxKeyProbe::Observer final : public CefDevToolsMessageObserver {
 
   void OnDevToolsMethodResult(CefRefPtr<CefBrowser>, int message_id, bool success,
                               const void* result, size_t size) override {
-    if (auto state = state_.lock()) {
-      state->Result(message_id, success, result, size);
-    }
+    const auto status = success && result && size <= 4096
+        ? DecodeLinuxKeyStatus(std::string_view(static_cast<const char*>(result), size))
+        : std::nullopt;
+    // Browser-domain results can arrive before ExecuteDevToolsMethod returns.
+    // Defer only bounded metadata until the assigned ID and window are ready.
+    CefPostTask(TID_UI, base::BindOnce([](std::weak_ptr<State> weak, int id, bool ok,
+                                       std::optional<int> sample) {
+      if (auto state = weak.lock()) {
+        state->Result(id, ok, sample);
+      }
+    }, state_, message_id, success, status));
   }
 
  private:
