@@ -124,3 +124,19 @@ The probe uses one fixed HTTPS `.invalid` origin and the public CEF cookie manag
 To verify restart of the key service, run with `--phase write`, stop both owned services, and restart them with the same protected store. Then run with `--phase read` against the same scope. Confirm the first browser process has exited before stopping its key service.
 
 To verify loss of the key, first read the synthetic cookie successfully. After the browser exits, retire the key material owned by the disposable scope. Keep the cookie database and run `--phase expect-unreadable` in the same scope. This phase requires both an encrypted row before launch and a read failure reported by the running CEF probe.
+
+## Disposable Meet restart
+
+`SYNCWATCH_CEF_RESEARCH_MEET_RESTART` defaults off and requires the Google research build. A launcher must opt in for both launches. With no phase set, Google research still uses a temporary session.
+
+1. Create a private scope named `meet-restart-` followed by 32 random lowercase hexadecimal digits.
+2. Set `SYNCWATCH_CEF_EXPERIMENT_ROOT` to the new `cef-root` child and `SYNCWATCH_CEF_MEET_RESTART_PHASE` to `create`.
+3. Use the browser window for the manual sign-in. Close it normally and wait for its complete process tree to exit.
+4. Start the same executable with the same root and `SYNCWATCH_CEF_MEET_RESTART_PHASE=reopen`. Observe the same Google session in the new window. Close it normally.
+5. Verify the complete process tree has exited. Remove the scope and its owned key before the group ends.
+
+The probe permits one reopen after a clean browser shutdown. It keeps the normal browser cookie expiry and capture policy. Never inspect, copy or reuse an existing browser profile.
+
+On macOS, use `tests/run_macos_meet_restart.py SIGNED_RESEARCH_BUNDLE`. It owns both launches and removes only the scope-specific Keychain item. On Windows, the launch scope requires an owner-only protected DACL, with optional System and local Administrators access. Run under the interactive desktop user. Startup requires a successful current-user DPAPI round trip. On Linux, use the same approved private Secret Service for both launches. Keep its Unix socket path within the host limit.
+
+The CTest `meet-restart-profile` checks the disposable profile boundary without loading CEF. Run it on Windows from the same interactive desktop account. A passing test does not qualify Google session reuse.

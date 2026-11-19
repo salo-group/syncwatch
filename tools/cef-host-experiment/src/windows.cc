@@ -34,6 +34,6 @@ CEF_BOOTSTRAP_EXPORT int RunWinMain(HINSTANCE instance, LPWSTR, int,
 #if defined(SYNCWATCH_CEF_COOKIE_PROBE)
   return CookieStoreProbeExitCode();
 #else
-  return 0;
+  return CompleteExperimentProfile() ? 0 : 1;
 #endif
 }

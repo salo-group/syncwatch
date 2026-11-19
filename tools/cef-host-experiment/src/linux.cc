@@ -27,7 +27,10 @@ NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
 #if defined(SYNCWATCH_CEF_COOKIE_PROBE)
   return CookieStoreProbeExitCode();
 #elif defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
-  return LinuxKeyProbeExitCode();
+  if (const int result = LinuxKeyProbeExitCode()) {
+    return result;
+  }
+  return CompleteExperimentProfile() ? 0 : 1;
 #else
   return 0;
 #endif

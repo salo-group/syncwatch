@@ -6,6 +6,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <string_view>
 
 #include "experiment_config.h"
 #include "navigation_policy.h"
@@ -14,6 +15,9 @@
 #endif
 #if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
 #include "linux_key_probe.h"
+#endif
+#if defined(SYNCWATCH_CEF_MEET_RESTART)
+#include "meet_restart_profile.h"
 #endif
 #include "include/base/cef_bind.h"
 #include "include/base/cef_callback.h"
@@ -38,6 +42,9 @@ class Lifetime {
   bool window_destroyed = false;
   bool closing = false;
   bool quit = false;
+#if defined(SYNCWATCH_CEF_MEET_RESTART)
+  bool created_browser = false;
+#endif
 
   void Close() {
     CEF_REQUIRE_UI_THREAD();
@@ -57,6 +64,9 @@ class Lifetime {
 };
 
 std::weak_ptr<Lifetime> active;
+#if defined(SYNCWATCH_CEF_MEET_RESTART)
+std::optional<MeetRestartProfile> restart_profile;
+#endif
 
 class BrowserClient final : public CefClient,
                             public CefLifeSpanHandler,
@@ -89,6 +99,9 @@ class BrowserClient final : public CefClient,
         browser->GetHost()->CloseBrowser(true);
         return;
       }
+#if defined(SYNCWATCH_CEF_MEET_RESTART)
+      life->created_browser = true;
+#endif
 #if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
       key_probe_ = std::make_unique<LinuxKeyProbe>(browser, verified_target_);
 #endif
@@ -346,6 +359,25 @@ bool ConfigureExperiment(CefSettings& settings, CefString& initial_url) {
   settings.command_line_args_disabled = true;
   settings.no_sandbox = false;
   settings.log_severity = LOGSEVERITY_DISABLE;
+  if (const char* mode = std::getenv("SYNCWATCH_CEF_MEET_RESTART_PHASE")) {
+#if defined(SYNCWATCH_CEF_MEET_RESTART)
+    const std::string_view phase(mode);
+    if (phase != "create" && phase != "reopen") {
+      return false;
+    }
+    restart_profile = MeetRestartProfile::Open(root,
+        phase == "create" ? MeetRestartPhase::Create : MeetRestartPhase::Reopen);
+    if (!restart_profile) {
+      return false;
+    }
+    CefString(&settings.root_cache_path) = root.native();
+    CefString(&settings.cache_path) = root.native();
+    return true;
+#else
+    static_cast<void>(mode);
+    return false;
+#endif
+  }
 #if defined(SYNCWATCH_CEF_COOKIE_PROBE)
   return ConfigureCookieStoreProbe(root, settings);
 #else
@@ -363,6 +395,25 @@ bool ConfigureExperiment(CefSettings& settings, CefString& initial_url) {
   CefString(&settings.root_cache_path) = root.native();
   return true;
 #endif
+}
+
+std::string MeetRestartKeyId() {
+#if defined(SYNCWATCH_CEF_MEET_RESTART)
+  if (restart_profile) {
+    return restart_profile->KeyId();
+  }
+#endif
+  return {};
+}
+
+bool CompleteExperimentProfile() {
+#if defined(SYNCWATCH_CEF_MEET_RESTART)
+  if (restart_profile) {
+    const auto lifetime = active.lock();
+    return lifetime && lifetime->created_browser && lifetime->quit && restart_profile->Complete();
+  }
+#endif
+  return true;
 }
 
 bool MatchesExperimentVersion() {

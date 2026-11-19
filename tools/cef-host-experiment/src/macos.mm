@@ -62,17 +62,21 @@ int main(int argc, char* argv[]) {
     }
     const std::string service = "org.salo.syncwatch.cef-research." + scope;
 #else
+    const auto scope = MeetRestartKeyId();
     const std::string service = "org.salo.syncwatch.cef-research." +
-        std::string([NSUUID UUID].UUIDString.UTF8String);
+        (scope.empty() ? std::string([NSUUID UUID].UUIDString.UTF8String) : scope);
 #endif
     const std::string account = "SyncWatch CEF research";
     CefString(&settings.keychain_service_name) = service;
     CefString(&settings.keychain_account_name) = account;
-    std::ofstream ownership(root / "keychain-owner.json");
-    ownership << "{\"service\":\"" << service << "\",\"account\":\"" << account << "\"}\n";
-    ownership.close();
-    if (!ownership) {
-      return 1;
+    // The two-launch controller owns the scope-derived service in both phases.
+    if (MeetRestartKeyId().empty()) {
+      std::ofstream ownership(root / "keychain-owner.json");
+      ownership << "{\"service\":\"" << service << "\",\"account\":\"" << account << "\"}\n";
+      ownership.close();
+      if (!ownership) {
+        return 1;
+      }
     }
     CefMainArgs arguments(argc, argv);
     auto app = CreateExperimentApp(initial_url);
@@ -88,10 +92,11 @@ int main(int argc, char* argv[]) {
 #endif
     CefRunMessageLoop();
     CefShutdown();
+#if !defined(SYNCWATCH_CEF_COOKIE_PROBE)
+    return CompleteExperimentProfile() ? 0 : 1;
+#endif
   }
 #if defined(SYNCWATCH_CEF_COOKIE_PROBE)
   return CookieStoreProbeExitCode();
-#else
-  return 0;
 #endif
 }
