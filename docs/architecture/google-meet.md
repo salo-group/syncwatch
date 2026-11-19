@@ -54,7 +54,15 @@ Validate the current room's canonical HTTPS `meet.google.com` URI before opening
 
 Do not expose room credentials, local files, or a general native bridge to website content. Keep the renderer sandbox and normal certificate checks enabled. Scope camera and microphone decisions to the requesting origin and explicit user action. Deny unexpected origins, unsupported permissions, downloads, and native-protocol launches. Validate authentication navigation separately; a Meet-only hostname rule must not silently break legitimate Google account selection.
 
-Use a SyncWatch-owned profile, separate from the user's browsers. Define profile persistence and deletion before enabling remembered web sign-in. Treat cookies as sensitive credentials. Use platform-protected storage where required; do not create a plaintext fallback or copy existing browser profiles.
+## Remembered Meet session
+
+On a device where the user chooses to stay signed in, reopen Meet with the same local profile after hangup, a new movie, or an app restart. Changing the movie keeps the current call active. Starting another call requires an explicit action. If Google requires sign-in again, show the provider's sign-in flow in the owned window.
+
+The native call owner selects a profile by the authenticated SyncWatch account and the local OS user. Use an opaque local identifier and an exclusive lease. Keep the profile on the device with private filesystem permissions and an OS-protected encryption key. The browser owns its cookies. SyncWatch must never read, transfer, or log Google cookies or passwords. Use a temporary profile when the user declines retention or secure storage is unavailable. Show that a temporary session will require sign-in again.
+
+Closing the call releases the profile lease, the browser processes and media. SyncWatch sign-out, account revocation, and **Forget Meet sign-in** invalidate the local profile before starting teardown. After the browser exits, remove the owned profile and its dedicated key where supported. If removal fails or the app exits during cleanup, keep the profile unavailable and retry cleanup on the next launch. The action clears this device's Meet sign-in. Google account sign-out on other devices and revocation of the backend Meet API grant use separate controls.
+
+For the pinned CEF candidate, a disk-backed cache enables persistent browser storage. Qualify normal provider cookies first. Keep the default expiry behavior for session-only cookies unless a separate provider compatibility check requires a supported setting. A successful synthetic restart proves browser storage behavior only. Before enabling retention, verify encrypted storage, profile isolation, restart, removal, and actual Google reuse on macOS, Windows and Linux. [Pinned CEF settings](https://github.com/chromiumembedded/cef/blob/8ea0c73b5dbed1389c8dafb911a98c41246bb8cb/include/internal/cef_types.h#L282-L336).
 
 ## Lifecycle and truthful state
 
