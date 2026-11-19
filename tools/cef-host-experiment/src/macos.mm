@@ -3,6 +3,9 @@
 #include <filesystem>
 #include "experiment.h"
 #include "experiment_config.h"
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+#include "cookie_store_probe.h"
+#endif
 #include "include/cef_application_mac.h"
 #include "include/wrapper/cef_helpers.h"
 #include "include/wrapper/cef_library_loader.h"
@@ -49,12 +52,22 @@ int main(int argc, char* argv[]) {
     }
     // Each disposable profile owns its encryption key. Never access the
     // default Chromium/Chrome Keychain item or reuse another browser's key.
+    const auto root = std::filesystem::path(CefString(&settings.root_cache_path).ToString());
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+    const auto scope = root.parent_path().filename().string();
+    constexpr std::string_view prefix = "cookie-probe-";
+    if (!scope.starts_with(prefix) || scope.size() != prefix.size() + 32 ||
+        scope.find_first_not_of("0123456789abcdef", prefix.size()) != std::string::npos) {
+      return 1;
+    }
+    const std::string service = "org.salo.syncwatch.cef-research." + scope;
+#else
     const std::string service = "org.salo.syncwatch.cef-research." +
         std::string([NSUUID UUID].UUIDString.UTF8String);
+#endif
     const std::string account = "SyncWatch CEF research";
     CefString(&settings.keychain_service_name) = service;
     CefString(&settings.keychain_account_name) = account;
-    const auto root = std::filesystem::path(CefString(&settings.root_cache_path).ToString());
     std::ofstream ownership(root / "keychain-owner.json");
     ownership << "{\"service\":\"" << service << "\",\"account\":\"" << account << "\"}\n";
     ownership.close();
@@ -66,13 +79,19 @@ int main(int argc, char* argv[]) {
     if (!CefInitialize(arguments, settings, app, nullptr)) {
       return CefGetExitCode();
     }
+#if !defined(SYNCWATCH_CEF_COOKIE_PROBE)
     if (@available(macOS 14.0, *)) {
       [NSApp activate];
     } else {
       [NSApp activateIgnoringOtherApps:YES];
     }
+#endif
     CefRunMessageLoop();
     CefShutdown();
   }
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+  return CookieStoreProbeExitCode();
+#else
   return 0;
+#endif
 }

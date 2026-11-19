@@ -1,5 +1,8 @@
 #include "experiment.h"
 #include "include/base/cef_compiler_specific.h"
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+#include "cookie_store_probe.h"
+#endif
 #if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
 #include "linux_key_probe.h"
 #endif
@@ -21,7 +24,9 @@ NO_STACK_PROTECTOR int main(int argc, char* argv[]) {
   }
   CefRunMessageLoop();
   CefShutdown();
-#if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+  return CookieStoreProbeExitCode();
+#elif defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
   return LinuxKeyProbeExitCode();
 #else
   return 0;

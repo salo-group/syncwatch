@@ -2,6 +2,9 @@
 #include "experiment.h"
 #include "include/cef_sandbox_win.h"
 #include "include/cef_version_info.h"
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+#include "cookie_store_probe.h"
+#endif
 
 #if !defined(CEF_USE_BOOTSTRAP)
 #error This experiment requires the upstream sandbox bootstrap.
@@ -28,5 +31,9 @@ CEF_BOOTSTRAP_EXPORT int RunWinMain(HINSTANCE instance, LPWSTR, int,
   }
   CefRunMessageLoop();
   CefShutdown();
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+  return CookieStoreProbeExitCode();
+#else
   return 0;
+#endif
 }

@@ -9,6 +9,9 @@
 
 #include "experiment_config.h"
 #include "navigation_policy.h"
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+#include "cookie_store_probe.h"
+#endif
 #if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
 #include "linux_key_probe.h"
 #endif
@@ -276,6 +279,9 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
 
   void OnContextInitialized() override {
     CEF_REQUIRE_UI_THREAD();
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+    StartCookieStoreProbe();
+#else
     CefBrowserSettings settings;
     CefString startup_url = initial_url_;
 #if defined(SYNCWATCH_CEF_LINUX_KEY_PROBE)
@@ -288,6 +294,7 @@ class ExperimentApp final : public CefApp, public CefBrowserProcessHandler {
       lifetime_->window_destroyed = true;
       lifetime_->Finish();
     }
+#endif
   }
 
  private:
@@ -336,6 +343,12 @@ bool ConfigureExperiment(CefSettings& settings, CefString& initial_url) {
     return false;
   }
 #endif
+  settings.command_line_args_disabled = true;
+  settings.no_sandbox = false;
+  settings.log_severity = LOGSEVERITY_DISABLE;
+#if defined(SYNCWATCH_CEF_COOKIE_PROBE)
+  return ConfigureCookieStoreProbe(root, settings);
+#else
   std::error_code error;
   if (!root.is_absolute() || !std::filesystem::create_directory(root, error) || error) {
     return false;
@@ -348,10 +361,8 @@ bool ConfigureExperiment(CefSettings& settings, CefString& initial_url) {
   }
 #endif
   CefString(&settings.root_cache_path) = root.native();
-  settings.command_line_args_disabled = true;
-  settings.no_sandbox = false;
-  settings.log_severity = LOGSEVERITY_DISABLE;
   return true;
+#endif
 }
 
 bool MatchesExperimentVersion() {

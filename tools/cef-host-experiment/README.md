@@ -108,3 +108,15 @@ Failed or unknown initialization closes the window before a Google credential pa
 Success preserves the Google window until normal close or the approved launcher's lifetime limit.
 The standalone blank diagnostic option remains incompatible with Google navigation.
 Neither mode reads or imports a desktop browser profile.
+
+## Synthetic cookie restart probe
+
+`SYNCWATCH_CEF_RESEARCH_COOKIE_PROBE` defaults off. Configure a separate blank build with this option. It cannot enable Google navigation or the Linux histogram probe. It opens no browser window and requests no page.
+
+1. Create a fresh, private test scope. On macOS, name it `cookie-probe-` followed by 32 random lowercase hexadecimal digits.
+2. On Linux, run the probe in the approved private Secret Service and sandbox environment. Keep the same private bus and unlocked collection for both launches.
+3. Run `python3 tests/run_cookie_store_probe.py NATIVE_EXECUTABLE PRIVATE_SCOPE` from this directory using the native desktop account. Point to the prepared research executable.
+4. Confirm both processes exit with code zero and the synthetic row has ciphertext. On Linux, verify the private Libsecret provider format as well.
+5. Confirm the owned processes have stopped. Remove the disposable scope and, on macOS, only the generated Keychain item. On Linux, also remove the temporary deployment and private services.
+
+The probe uses one fixed HTTPS `.invalid` origin and the public CEF cookie manager. The first process writes and flushes an expiring marker. The second reopens the same profile and verifies the marker. Keep the standard session-cookie expiry policy. The probe does not authorize retention of Google credentials or qualify real Meet restart.
