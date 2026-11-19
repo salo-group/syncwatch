@@ -122,3 +122,5 @@ Neither mode reads or imports a desktop browser profile.
 The probe uses one fixed HTTPS `.invalid` origin and the public CEF cookie manager. The first process writes and flushes an expiring marker. The second reopens the same profile and verifies the marker. Keep the standard session-cookie expiry policy. The probe does not authorize retention of Google credentials or qualify real Meet restart.
 
 To verify restart of the key service, run with `--phase write`, stop both owned services, and restart them with the same protected store. Then run with `--phase read` against the same scope. Confirm the first browser process has exited before stopping its key service.
+
+To verify loss of the key, first read the synthetic cookie successfully. After the browser exits, retire the key material owned by the disposable scope. Keep the cookie database and run `--phase expect-unreadable` in the same scope. This phase requires both an encrypted row before launch and a read failure reported by the running CEF probe.
