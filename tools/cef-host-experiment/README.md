@@ -120,3 +120,5 @@ Neither mode reads or imports a desktop browser profile.
 5. Confirm the owned processes have stopped. Remove the disposable scope and, on macOS, only the generated Keychain item. On Linux, also remove the temporary deployment and private services.
 
 The probe uses one fixed HTTPS `.invalid` origin and the public CEF cookie manager. The first process writes and flushes an expiring marker. The second reopens the same profile and verifies the marker. Keep the standard session-cookie expiry policy. The probe does not authorize retention of Google credentials or qualify real Meet restart.
+
+To verify restart of the key service, run with `--phase write`, stop both owned services, and restart them with the same protected store. Then run with `--phase read` against the same scope. Confirm the first browser process has exited before stopping its key service.

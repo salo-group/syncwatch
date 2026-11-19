@@ -24,29 +24,39 @@ def verify_encrypted_row(root: Path) -> bool:
     return ciphertext.startswith(b'v11')
 
 
-def run_probe(executable: Path, scope: Path) -> dict:
+def run_probe(executable: Path, scope: Path, phase: str = 'both') -> dict:
     root = scope / 'cef-root'
-    if not scope.is_dir() or scope.is_symlink() or root.exists() or root.is_symlink():
-        raise ValueError('Use a new private scope for the synthetic profile')
-    libsecret_prefix = False
-    for mode in ('write', 'read'):
-        result = subprocess.run(
+    if not scope.is_dir() or scope.is_symlink() or root.is_symlink():
+        raise ValueError('Use a private scope for the synthetic profile')
+    if phase not in ('both', 'write', 'read'):
+        raise ValueError('Unexpected synthetic probe phase')
+    if phase == 'read':
+        marker = root / '.syncwatch-cookie-probe'
+        if not root.is_dir() or not marker.is_file() or marker.is_symlink():
+            raise ValueError('The scope has no synthetic probe profile')
+        libsecret_prefix = verify_encrypted_row(root)
+    elif root.exists():
+        raise ValueError('Use a new private scope to write the synthetic profile')
+    result = {}
+    for mode in ('write', 'read') if phase == 'both' else (phase,):
+        process = subprocess.run(
             [str(executable)], cwd=scope, stdin=subprocess.DEVNULL, capture_output=True,
             env={**os.environ, 'SYNCWATCH_CEF_EXPERIMENT_ROOT': str(root),
                  'SYNCWATCH_CEF_COOKIE_PROBE_MODE': mode}, timeout=30,
         )
         evidence = f'CEF synthetic cookie probe {mode} passed'.encode('ascii')
-        if result.returncode or evidence not in result.stderr.splitlines():
-            raise RuntimeError(f'Probe {mode} failed: exit {result.returncode}')
+        if process.returncode or evidence not in process.stderr.splitlines():
+            raise RuntimeError(f'Probe {mode} failed: exit {process.returncode}')
+        result[f'{mode}ProcessExit'] = 0
         if mode == 'write':
             libsecret_prefix = verify_encrypted_row(root)
-    return {'writeProcessExit': 0, 'readProcessExit': 0, 'encryptedRow': True,
-            'libsecretVersionPrefix': libsecret_prefix}
+    return {**result, 'encryptedRow': True, 'libsecretVersionPrefix': libsecret_prefix}
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('executable', type=Path)
     parser.add_argument('scope', type=Path)
+    parser.add_argument('--phase', choices=('both', 'write', 'read'), default='both')
     options = parser.parse_args()
-    print(json.dumps(run_probe(options.executable.resolve(strict=True), options.scope.resolve(strict=True))))
+    print(json.dumps(run_probe(options.executable.resolve(strict=True), options.scope.absolute(), options.phase)))
