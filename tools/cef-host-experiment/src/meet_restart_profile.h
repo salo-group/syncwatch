@@ -6,6 +6,10 @@
 
 enum class MeetRestartPhase { Create, Reopen };
 
+#if defined(_WIN32)
+bool CanProtectWindowsMeetRestartProfile();
+#endif
+
 // One caller-owned, disposable profile. The launcher owns its final removal.
 class MeetRestartProfile {
  public:

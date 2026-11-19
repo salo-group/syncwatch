@@ -139,4 +139,4 @@ The probe permits one reopen after a clean browser shutdown. It keeps the normal
 
 On macOS, use `tests/run_macos_meet_restart.py SIGNED_RESEARCH_BUNDLE`. It owns both launches and removes only the scope-specific Keychain item. On Windows, the launch scope requires an owner-only protected DACL, with optional System and local Administrators access. Run under the interactive desktop user. Startup requires a successful current-user DPAPI round trip. On Linux, use the same approved private Secret Service for both launches. Keep its Unix socket path within the host limit.
 
-The CTest `meet-restart-profile` checks the disposable profile boundary without loading CEF. Run it on Windows from the same interactive desktop account. A passing test does not qualify Google session reuse.
+The CTest `meet-restart-profile` checks directory access and the launch order without loading CEF. Run the real Windows restart from an interactive desktop. Verify DPAPI and Google session reuse separately.

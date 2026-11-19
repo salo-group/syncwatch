@@ -365,6 +365,11 @@ bool ConfigureExperiment(CefSettings& settings, CefString& initial_url) {
     if (phase != "create" && phase != "reopen") {
       return false;
     }
+#if defined(OS_WIN)
+    if (!CanProtectWindowsMeetRestartProfile()) {
+      return false;
+    }
+#endif
     restart_profile = MeetRestartProfile::Open(root,
         phase == "create" ? MeetRestartPhase::Create : MeetRestartPhase::Reopen);
     if (!restart_profile) {

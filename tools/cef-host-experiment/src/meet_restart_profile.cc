@@ -102,7 +102,20 @@ bool IsPrivateDirectory(const std::filesystem::path& path, bool scope = false) {
 
 bool CreatePrivateDirectory(const std::filesystem::path& path) {
 #if defined(_WIN32)
-  return CreateDirectoryW(path.c_str(), nullptr) && IsPrivateDirectory(path);
+  auto user = CurrentUser();
+  if (user.empty()) {
+    return false;
+  }
+  SECURITY_DESCRIPTOR descriptor;
+  const auto sid = reinterpret_cast<TOKEN_USER*>(user.data())->User.Sid;
+  if (!InitializeSecurityDescriptor(&descriptor, SECURITY_DESCRIPTOR_REVISION) ||
+      !SetSecurityDescriptorOwner(&descriptor, sid, FALSE)) {
+    return false;
+  }
+  // An elevated token can default to the Administrators group as owner.
+  // Set the owner explicitly and inherit the already verified parent DACL.
+  SECURITY_ATTRIBUTES attributes{sizeof(attributes), &descriptor, FALSE};
+  return CreateDirectoryW(path.c_str(), &attributes) && IsPrivateDirectory(path);
 #else
   return !mkdir(path.c_str(), 0700) && IsPrivateDirectory(path);
 #endif
@@ -127,8 +140,10 @@ std::string ScopeId(const std::filesystem::path& root) {
   return name;
 }
 
-bool CanUseCurrentUserStorage() {
+}  // namespace
+
 #if defined(_WIN32)
+bool CanProtectWindowsMeetRestartProfile() {
   // SSH and other non-interactive sessions may lack the desktop DPAPI key.
   BYTE marker[] = {0x53, 0x57};
   DATA_BLOB original{sizeof(marker), marker};
@@ -142,14 +157,8 @@ bool CanUseCurrentUserStorage() {
   LocalFree(restored.pbData);
   LocalFree(encrypted.pbData);
   return ok;
-#else
-  // Linux requires its private Secret Service before navigation. macOS uses
-  // a dedicated Keychain item selected by the scope ID in the entrypoint.
-  return true;
-#endif
 }
-
-}  // namespace
+#endif
 
 MeetRestartProfile::MeetRestartProfile(const std::filesystem::path& root, MeetRestartPhase phase)
     : root_(root), phase_(phase) {}
@@ -174,7 +183,7 @@ std::optional<MeetRestartProfile> MeetRestartProfile::Open(const std::filesystem
       break;
     }
   }
-  if (!IsPrivateDirectory(scope, true) || !CanUseCurrentUserStorage()) {
+  if (!IsPrivateDirectory(scope, true)) {
     return std::nullopt;
   }
   if (phase == MeetRestartPhase::Create) {
