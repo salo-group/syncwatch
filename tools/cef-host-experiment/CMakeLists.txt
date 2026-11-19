@@ -91,7 +91,20 @@ if(OS_MAC)
   target_compile_options(${CEF_TARGET} PRIVATE "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>")
   set_target_properties(${CEF_TARGET} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_BINARY_DIR}/Main-Info.plist")
   set(CEF_APP "${CEF_TARGET_OUT_DIR}/${CEF_TARGET}.app")
-  COPY_MAC_FRAMEWORK(${CEF_TARGET} "${CEF_BINARY_DIR}" "${CEF_APP}")
+  set(FRAMEWORK_NAME "Chromium Embedded Framework")
+  set(FRAMEWORK_DIR "${CEF_APP}/Contents/Frameworks/${FRAMEWORK_NAME}.framework")
+  # Replace framework links in place. Repeated ln -sf can follow directory links
+  # and create broken entries in the signed bundle.
+  add_custom_command(TARGET ${CEF_TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${CEF_BINARY_DIR}/${FRAMEWORK_NAME}.framework" "${FRAMEWORK_DIR}/Versions/A"
+    COMMAND ${CMAKE_COMMAND} -E create_symlink "A" "${FRAMEWORK_DIR}/Versions/Current"
+    VERBATIM)
+  foreach(ENTRY IN ITEMS "${FRAMEWORK_NAME}" Libraries Resources)
+    add_custom_command(TARGET ${CEF_TARGET} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E create_symlink "Versions/A/${ENTRY}" "${FRAMEWORK_DIR}/${ENTRY}"
+      VERBATIM)
+  endforeach()
   foreach(SUFFIXES ${CEF_HELPER_APP_SUFFIXES})
     string(REPLACE ":" ";" SUFFIXES "${SUFFIXES}")
     list(GET SUFFIXES 0 NAME_SUFFIX)
