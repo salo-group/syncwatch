@@ -83,6 +83,15 @@ class Session(SyncplayClient):
             return None, None, None, None
         return super().getLocalState()
 
+    def _determinePlayerStateChange(self, paused, position):
+        pause_changed, seeked = super()._determinePlayerStateChange(paused, position)
+        if not pause_changed and paused != self.getPlayerPaused() and self._protocol is not None:
+            # A user can return to the last confirmed room state while their
+            # opposite choice is still queued or waiting for acknowledgement.
+            unconfirmed = self._protocol.unconfirmed_pause
+            pause_changed = unconfirmed is not None and unconfirmed != paused
+        return pause_changed, seeked
+
     def media_loaded(self, handle, name, duration_ms, size):
         self.assert_owner_thread()
         if (not isinstance(handle, str) or not handle or any(c in handle for c in "/\\:\x00")

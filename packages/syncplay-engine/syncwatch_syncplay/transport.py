@@ -31,6 +31,15 @@ class StrictClientProtocol(SyncClientProtocol):
         self._deadline = None
         self._cancel_admission = None
         self._deferred_playstate = None
+        self._sent_pause = None
+
+    @property
+    def unconfirmed_pause(self):
+        if self._deferred_playstate is not None:
+            return self._deferred_playstate[1]
+        if self.clientIgnoringOnTheFly:
+            return self._sent_pause
+        return None
 
     def sendState(self, position, paused, doSeek, latencyCalculation, stateChange=False):
         pending = self._deferred_playstate
@@ -47,6 +56,8 @@ class StrictClientProtocol(SyncClientProtocol):
                 position, paused, doSeek = pending
             self._deferred_playstate = None
             stateChange = True
+        if stateChange:
+            self._sent_pause = paused
         super().sendState(position, paused, doSeek, latencyCalculation, stateChange)
 
     def handleState(self, state):
