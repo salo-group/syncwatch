@@ -19,7 +19,14 @@ internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomCont
         if (uri.authority == service.authority && uri.path == "/auth/google/meet-start") { authorization = uri; true }
         else { check(uri.host == "meet.google.com"); opens++; entered.complete(Unit); withContext(NonCancellable) { release.await() } }
     }
-    val guest = MeetController(scope, peer) { error("Guest browser must remain explicit") }
+    var failGuestStatus = false
+    val guest = MeetController(scope, peer, readCallStatus = { member ->
+        if (failGuestStatus) {
+            failGuestStatus = false
+            throw RoomProtocolException("unavailable")
+        }
+        member.owner.callStatus()
+    }) { error("Guest browser must remain explicit") }
     suspend fun settles(stage: String, condition: () -> Boolean) {
         try { withTimeout(25_000) { while (!condition()) delay(20) } }
         catch (_: TimeoutCancellationException) {
@@ -65,6 +72,11 @@ internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomCont
         owner.action("meetConfirm"); settles("reauthorization-granted") { "meetStart" in owner.presentation.enabledActions }
         owner.action("meetStart"); settles("first-call-ready") { "meetOpen" in owner.presentation.enabledActions && "meetOpen" in guest.presentation.enabledActions }
         check("meetEnd" !in guest.presentation.enabledActions)
+        failGuestStatus = true
+        settles("guest-status-unavailable") { guest.presentation.status == "meetUnavailable" }
+        check(guest.presentation.enabledActions.intersect(setOf("meetOpen", "meetStart", "meetEnd")).isEmpty())
+        settles("guest-status-restored") { guest.presentation.status == "meetReady" }
+        check("meetOpen" in guest.presentation.enabledActions)
         owner.action("meetEnd"); check("meetConfirmEnd" in owner.presentation.enabledActions)
         owner.action("meetCancelEnd"); check("meetEnd" in owner.presentation.enabledActions)
         check(checkNotNull(host.callMembership()).owner.callStatus().state == "ready")

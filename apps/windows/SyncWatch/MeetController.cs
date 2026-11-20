@@ -1,13 +1,16 @@
 using System.Diagnostics;
+using System.Net.Http;
 using SyncWatch.Design;
 using SyncWatch.Room;
 
 namespace SyncWatch;
 
 /// <summary>Room-owned permission and explicit browser handoff, independent of watch/player ownership.</summary>
-internal sealed class MeetController(RoomController room, Func<Uri, CancellationToken, Task<bool>>? browser = null)
+internal sealed class MeetController(RoomController room, Func<Uri, CancellationToken, Task<bool>>? browser = null,
+    Func<RoomCallMembership, CancellationToken, Task<RoomCallStatus>>? readCallStatus = null)
 {
     private readonly Func<Uri, CancellationToken, Task<bool>> openBrowser = browser ?? OpenBrowser;
+    private readonly Func<RoomCallMembership, CancellationToken, Task<RoomCallStatus>> readStatus = readCallStatus ?? ((member, cancellation) => member.Owner.CallStatusAsync(cancellation));
     private MeetPresentation model = new();
     private RoomCallMembership? membership;
     private RoomCallStatus? call, endTarget;
@@ -19,6 +22,7 @@ internal sealed class MeetController(RoomController room, Func<Uri, Cancellation
     private long generation;
     private bool visible, closing, busy, browserOpened;
     private string? notice;
+    private static readonly long[] StatusRetryDelays = [1000, 2000, 4000, 8000];
     public event Action? Changed;
     public MeetPresentation Presentation => closing ? new() { EnabledActions = [] }
         : membership is not null && room.IsCurrent(membership) ? model : new();
@@ -115,6 +119,7 @@ internal sealed class MeetController(RoomController room, Func<Uri, Cancellation
             {
                 await body(member, token, cancellation);
                 if (!Valid(token, member, cancellation)) return; busy = false; Render();
+                int statusFailures = 0;
                 while (Valid(token, member, cancellation))
                 {
                     long delay;
@@ -125,8 +130,22 @@ internal sealed class MeetController(RoomController room, Func<Uri, Cancellation
                     }
                     else
                     {
-                        var result = await member.Owner.CallStatusAsync(cancellation);
-                        if (!Valid(token, member, cancellation)) return; Apply(result); delay = result.PollAfterMs;
+                        try
+                        {
+                            var result = await readStatus(member, cancellation);
+                            if (!Valid(token, member, cancellation)) return;
+                            if (statusFailures > 0) { notice = null; statusFailures = 0; }
+                            Apply(result); delay = result.PollAfterMs;
+                        }
+                        catch (Exception error)
+                        {
+                            if (!Valid(token, member, cancellation)) return;
+                            call = null;
+                            endTarget = null;
+                            if (!IsTransientStatusFailure(error) || statusFailures >= StatusRetryDelays.Length) throw;
+                            notice = "meetUnavailable";
+                            delay = StatusRetryDelays[statusFailures++];
+                        }
                     }
                     Render(); await Task.Delay(TimeSpan.FromMilliseconds(delay), cancellation);
                 }
@@ -139,6 +158,9 @@ internal sealed class MeetController(RoomController room, Func<Uri, Cancellation
         }
     }
     private bool Valid(long token, RoomCallMembership member, CancellationToken cancellation) => !cancellation.IsCancellationRequested && !closing && visible && generation == token && room.IsCurrent(member);
+    private static bool IsTransientStatusFailure(Exception error) => error is RoomProtocolException { Message: "unavailable" }
+        or OperationCanceledException
+        or HttpRequestException { HttpRequestError: HttpRequestError.NameResolutionError or HttpRequestError.ConnectionError or HttpRequestError.ResponseEnded };
     private void Apply(RoomMeetAuthorizationStatus value)
     {
         permissionStatus = value;

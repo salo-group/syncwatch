@@ -9,6 +9,7 @@ import SyncWatchRoom
     @Published private var model = MeetPresentation()
     private let room: RoomController
     private let openBrowser: @MainActor (URL) async -> Bool
+    private let readCallStatus: @MainActor (RoomCallMembership) async throws -> RoomCallStatus
     private var membership: RoomCallMembership?
     private var call: RoomCallStatus?
     private var permission: RoomMeetAuthorization?
@@ -20,10 +21,17 @@ import SyncWatchRoom
     private var generation = UUID()
     private var visible = false, closing = false, busy = false, browserOpened = false
     private var notice: String?
+    private static let statusRetryDelays: [UInt64] = [1000, 2000, 4000, 8000]
 
-    init(room: RoomController, openBrowser: @escaping @MainActor (URL) async -> Bool = { NSWorkspace.shared.open($0) })
-    {
+    init(
+        room: RoomController,
+        readCallStatus: @escaping @MainActor (RoomCallMembership) async throws -> RoomCallStatus = {
+            try await $0.owner.callStatus()
+        },
+        openBrowser: @escaping @MainActor (URL) async -> Bool = { NSWorkspace.shared.open($0) }
+    ) {
         self.room = room
+        self.readCallStatus = readCallStatus
         self.openBrowser = openBrowser
     }
     var presentation: MeetPresentation {
@@ -205,6 +213,7 @@ import SyncWatchRoom
                 guard valid(token, member) else { return }
                 busy = false
                 render()
+                var statusFailures = 0
                 while valid(token, member) {
                     let delay: UInt64
                     if let flow = permission {
@@ -213,10 +222,26 @@ import SyncWatchRoom
                         apply(result)
                         delay = flow.pollAfterMs
                     } else {
-                        let result = try await member.owner.callStatus()
-                        guard valid(token, member) else { return }
-                        apply(result)
-                        delay = result.pollAfterMs
+                        do {
+                            let result = try await readCallStatus(member)
+                            guard valid(token, member) else { return }
+                            if statusFailures > 0 {
+                                notice = nil
+                                statusFailures = 0
+                            }
+                            apply(result)
+                            delay = result.pollAfterMs
+                        } catch {
+                            guard valid(token, member) else { return }
+                            call = nil
+                            endTarget = nil
+                            guard Self.isTransientStatusFailure(error),
+                                statusFailures < Self.statusRetryDelays.count
+                            else { throw error }
+                            notice = "meetUnavailable"
+                            delay = Self.statusRetryDelays[statusFailures]
+                            statusFailures += 1
+                        }
                     }
                     render()
                     try await Task.sleep(for: .milliseconds(Int64(delay)))
@@ -236,6 +261,14 @@ import SyncWatchRoom
     }
     private func valid(_ token: UUID, _ member: RoomCallMembership) -> Bool {
         !Task.isCancelled && !closing && visible && generation == token && room.isCurrent(member)
+    }
+    private static func isTransientStatusFailure(_ error: Error) -> Bool {
+        if let failure = error as? RoomProtocolFailure, case .rejected("unavailable") = failure { return true }
+        guard let error = error as? URLError else { return false }
+        return [
+            .timedOut, .notConnectedToInternet, .networkConnectionLost,
+            .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed,
+        ].contains(error.code)
     }
     private func apply(_ value: RoomMeetAuthorizationStatus) {
         permissionStatus = value
