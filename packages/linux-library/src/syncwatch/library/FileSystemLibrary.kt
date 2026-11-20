@@ -1,13 +1,17 @@
 package syncwatch.library
 
+import java.io.IOException
 import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.DirectoryStream
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
+import java.nio.file.SecureDirectoryStream
+import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 import java.security.MessageDigest
-import java.util.ArrayDeque
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -24,50 +28,61 @@ class FileSystemLibrary(private val companionExtensions: Map<String, LibraryComp
         require(java.util.UUID.fromString(rootId).toString() == rootId) { "library-root-id" }
         require(root.isAbsolute) { "absolute-library-root" }
         val root = root.normalize()
-        require(Files.readAttributes(root, BasicFileAttributes::class.java).isDirectory) { "library-root" }
-        val pending = ArrayDeque<Pair<Path, String>>()
-        pending.add(root to "")
         val files = ArrayList<LocalMediaFile>()
         val companions = ArrayList<LocalCompanionFile>()
         val caseSensitive = HashMap<String, Boolean>()
-        while (pending.isNotEmpty()) {
+        suspend fun visit(directory: SecureDirectoryStream<Path>, physicalDirectory: Path, relativeDirectory: String, depth: Int) {
+            if (depth >= maximumDirectoryDepth) throw IOException("library-depth")
             currentCoroutineContext().ensureActive()
-            val (directory, relativeDirectory) = pending.removeLast()
-            Files.newDirectoryStream(directory).use { listing ->
-                val children = listing.toList()
-                val names = children.map { it.fileName.toString() }.toSet()
-                for (child in children) {
-                    currentCoroutineContext().ensureActive()
-                    val facts = Files.readAttributes(child, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
-                    if (facts.isSymbolicLink) continue
-                    val relative = relativeDirectory + child.fileName.toString()
-                    if (facts.isDirectory) {
-                        if (recursive) pending.add(child to "$relative/")
-                        continue
+            val children = directory.map { it.fileName }
+            val names = children.map(Path::toString).toSet()
+            for (child in children) {
+                currentCoroutineContext().ensureActive()
+                val facts = directory.attributes(child)
+                if (facts.isSymbolicLink) continue
+                val path = physicalDirectory.resolve(child)
+                val relative = relativeDirectory + child
+                if (facts.isDirectory) {
+                    if (recursive) directory.newDirectoryStream(child, NOFOLLOW_LINKS).use {
+                        visit(it, path, "$relative/", depth + 1)
                     }
-                    val filename = child.fileName.toString()
-                    val dot = filename.lastIndexOf('.')
-                    if (!facts.isRegularFile || dot < 0) continue
-                    val extensionName = filename.substring(dot + 1)
-                    val video = extensionName.lowercase() in extensions
-                    val kind = companionExtensions[extensionName.lowercase()]
-                    if (!video && kind == null) continue
-                    val id = MessageDigest.getInstance("SHA-256").digest((rootId + "\u0000" + relative).toByteArray(UTF_8))
-                        .joinToString("") { "%02x".format(it.toInt() and 255) }
-                    if (!video && kind != null) {
-                        companions.add(LocalCompanionFile(id, kind, relative, child, facts.size(), facts.lastModifiedTime()))
-                        continue
-                    }
-                    caseSensitive.getOrPut(relativeDirectory) {
-                        // Read-only probe of a known ASCII extension in this directory.
-                        val alternate = filename.substring(0, dot + 1) + extensionName.map {
-                            if (it.isUpperCase()) it.lowercaseChar() else it.uppercaseChar()
-                        }.joinToString("")
-                        alternate in names || !Files.exists(directory.resolve(alternate), NOFOLLOW_LINKS)
-                    }
-                    files.add(LocalMediaFile(id, filename, relative, child, facts.size(), facts.lastModifiedTime()))
+                    continue
                 }
+                val filename = child.toString()
+                val dot = filename.lastIndexOf('.')
+                if (!facts.isRegularFile || dot < 0) continue
+                val extensionName = filename.substring(dot + 1)
+                val video = extensionName.lowercase() in extensions
+                val kind = companionExtensions[extensionName.lowercase()]
+                if (!video && kind == null) continue
+                val id = MessageDigest.getInstance("SHA-256").digest((rootId + "\u0000" + relative).toByteArray(UTF_8))
+                    .joinToString("") { "%02x".format(it.toInt() and 255) }
+                if (!video && kind != null) {
+                    companions.add(LocalCompanionFile(id, kind, relative, path, facts.size(), facts.lastModifiedTime()))
+                    continue
+                }
+                caseSensitive.getOrPut(relativeDirectory) {
+                    // Read-only probe of a known ASCII extension in this directory.
+                    val alternate = filename.substring(0, dot + 1) + extensionName.map {
+                        if (it.isUpperCase()) it.lowercaseChar() else it.uppercaseChar()
+                    }.joinToString("")
+                    alternate in names || try {
+                        directory.attributes(child.resolveSibling(alternate))
+                        false
+                    } catch (_: NoSuchFileException) {
+                        true
+                    }
+                }
+                files.add(LocalMediaFile(id, filename, relative, path, facts.size(), facts.lastModifiedTime()))
             }
+        }
+        val selected = Files.readAttributes(root, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
+        if (!selected.isDirectory || selected.fileKey() == null) throw IOException("library-root")
+        Files.newDirectoryStream(root).use { stream ->
+            val directory = secure(stream)
+            val opened = directory.getFileAttributeView(BasicFileAttributeView::class.java).readAttributes()
+            if (selected.fileKey() != opened.fileKey()) throw IOException("library-root-changed")
+            visit(directory, root, "", 0)
         }
         currentCoroutineContext().ensureActive()
         val paths = files.map { it.relativePath }
@@ -87,7 +102,14 @@ class FileSystemLibrary(private val companionExtensions: Map<String, LibraryComp
         files.sortWith { a, b -> java.util.Arrays.compareUnsigned(a.relativePath.toByteArray(UTF_8), b.relativePath.toByteArray(UTF_8)) }
         java.util.Collections.unmodifiableList(files)
     }
+    private fun secure(stream: DirectoryStream<Path>): SecureDirectoryStream<Path> =
+        stream as? SecureDirectoryStream<Path> ?: throw IOException("secure-library-scan-unavailable")
+
+    private fun SecureDirectoryStream<Path>.attributes(name: Path) =
+        getFileAttributeView(name, BasicFileAttributeView::class.java, NOFOLLOW_LINKS).readAttributes()
+
     private companion object {
+        const val maximumDirectoryDepth = 128
         val extensions = setOf("mkv", "mp4", "avi", "mov", "m4v", "webm", "wmv", "mpg", "mpeg", "ts", "m2ts")
     }
 }

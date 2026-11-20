@@ -1,6 +1,7 @@
 """Real TLS/protocol checks; synthetic authority, no native player or Google acceptance."""
 
 import secrets
+from twisted.internet.address import IPv4Address, IPv6Address
 from twisted.protocols.basic import LineReceiver
 from twisted.internet.interfaces import IHandshakeListener
 from zope.interface import implementer
@@ -104,9 +105,25 @@ def run_admission(root):
                 del rejection_stages[:-8]
             return valid
     class ObservedAuthorityFactory(AdmissionFactory):
-        def buildProtocol(self, address):
-            return ObservedAdmission(self) if len(self.connections) < 128 else None
+        protocol = ObservedAdmission
     factory = ObservedAuthorityFactory(authority, tls_directory=directory, salt="admission-fixture-salt")
+    source = IPv6Address("TCP", "2001:db8::1", 1234)
+    assert factory.buildProtocol(source) is not None and not factory.connections
+    pending = []
+    for _ in range(4):
+        connection = factory.buildProtocol(source)
+        assert connection is not None and factory.track_pending(connection)
+        pending.append(connection)
+    assert factory.buildProtocol(IPv6Address("TCP", "2001:db8::2", 1235)) is None
+    independent = factory.buildProtocol(IPv4Address("TCP", "192.0.2.1", 1234))
+    assert independent is not None and factory.track_pending(independent)
+    factory.release(independent)
+    for connection in pending:
+        factory.release(connection)
+    replacement = factory.buildProtocol(source)
+    assert replacement is not None and factory.track_pending(replacement)
+    factory.release(replacement)
+    assert not factory.connections
     listener = reactor.listenTCP(0, factory, interface="127.0.0.1")
     port = listener.getHost().port
 

@@ -6,6 +6,8 @@ Configure the confidential backend with `SYNCWATCH_GOOGLE_CLIENT_FILE` (protecte
 
 The native API returns JSON `{ "v": 2, "result": ... }`; typed errors return `{ "v": 2, "error": { "code": ... } }`. Native request bodies are JSON objects with `v: 2`, no unknown or duplicate fields, and at most 4096 bytes. The endpoints accept no browser Origin header. Responses never return Google tokens. Clients bound response bytes and reject redirects.
 
+New sign-in starts have a separate limit of 12 requests per minute per IPv4 address or IPv6 /64. The service uses the connection address, so clients behind the same proxy or NAT share the limit. Rejections use HTTP 429 with `queueFull` and `Retry-After`.
+
 | Request | Body or header | Result |
 | --- | --- | --- |
 | `POST /v2/account/sign-ins` | `challenge`: base64url SHA-256 of an in-memory 256-bit verifier | `transactionId`, same-origin `browserUri`, `expiresIn: 300`, `pollAfterMs: 2000` |
