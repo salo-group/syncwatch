@@ -22,6 +22,7 @@ public sealed class FileSystemLibrary
     }
     private static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase)
         { ".mkv", ".mp4", ".avi", ".mov", ".m4v", ".webm", ".wmv", ".mpg", ".mpeg", ".ts", ".m2ts" };
+    private const int MaximumDirectoryDepth = 128;
 
     public Task<IReadOnlyList<LocalMediaFile>> ScanAsync(string root, string rootId, bool recursive, CancellationToken cancellation = default)
     {
@@ -33,52 +34,56 @@ public sealed class FileSystemLibrary
 
     private IReadOnlyList<LocalMediaFile> Scan(string root, string rootId, bool recursive, CancellationToken cancellation)
     {
-        if ((System.IO.File.GetAttributes(root) & FileAttributes.Directory) == 0) throw new IOException("library-root");
-        var pending = new Stack<(string Path, string Relative)>();
-        pending.Push((root, ""));
         var files = new List<LocalMediaFile>();
         var companions = new List<LocalCompanionFile>();
         var caseSensitive = new Dictionary<string, bool>(StringComparer.Ordinal);
-        while (pending.TryPop(out var directory))
+        void Visit(LibraryDirectory directory, string relativeDirectory, int depth)
         {
+            if (depth >= MaximumDirectoryDepth) throw new IOException("library-depth");
             cancellation.ThrowIfCancellationRequested();
-            string[] children = Directory.GetFileSystemEntries(directory.Path);
-            var names = children.Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal);
-            foreach (string path in children)
+            List<LibraryDirectory.Entry> children = directory.ReadEntries(cancellation);
+            var names = children.Select(entry => entry.Name).ToHashSet(StringComparer.Ordinal);
+            foreach (var entry in children)
             {
                 cancellation.ThrowIfCancellationRequested();
-                FileAttributes attributes = System.IO.File.GetAttributes(path);
-                if ((attributes & FileAttributes.ReparsePoint) != 0) continue;
-                string relative = directory.Relative + Path.GetFileName(path);
-                if ((attributes & FileAttributes.Directory) != 0)
+                if ((entry.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+                string filename = entry.Name;
+                string relative = relativeDirectory + filename;
+                if ((entry.Attributes & FileAttributes.Directory) != 0)
                 {
-                    if (recursive) pending.Push((path, relative + "/"));
+                    if (recursive)
+                    {
+                        using var child = directory.OpenChild(filename);
+                        Visit(child, relative + "/", depth + 1);
+                    }
                     continue;
                 }
-                string filename = Path.GetFileName(path);
                 int dot = filename.LastIndexOf('.');
                 if (dot < 0) continue;
                 string extensionName = filename[(dot + 1)..];
                 bool video = Extensions.Contains(filename[dot..]);
                 bool extra = companionExtensions.TryGetValue(extensionName, out var kind);
                 if (!video && !extra) continue;
-                var info = new FileInfo(path);
+                if (entry.Size < 0) throw new IOException("library-file-size");
+                string path = Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar));
+                var modified = DateTimeOffset.FromFileTime(entry.LastWriteTime).ToUniversalTime();
                 string id = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(rootId + "\0" + relative)));
                 if (!video)
                 {
-                    companions.Add(new(id, kind, relative, path, info.Length, info.LastWriteTimeUtc));
+                    companions.Add(new(id, kind, relative, path, entry.Size, modified));
                     continue;
                 }
-                if (!caseSensitive.ContainsKey(directory.Relative))
+                if (!caseSensitive.ContainsKey(relativeDirectory))
                 {
                     // Read-only probe of a known ASCII extension in the actual directory.
                     string alternate = filename[..(dot + 1)] + new string(extensionName.Select(c =>
                         char.IsUpper(c) ? char.ToLowerInvariant(c) : char.ToUpperInvariant(c)).ToArray());
-                    caseSensitive[directory.Relative] = names.Contains(alternate) || !System.IO.File.Exists(Path.Combine(directory.Path, alternate));
+                    caseSensitive[relativeDirectory] = names.Contains(alternate) || !directory.Exists(alternate);
                 }
-                files.Add(new(id, filename, relative, path, info.Length, info.LastWriteTimeUtc));
+                files.Add(new(id, filename, relative, path, entry.Size, modified));
             }
         }
+        using (var directory = LibraryDirectory.OpenRoot(root)) Visit(directory, "", 0);
         cancellation.ThrowIfCancellationRequested();
         string[] paths = files.Select(f => f.RelativePath).ToArray();
         string[] audio = companions.Where(f => f.Kind == LibraryCompanionKind.Audio).Select(f => f.RelativePath).ToArray();

@@ -29,6 +29,11 @@ try
     }
     catch (UnauthorizedAccessException) { Console.WriteLine("SKIP: Windows symbolic-link creation privilege unavailable"); }
     var scanner = new FileSystemLibrary();
+    if (linksCreated)
+    {
+        try { await scanner.ScanAsync(Path.Combine(root, "nested", "cycle"), id, true); throw new Exception("link-root-accepted"); }
+        catch (IOException) { }
+    }
     var expected = data.GetProperty("expected").EnumerateArray().ToArray();
     var result = await scanner.ScanAsync(root, id, true);
     Require(result.Select(x => x.RelativePath).SequenceEqual(expected.Select(x => x.GetProperty("relativePath").GetString())), "recursive-paths");
