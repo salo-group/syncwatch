@@ -289,7 +289,7 @@ class AdmissionFactory(SyncFactory):
 
     def __init__(self, authority, *, tls_directory, salt):
         self.authority = authority
-        self.connections = set()
+        self.connections = {}
         self.members = {}
         self._pending_sources = {}
         self._pending_counts = Counter()
@@ -307,8 +307,10 @@ class AdmissionFactory(SyncFactory):
         if len(self._pending_sources) >= self.MAX_PENDING or self._pending_counts[ip] >= self.MAX_PENDING_PER_SOURCE:
             return None
         connection = self.protocol(self)
-        self.connections.add(connection)
-        self._pending_sources[connection] = ip
+        # The pinned protocol hashes its transport, which is assigned after this method returns.
+        key = id(connection)
+        self.connections[key] = connection
+        self._pending_sources[key] = ip
         self._pending_counts[ip] += 1
         return connection
 
@@ -325,7 +327,7 @@ class AdmissionFactory(SyncFactory):
         return True
 
     def _release_pending(self, connection):
-        source = self._pending_sources.pop(connection, None)
+        source = self._pending_sources.pop(id(connection), None)
         if source is not None:
             self._pending_counts[source] -= 1
             if self._pending_counts[source] == 0:
@@ -356,7 +358,7 @@ class AdmissionFactory(SyncFactory):
 
     def release(self, connection):
         self._release_pending(connection)
-        self.connections.discard(connection)
+        self.connections.pop(id(connection), None)
         lease = connection._lease
         if lease is not None:
             key = (lease.room_epoch, lease.member_id)
@@ -368,5 +370,5 @@ class AdmissionFactory(SyncFactory):
                 self.close()
 
     def close(self):
-        for connection in tuple(self.connections):
+        for connection in tuple(self.connections.values()):
             connection._reject()
