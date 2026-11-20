@@ -23,6 +23,7 @@ fun main(arguments: Array<String>) = runBlocking {
     @Suppress("UNCHECKED_CAST")
     val expected = corpus["expected"] as List<Map<String, Any?>>
     val root = Files.createTempDirectory("syncwatch-library-")
+    val alias = Files.createTempDirectory("syncwatch-library-alias-")
     try {
         for (file in source) {
             val path = root.resolve(file["path"] as String)
@@ -44,10 +45,14 @@ fun main(arguments: Array<String>) = runBlocking {
             try { scanner.scan(root, id, true); error("cancelled-snapshot") } catch (_: CancellationException) { }
         }.join()
         check(runCatching { scanner.scan(root.resolve("absent"), id, true) }.isFailure)
+        val linkRoot = Files.createSymbolicLink(alias.resolve("root"), root)
+        check(runCatching { scanner.scan(linkRoot, id, true) }.isFailure)
         check(runCatching { scanner.scan(root, "invalid", true) }.isFailure)
         libraryAccessChecks(Path.of(arguments.single()), root)
         println("SYNCWATCH_LIBRARY_OK entries=${result.size} symlinkChecks=true")
     } finally {
+        Files.deleteIfExists(alias.resolve("root"))
+        Files.delete(alias)
         Files.walk(root).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach { Files.delete(it) } }
     }
 }

@@ -5,7 +5,9 @@ consume the ticket exactly once, return a live lease, and fail closed when its
 private control channel is lost. No stock listener is created by this module.
 """
 
+from collections import Counter
 from dataclasses import dataclass
+import ipaddress
 import json
 import math
 import re
@@ -82,8 +84,9 @@ def _features(value):
 class AdmissionProtocol(SyncServerProtocol):
     MAX_LENGTH = 16384
 
-    def __init__(self, factory):
+    def __init__(self, factory, source):
         super().__init__(factory)
+        self.source = source
         self._phase = "tls"
         self._lease = None
         self._pending = None
@@ -91,7 +94,9 @@ class AdmissionProtocol(SyncServerProtocol):
         self._audit = None
 
     def connectionMade(self):
-        self._factory.connections.add(self)
+        if not self._factory.track_pending(self):
+            self._reject()
+            return
         self._deadline = reactor.callLater(10, self._reject)
 
     def dropWithError(self, _):
@@ -277,34 +282,66 @@ class AdmissionProtocol(SyncServerProtocol):
     def connectionLost(self, reason):
         self._reject()
         self._factory.release(self)
-        self._factory.connections.discard(self)
         super().connectionLost(reason)
 
 
 class AdmissionFactory(SyncFactory):
+    protocol = AdmissionProtocol
+    MAX_PENDING = 32
+    MAX_PENDING_PER_SOURCE = 4
+    MAX_MEMBERS = 128
+
     def __init__(self, authority, *, tls_directory, salt):
         self.authority = authority
-        self.connections = set()
+        self.connections = {}
         self.members = {}
+        self._pending_sources = {}
+        self._pending_counts = Counter()
         super().__init__(port="0", salt=salt, isolateRooms=True, disableChat=True, tlsCertPath=str(tls_directory))
         if not self.serverAcceptsTLS or self.options is None:
             raise ValueError("The admission listener requires its owned TLS certificate")
 
     def buildProtocol(self, address):
-        if len(self.connections) >= 128:
+        try:
+            ip = ipaddress.ip_address(address.host)
+        except (AttributeError, ValueError):
             return None
-        return AdmissionProtocol(self)
+        if isinstance(ip, ipaddress.IPv6Address):
+            ip = ip.ipv4_mapped or ipaddress.IPv6Network((ip, 64), strict=False)
+        return self.protocol(self, ip) if self._has_pending_slot(ip) else None
+
+    def _has_pending_slot(self, source):
+        return len(self._pending_sources) < self.MAX_PENDING and self._pending_counts[source] < self.MAX_PENDING_PER_SOURCE
+
+    def track_pending(self, connection):
+        # Allocate only after Twisted attaches the transport. A failed attach owns no slot.
+        source = connection.source
+        if not self._has_pending_slot(source):
+            return False
+        key = id(connection)
+        self.connections[key] = connection
+        self._pending_sources[key] = source
+        self._pending_counts[source] += 1
+        return True
 
     def claim(self, connection):
         key = (connection._lease.room_epoch, connection._lease.member_id)
-        if key in self.members:
+        if key in self.members or len(self.members) >= self.MAX_MEMBERS:
             return False
         if any(other._lease.username == connection._lease.username for other in self.members.values()):
             return False
         # Keep the first live transport until it is actually reaped. A replay
         # cannot replace another connection or delete its watcher on loss.
         self.members[key] = connection
+        self._release_pending(connection)
         return True
+
+    def _release_pending(self, connection):
+        source = self._pending_sources.pop(id(connection), None)
+        if source is not None:
+            self._pending_counts[source] -= 1
+            if self._pending_counts[source] == 0:
+                del self._pending_counts[source]
 
     def renew(self, lease):
         if not _valid_lease(lease):
@@ -330,6 +367,8 @@ class AdmissionFactory(SyncFactory):
             connection._reject()
 
     def release(self, connection):
+        self._release_pending(connection)
+        self.connections.pop(id(connection), None)
         lease = connection._lease
         if lease is not None:
             key = (lease.room_epoch, lease.member_id)
@@ -341,5 +380,5 @@ class AdmissionFactory(SyncFactory):
                 self.close()
 
     def close(self):
-        for connection in tuple(self.connections):
+        for connection in tuple(self.connections.values()):
             connection._reject()

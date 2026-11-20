@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Net.Sockets;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,14 @@ internal static class AccountRateLimitChecks
             {
                 using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false })
                 { BaseAddress = origin, Timeout = TimeSpan.FromSeconds(5) };
+                for (int request = 0; request < 12; request++)
+                {
+                    using var started = await client.PostAsJsonAsync("/v2/account/sign-ins", new { v = 2, challenge = AccountWire.Hash(Wire.Secret()) });
+                    Require(started.StatusCode == HttpStatusCode.OK);
+                }
+                using var startLimited = await client.PostAsJsonAsync("/v2/account/sign-ins", new { v = 2, challenge = AccountWire.Hash(Wire.Secret()) });
+                Require(startLimited.StatusCode == HttpStatusCode.TooManyRequests);
+
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", account.AccessToken);
                 for (int request = 0; request < 120; request++)
                 {

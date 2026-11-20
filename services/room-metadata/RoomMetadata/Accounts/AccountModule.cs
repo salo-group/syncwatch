@@ -1,4 +1,6 @@
+using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.RateLimiting;
@@ -14,6 +16,7 @@ public static class AccountModule
 {
     internal const string Google = "google-account";
     internal const string TransactionKey = "syncwatch.transaction";
+    private const string SignInStartPolicy = "sign-in-start";
     private sealed record StartBody(int V, string Challenge);
     private sealed record ProofBody(int V, string Proof, string? RequestId = null, string? BrowserProof = null);
     private sealed record RefreshBody(int V, string RefreshToken, string RequestId);
@@ -42,9 +45,9 @@ public static class AccountModule
                     response.Headers.RetryAfter = Math.Clamp(Math.Ceiling(retry.TotalSeconds), 1, 60).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 await response.WriteAsJsonAsync(new { v = 2, error = new { code = "queueFull" } }, AccountWire.Json, cancellation);
             };
-            limiter.AddPolicy("account", context => RateLimitPartition.GetFixedWindowLimiter(
-                context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
-                { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+            limiter.AddPolicy("account", context => RequestBudget(context.Connection.RemoteIpAddress?.ToString() ?? "unknown", 120));
+            // One source cannot fill the shared pool during its five-minute retention period.
+            limiter.AddPolicy(SignInStartPolicy, context => RequestBudget(SignInSource(context.Connection.RemoteIpAddress), 12));
         });
         builder.Services.AddAuthentication().AddCookie("account-browser").AddOAuth(Google, oauth =>
         {
@@ -130,12 +133,12 @@ public static class AccountModule
             properties.Items[TransactionKey] = id;
             await context.ChallengeAsync(Google, properties);
         }).RequireRateLimiting("account");
-        RouteGroupBuilder group = app.MapGroup("/v2/account").RequireRateLimiting("account");
-        group.MapPost("/sign-ins", async context =>
+        app.MapPost("/v2/account/sign-ins", async context =>
         {
             StartBody body = await Read<StartBody>(context); Version(body.V);
             await Reply(context, context.RequestServices.GetRequiredService<SignInTransactions>().Start(body.Challenge));
-        });
+        }).RequireRateLimiting(SignInStartPolicy);
+        RouteGroupBuilder group = app.MapGroup("/v2/account").RequireRateLimiting("account");
         foreach (string action in new[] { "poll", "verify", "confirm", "cancel" })
         {
             group.MapPost("/sign-ins/{id}/" + action, async context =>
@@ -174,6 +177,18 @@ public static class AccountModule
         context.Response.Headers.XContentTypeOptions = "nosniff";
         context.Response.Headers.XFrameOptions = "DENY";
     }
+    private static RateLimitPartition<string> RequestBudget(string source, int limit) =>
+        RateLimitPartition.GetFixedWindowLimiter(source, _ => new FixedWindowRateLimiterOptions
+        { PermitLimit = limit, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 });
+
+    private static string SignInSource(IPAddress? address)
+    {
+        if (address is null) return "unknown";
+        if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
+        return address.AddressFamily == AddressFamily.InterNetworkV6
+            ? Convert.ToHexString(address.GetAddressBytes().AsSpan(0, 8)) : address.ToString();
+    }
+
     private static void Version(int version) => AccountWire.Need(version == 2, "unsupportedVersion");
     internal static string Bearer(HttpContext context)
     {

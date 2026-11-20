@@ -18,6 +18,16 @@ logs/
 *.pfx
 *.p12
 *.key
+*.pem
+*.protected
+*.har
+client_secret*.json
+credentials.json
+Cookies
+Cookies-journal
+Login Data
+Login Data-journal
+Local State
 __pycache__/
 *.pyc
 .venv/

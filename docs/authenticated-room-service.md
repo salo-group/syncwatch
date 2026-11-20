@@ -18,6 +18,8 @@ Partial configuration fails at startup. The listener must complete its private a
 
 In this mode, `/v1/rooms` routes are absent and a legacy creation key is unnecessary. There is no stock Syncplay listener or anonymous-room fallback. Without authority configuration, the separate legacy service retains its existing behavior.
 
+The Syncplay listener reserves up to 32 slots for pending handshakes and up to 128 for admitted members. One IPv4 address or IPv6 /64 can hold at most four pending slots. Clients behind the same NAT share that limit. A verified ticket moves the connection into an admitted slot. Disconnection releases the slot owned by that connection.
+
 A lost helper/control channel stops the HTTP application with a failing exit status. Shutdown closes and joins the owned helper and its connections. Rooms and admission tickets are ephemeral; service restart does not preserve membership or permit old-ticket replay.
 
 ## Authentication and wire contracts

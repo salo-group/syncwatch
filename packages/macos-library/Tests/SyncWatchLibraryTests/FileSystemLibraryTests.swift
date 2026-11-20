@@ -37,6 +37,12 @@ private struct Corpus: Decodable {
     try FileManager.default.createSymbolicLink(
         at: root.appendingPathComponent("nested/cycle"), withDestinationURL: root)
     let scanner = FileSystemLibrary()
+    let aliasRoot = root.appendingPathComponent("root-alias")
+    try FileManager.default.createSymbolicLink(at: aliasRoot, withDestinationURL: root)
+    do {
+        _ = try await scanner.scan(root: aliasRoot, rootID: corpus.rootId, recursive: true)
+        Issue.record("Symbolic link accepted as the library root")
+    } catch is CocoaError {}
     let result = try await scanner.scan(root: root, rootID: corpus.rootId, recursive: true)
     #expect(result.map(\.relativePath) == corpus.expected.map(\.relativePath))
     #expect(result.map(\.id) == corpus.expected.map(\.id))
