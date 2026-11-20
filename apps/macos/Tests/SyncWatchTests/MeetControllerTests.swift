@@ -10,8 +10,16 @@ import Testing
 ) async throws {
     let gate = MeetBrowserGate(service: service)
     let owner = MeetController(room: host, openBrowser: gate.open)
+    var failGuestStatus = false
     let guest = MeetController(
         room: peer,
+        readCallStatus: { member in
+            if failGuestStatus {
+                failGuestStatus = false
+                throw RoomProtocolFailure.rejected("unavailable")
+            }
+            return try await member.owner.callStatus()
+        },
         openBrowser: { _ in
             Issue.record("Guest browser must remain explicit")
             return false
@@ -91,6 +99,11 @@ import Testing
                 && guest.presentation.enabledActions.contains("meetOpen")
         }
         #expect(!guest.presentation.enabledActions.contains("meetEnd"))
+        failGuestStatus = true
+        try await meetSettles { guest.presentation.status == "meetUnavailable" }
+        #expect(guest.presentation.enabledActions.isDisjoint(with: ["meetOpen", "meetStart", "meetEnd"]))
+        try await meetSettles { guest.presentation.status == "meetReady" }
+        #expect(guest.presentation.enabledActions.contains("meetOpen"))
         owner.action("meetEnd")
         #expect(owner.presentation.enabledActions.contains("meetConfirmEnd"))
         owner.action("meetCancelEnd")

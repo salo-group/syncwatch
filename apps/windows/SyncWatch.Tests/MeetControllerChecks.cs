@@ -17,7 +17,12 @@ internal static class MeetControllerChecks
             if (uri.GetLeftPart(UriPartial.Authority) == service.GetLeftPart(UriPartial.Authority) && uri.AbsolutePath == "/auth/google/meet-start") { authorization = uri; return true; }
             Require(uri.Host == "meet.google.com"); opens++; entered.TrySetResult(true); await release.Task; return true;
         });
-        var guest = new MeetController(peer, (_, _) => throw new Exception("Guest browser must remain explicit"));
+        int failGuestStatus = 0;
+        var guest = new MeetController(peer, (_, _) => throw new Exception("Guest browser must remain explicit"), (member, cancellation) =>
+        {
+            if (Interlocked.Exchange(ref failGuestStatus, 0) != 0) throw new RoomProtocolException("unavailable");
+            return member.Owner.CallStatusAsync(cancellation);
+        });
         try
         {
             owner.Present(); guest.Present();
@@ -58,6 +63,11 @@ internal static class MeetControllerChecks
             owner.Action("meetConfirm"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetStart"));
             owner.Action("meetStart"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetOpen") && guest.Presentation.EnabledActions.Contains("meetOpen"));
             Require(!guest.Presentation.EnabledActions.Contains("meetEnd"));
+            Interlocked.Exchange(ref failGuestStatus, 1);
+            await Settles(() => guest.Presentation.Status == "meetUnavailable");
+            Require(!guest.Presentation.EnabledActions.Overlaps(["meetOpen", "meetStart", "meetEnd"]));
+            await Settles(() => guest.Presentation.Status == "meetReady");
+            Require(guest.Presentation.EnabledActions.Contains("meetOpen"));
             owner.Action("meetEnd"); Require(owner.Presentation.EnabledActions.Contains("meetConfirmEnd"));
             owner.Action("meetCancelEnd"); Require(owner.Presentation.EnabledActions.Contains("meetEnd"));
             Require((await host.CallMembership()!.Owner.CallStatusAsync()).State == "ready");
