@@ -5,7 +5,9 @@ consume the ticket exactly once, return a live lease, and fail closed when its
 private control channel is lost. No stock listener is created by this module.
 """
 
+from collections import Counter
 from dataclasses import dataclass
+import ipaddress
 import json
 import math
 import re
@@ -91,7 +93,6 @@ class AdmissionProtocol(SyncServerProtocol):
         self._audit = None
 
     def connectionMade(self):
-        self._factory.connections.add(self)
         self._deadline = reactor.callLater(10, self._reject)
 
     def dropWithError(self, _):
@@ -277,34 +278,58 @@ class AdmissionProtocol(SyncServerProtocol):
     def connectionLost(self, reason):
         self._reject()
         self._factory.release(self)
-        self._factory.connections.discard(self)
         super().connectionLost(reason)
 
 
 class AdmissionFactory(SyncFactory):
+    protocol = AdmissionProtocol
+    MAX_PENDING = 32
+    MAX_PENDING_PER_SOURCE = 4
+    MAX_MEMBERS = 128
+
     def __init__(self, authority, *, tls_directory, salt):
         self.authority = authority
         self.connections = set()
         self.members = {}
+        self._pending_sources = {}
+        self._pending_counts = Counter()
         super().__init__(port="0", salt=salt, isolateRooms=True, disableChat=True, tlsCertPath=str(tls_directory))
         if not self.serverAcceptsTLS or self.options is None:
             raise ValueError("The admission listener requires its owned TLS certificate")
 
     def buildProtocol(self, address):
-        if len(self.connections) >= 128:
+        try:
+            ip = ipaddress.ip_address(address.host)
+        except (AttributeError, ValueError):
             return None
-        return AdmissionProtocol(self)
+        if isinstance(ip, ipaddress.IPv6Address):
+            ip = ip.ipv4_mapped or ipaddress.IPv6Network((ip, 64), strict=False)
+        if len(self._pending_sources) >= self.MAX_PENDING or self._pending_counts[ip] >= self.MAX_PENDING_PER_SOURCE:
+            return None
+        connection = self.protocol(self)
+        self.connections.add(connection)
+        self._pending_sources[connection] = ip
+        self._pending_counts[ip] += 1
+        return connection
 
     def claim(self, connection):
         key = (connection._lease.room_epoch, connection._lease.member_id)
-        if key in self.members:
+        if key in self.members or len(self.members) >= self.MAX_MEMBERS:
             return False
         if any(other._lease.username == connection._lease.username for other in self.members.values()):
             return False
         # Keep the first live transport until it is actually reaped. A replay
         # cannot replace another connection or delete its watcher on loss.
         self.members[key] = connection
+        self._release_pending(connection)
         return True
+
+    def _release_pending(self, connection):
+        source = self._pending_sources.pop(connection, None)
+        if source is not None:
+            self._pending_counts[source] -= 1
+            if self._pending_counts[source] == 0:
+                del self._pending_counts[source]
 
     def renew(self, lease):
         if not _valid_lease(lease):
@@ -330,6 +355,8 @@ class AdmissionFactory(SyncFactory):
             connection._reject()
 
     def release(self, connection):
+        self._release_pending(connection)
+        self.connections.discard(connection)
         lease = connection._lease
         if lease is not None:
             key = (lease.room_epoch, lease.member_id)
