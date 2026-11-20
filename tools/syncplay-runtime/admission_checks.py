@@ -108,16 +108,20 @@ def run_admission(root):
         protocol = ObservedAdmission
     factory = ObservedAuthorityFactory(authority, tls_directory=directory, salt="admission-fixture-salt")
     source = IPv6Address("TCP", "2001:db8::1", 1234)
-    pending = [factory.buildProtocol(source) for _ in range(4)]
-    assert all(connection is not None for connection in pending)
+    assert factory.buildProtocol(source) is not None and not factory.connections
+    pending = []
+    for _ in range(4):
+        connection = factory.buildProtocol(source)
+        assert connection is not None and factory.track_pending(connection)
+        pending.append(connection)
     assert factory.buildProtocol(IPv6Address("TCP", "2001:db8::2", 1235)) is None
     independent = factory.buildProtocol(IPv4Address("TCP", "192.0.2.1", 1234))
-    assert independent is not None
+    assert independent is not None and factory.track_pending(independent)
     factory.release(independent)
     for connection in pending:
         factory.release(connection)
     replacement = factory.buildProtocol(source)
-    assert replacement is not None
+    assert replacement is not None and factory.track_pending(replacement)
     factory.release(replacement)
     assert not factory.connections
     listener = reactor.listenTCP(0, factory, interface="127.0.0.1")

@@ -84,8 +84,9 @@ def _features(value):
 class AdmissionProtocol(SyncServerProtocol):
     MAX_LENGTH = 16384
 
-    def __init__(self, factory):
+    def __init__(self, factory, source):
         super().__init__(factory)
+        self.source = source
         self._phase = "tls"
         self._lease = None
         self._pending = None
@@ -93,6 +94,9 @@ class AdmissionProtocol(SyncServerProtocol):
         self._audit = None
 
     def connectionMade(self):
+        if not self._factory.track_pending(self):
+            self._reject()
+            return
         self._deadline = reactor.callLater(10, self._reject)
 
     def dropWithError(self, _):
@@ -304,15 +308,21 @@ class AdmissionFactory(SyncFactory):
             return None
         if isinstance(ip, ipaddress.IPv6Address):
             ip = ip.ipv4_mapped or ipaddress.IPv6Network((ip, 64), strict=False)
-        if len(self._pending_sources) >= self.MAX_PENDING or self._pending_counts[ip] >= self.MAX_PENDING_PER_SOURCE:
-            return None
-        connection = self.protocol(self)
-        # The pinned protocol hashes its transport, which is assigned after this method returns.
+        return self.protocol(self, ip) if self._has_pending_slot(ip) else None
+
+    def _has_pending_slot(self, source):
+        return len(self._pending_sources) < self.MAX_PENDING and self._pending_counts[source] < self.MAX_PENDING_PER_SOURCE
+
+    def track_pending(self, connection):
+        # Allocate only after Twisted attaches the transport. A failed attach owns no slot.
+        source = connection.source
+        if not self._has_pending_slot(source):
+            return False
         key = id(connection)
         self.connections[key] = connection
-        self._pending_sources[key] = ip
-        self._pending_counts[ip] += 1
-        return connection
+        self._pending_sources[key] = source
+        self._pending_counts[source] += 1
+        return True
 
     def claim(self, connection):
         key = (connection._lease.room_epoch, connection._lease.member_id)
