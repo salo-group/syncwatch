@@ -26,7 +26,10 @@ Failed, cancelled, missing and unexpected results cannot satisfy the aggregate.
 Missing or invalid selection metadata fails validation.
 Full validation requires every selected job to succeed.
 
-The validated dependency matrix is partitioned by platform without changing its entries.
+CI schedules the validated dependency selection by platform. Each build keeps its platform and cold flag.
+Short macOS dependency builds share one runner. VLC and Syncplay keep dedicated runners.
+Each build keeps its own checks and artifact. A component failure fails its job.
+Reruns publish verification artifacts for the new attempt. The first attempt can also publish shared caches.
 Each native application waits for its own platform producers.
 The aggregate requires all three producer groups, including groups that another platform does not consume.
 Windows native regression tests run in an isolated Windows job beside application assembly.
@@ -62,4 +65,5 @@ Oversized optional object caches retain the fresh source build.
 If the cache API is unavailable, CI fetches the original pinned sources and performs the same checks.
 Corrupt archives, invalid metadata and failed Git verification remain fatal.
 Temporary connection failures can retry the same read-only cache request twice.
+HTTP 502, 503 and 504 can retry cache metadata or archive reads twice within the original request deadline.
 Writes and received archive data are never replayed by this retry.

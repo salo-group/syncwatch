@@ -48,6 +48,44 @@ test('cache round-trip verifies archive digest and never sends the repository to
     assert.equal(server.calls[3].redirect, 'error');
 });
 
+test('temporary HTTP errors retry cache metadata and archive reads', async t => {
+    const config = await fixture(t);
+    const server = service();
+    const counts = new Map();
+    const delays = [];
+    const result = await restoreCache(config, async (url, options) => {
+        const attempt = (counts.get(String(url)) ?? 0) + 1;
+        counts.set(String(url), attempt);
+        if (String(url).includes('/actions/artifacts?') && attempt === 1) {
+            return new Response('temporary metadata failure', {status: 502});
+        }
+        if (new URL(url).host === 'storage.example.invalid' && attempt < 3) {
+            assert.equal(options.headers, undefined);
+            assert.equal(options.redirect, 'error');
+            return new Response('temporary storage failure', {status: attempt === 1 ? 503 : 504});
+        }
+        return server.request(url, options);
+    }, async delay => { delays.push(delay); });
+    assert.equal(result.hit, true);
+    assert.deepEqual(delays, [250, 250, 750]);
+    assert.deepEqual(await readFile(config.destination), bytes);
+});
+
+test('an unavailable archive stops after three read attempts', async t => {
+    const config = await fixture(t);
+    const server = service();
+    let requests = 0;
+    await assert.rejects(restoreCache(config, async (url, options) => {
+        if (new URL(url).host === 'storage.example.invalid') {
+            requests++;
+            return new Response(null, {status: 503});
+        }
+        return server.request(url, options);
+    }, async () => {}), /Artifact storage download failed/);
+    assert.equal(requests, 3);
+    await assert.rejects(readFile(config.destination));
+});
+
 test('PR, expired, and failed-run artifacts are misses rather than reusable cache entries', async t => {
     const config = await fixture(t);
     for (const artifact of [{...validArtifact, expired: true}, {...validArtifact, workflow_run: {...validArtifact.workflow_run, head_repository_id: 999}}, {...validArtifact, workflow_run: {...validArtifact.workflow_run, head_branch: 'feature'}}]) {

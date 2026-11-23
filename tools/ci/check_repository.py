@@ -230,7 +230,7 @@ def check_workflows(root: Path) -> None:
             require(job.get("needs") == ["dependency-plan"] and job.get("strategy") == {
                 "fail-fast": False, "matrix": "${{ fromJSON(needs.dependency-plan.outputs." + platform + "_matrix) }}",
             }, "dependency jobs must execute the complete selected matrix")
-            require(job.get("with") == {"component": "${{ matrix.component }}", "platform": "${{ matrix.platform }}", "cold": "${{ matrix.cold }}"}, "dependency jobs must preserve selected inputs")
+            require(job.get("with") == {"components": "${{ toJSON(matrix.components) }}", "platform": "${{ matrix.platform }}", "cold": "${{ matrix.cold }}"}, "dependency jobs must preserve selected inputs")
             require(job.get("if") == "${{ needs.dependency-plan.result == 'success' }}", "only a failed dependency plan may prevent matrix expansion")
             require(not any(key in job for key in ("continue-on-error", "permissions", "secrets", "environment")), "dependency failures must propagate without privileged overrides")
             continue
@@ -323,6 +323,7 @@ def check_workflows(root: Path) -> None:
             "artifact transport tests must execute")
     require("node --test tools/ci/tests/sdk_cache.test.mjs tools/ci/tests/linux_runtime_cache.test.mjs tools/ci/tests/git_cache.test.mjs" in test_commands,
             "SDK, runtime and Git object cache tests must execute")
+    require("node --test tools/ci/tests/dependency_group.test.mjs" in test_commands, "dependency job tests must execute")
     require("python3 -m unittest discover -s tools/dependencies/tests -v\nnode --test tools/dependencies/tests/cache.test.mjs" in test_commands, "dependency infrastructure tests must execute")
     planner = jobs["dependency-plan"]
     require(any(step.get("id") == "plan" and step.get("run") == "python3 tools/dependencies/build.py plan" for step in planner["steps"]), "dependency planner must validate real source manifests")
@@ -338,7 +339,7 @@ def check_workflows(root: Path) -> None:
     require(action.get("runs") == {"using": "node24", "main": "upload.mjs"}, "artifact action must use its declared runner runtime")
     reusable = load_json(root / ".github/workflows/dependency-build.yml")
     require(reusable.get("permissions") == workflow["permissions"], "dependency workflow must use read-only permissions")
-    require(reusable.get("on") == {"workflow_call": {"inputs": {"component": {"required": True, "type": "string"}, "platform": {"required": True, "type": "string"}, "cold": {"required": True, "type": "boolean"}}}}, "dependency workflow must have typed, unprivileged inputs")
+    require(reusable.get("on") == {"workflow_call": {"inputs": {"components": {"required": True, "type": "string"}, "platform": {"required": True, "type": "string"}, "cold": {"required": True, "type": "boolean"}}}}, "dependency workflow must have typed, unprivileged inputs")
     require(set(reusable.get("jobs", {})) == {"build"}, "unexpected reusable dependency jobs")
     dependency = reusable["jobs"]["build"]
     require(dependency.get("runs-on") == "${{ fromJSON('{\"linux-x64\":\"ubuntu-24.04\",\"macos-arm64\":\"macos-15\",\"windows-x64\":\"windows-2025\"}')[inputs.platform] }}", "dependency runner map must be explicit")
@@ -347,7 +348,7 @@ def check_workflows(root: Path) -> None:
     require(len(dependency.get("steps", [])) == 2 and dependency["steps"][0].get("env") == jobs["repository"]["steps"][0]["env"], "dependency workflow must check out the exact selected revision")
     require(dependency["steps"][-1] == {
         "name": "Verify source inputs, build, and retain artifacts", "uses": "./.github/actions/dependency-build",
-        "with": {"component": "${{ inputs.component }}", "platform": "${{ inputs.platform }}", "cold": "${{ inputs.cold }}", "cache-token": "${{ github.token }}"},
+        "with": {"components": "${{ inputs.components }}", "platform": "${{ inputs.platform }}", "cold": "${{ inputs.cold }}", "cache-token": "${{ github.token }}"},
     }, "dependency workflow must execute the declared build action")
     action = load_json(root / ".github/actions/dependency-build/action.yml")
     require(action.get("runs") == {"using": "node24", "main": "build.mjs"}, "dependency action must use its declared runner runtime")
