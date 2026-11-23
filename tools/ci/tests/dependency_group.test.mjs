@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {runDependencies} from '../../../.github/actions/dependency-build/build.mjs';
+import {publishesDependencyCache, runDependencies} from '../../../.github/actions/dependency-build/build.mjs';
 
 test('a shared macOS runner builds each component with the selected cold mode', async () => {
     const calls = [];
@@ -27,4 +27,12 @@ test('invalid selections are rejected before any build starts', async () => {
     }
     await assert.rejects(runDependencies('["zlib","fastjsonschema"]', 'windows-x64', 'false', build));
     assert.equal(calls, 0);
+});
+
+test('a rerun leaves immutable shared cache names to the first attempt', () => {
+    const first = {GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main', GITHUB_RUN_ATTEMPT: '1'};
+    assert.equal(publishesDependencyCache(first), true);
+    assert.equal(publishesDependencyCache({...first, GITHUB_RUN_ATTEMPT: '2'}), false);
+    assert.equal(publishesDependencyCache({...first, GITHUB_EVENT_NAME: 'pull_request'}), false);
+    assert.equal(publishesDependencyCache({...first, GITHUB_REF: 'refs/heads/feature'}), false);
 });

@@ -29,6 +29,7 @@ Full validation requires every selected job to succeed.
 CI schedules the validated dependency selection by platform. Each build keeps its platform and cold flag.
 Short macOS dependency builds share one runner. VLC and Syncplay keep dedicated runners.
 Each build keeps its own checks and artifact. A component failure fails its job.
+Reruns publish verification artifacts for the new attempt. The first attempt can also publish shared caches.
 Each native application waits for its own platform producers.
 The aggregate requires all three producer groups, including groups that another platform does not consume.
 Windows native regression tests run in an isolated Windows job beside application assembly.

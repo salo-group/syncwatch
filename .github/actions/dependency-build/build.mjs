@@ -7,6 +7,11 @@ import {main as upload} from '../../../tools/ci/artifact_upload.mjs';
 import {warmSdkArchives, publishSdkArchives} from '../../../tools/ci/sdk_cache.mjs';
 import {warmGitSources, publishGitSources} from '../../../tools/ci/git_cache.mjs';
 
+export function publishesDependencyCache(environment) {
+    return ['push', 'schedule', 'workflow_dispatch'].includes(environment.GITHUB_EVENT_NAME)
+        && environment.GITHUB_REF === 'refs/heads/main' && environment.GITHUB_RUN_ATTEMPT === '1';
+}
+
 async function buildComponent(component, platform, cold) {
     const root = process.env.GITHUB_WORKSPACE;
     const directory = resolve(root, 'artifacts/dependencies', component, platform);
@@ -94,8 +99,7 @@ async function buildComponent(component, platform, cold) {
             throw new Error('Native design resource validation failed');
         }
     }
-    const trusted = ['push', 'schedule', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME)
-        && process.env.GITHUB_REF === 'refs/heads/main';
+    const trusted = publishesDependencyCache(process.env);
     if (trusted && !process.exitCode) {
         await upload({archive: dependencyArchive, name: `syncwatch-dependency-cache-${prepared.key}`});
     }
