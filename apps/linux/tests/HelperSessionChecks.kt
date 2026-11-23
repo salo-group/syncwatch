@@ -125,15 +125,24 @@ private class SessionPlayer(private val scope: PlaybackScope) : PlaybackPort {
     var seeks = 0
         private set
     private var ended = false
+    private var delayPause = false
+    private var pendingPause: Boolean? = null
     fun finishMedia() { sequence++; ended = true; paused = true; position = 60000 }
     var closes = 0
         private set
     override suspend fun observe(scope: PlaybackScope): PlaybackObservation {
         this.scope.check(scope)
-        return PlaybackObservation(scope, sequence, PlaybackStatus.ready, position, 60000, paused, 1.0,
+        val observation = PlaybackObservation(scope, sequence, PlaybackStatus.ready, position, 60000, paused, 1.0,
             !ended, false, ended, 0, 0, 0, null, false)
+        pendingPause?.let { pendingPause = null; setPaused(it, scope) }
+        return observation
     }
-    override suspend fun setPaused(paused: Boolean, scope: PlaybackScope) { if (this.paused != paused) sequence++; this.paused = paused }
+    override suspend fun setPaused(paused: Boolean, scope: PlaybackScope) {
+        if (delayPause) { delayPause = false; pendingPause = paused; return }
+        if (this.paused != paused) sequence++
+        this.paused = paused
+    }
+    fun delayNextPause() { delayPause = true }
     override suspend fun seek(positionMs: Long, scope: PlaybackScope) { sequence++; position = positionMs; seeks++ }
     override suspend fun load(localFile: Path, scope: PlaybackScope): Unit = error("Unexpected load")
     override suspend fun setRate(rate: Double, scope: PlaybackScope): Unit = error("Unexpected rate")
@@ -294,9 +303,23 @@ private suspend fun admissionChecks(owner: CoroutineScope) {
     check(SyncplayAdmission("A".repeat(64), "member-run").toString() == "[redacted]")
 }
 
+private suspend fun pauseCorrectionWaitsForNativeReadback(paused: Boolean) {
+    val native = PlaybackScope.fresh().replacingMedia()
+    val wire = PlaybackScope("helper-run", 7)
+    val player = SessionPlayer(native)
+    player.setPaused(!paused, native)
+    player.delayNextPause()
+    val frame = ("""{"v":1,"id":"cmd-1","type":"player.setPaused","clientRunId":"helper-run","mediaGeneration":7,"payload":{"paused":$paused}}""" + "\n").toByteArray()
+    val command = PlayerCorrection.decode(frame, wire)
+    val actual = command.apply(player, native, "media-1")
+    val reply = PlayerCorrection.frameValue(command.result(actual, native))
+    check(Json.`object`(reply["payload"])["paused"] == paused) { "Correction acknowledged the previous pause state" }
+}
+
 internal fun helperSessionChecks() {
     Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
         runBlocking(dispatcher) {
+            for (paused in listOf(true, false)) pauseCorrectionWaitsForNativeReadback(paused)
             admissionChecks(this)
             stationaryHandshake(this)
             for (beforeAck in listOf(false, true)) readinessPulse(this, beforeAck)

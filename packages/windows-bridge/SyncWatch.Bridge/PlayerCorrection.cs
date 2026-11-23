@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -75,9 +76,16 @@ public sealed class PlayerCorrection
                 if (MediaHandle != authorizedHandle) throw new PlayerCorrectionException("unauthorizedHandle");
                 break; // The selection owner already loaded this file; never reopen or rewind.
         }
-        var observation = await player.ObserveAsync(nativeScope, cancellation).ConfigureAwait(false);
-        Validate(observation, nativeScope);
-        return observation;
+        var wait = Stopwatch.StartNew();
+        while (true)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            var observation = await player.ObserveAsync(nativeScope, cancellation).ConfigureAwait(false);
+            Validate(observation, nativeScope);
+            if (Kind != CorrectionKind.Pause || observation.Paused == Paused) return observation;
+            if (wait.Elapsed >= TimeSpan.FromSeconds(2)) throw new PlayerCorrectionException("unavailable");
+            await Task.Delay(20, cancellation).ConfigureAwait(false);
+        }
     }
 
     public byte[] Result(PlaybackObservation observation, PlaybackScope nativeScope)

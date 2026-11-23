@@ -176,9 +176,17 @@ private actor SessionPlayer: PlaybackPort {
     private(set) var seeks = 0
     private(set) var closes = 0
     private var ended = false
+    private var delayPause = false
+    private var pendingPause: Bool?
     init(_ scope: PlaybackScope) { self.scope = scope }
     func observe(_ scope: PlaybackScope) throws -> PlaybackObservation {
         try self.scope.check(clientRunID: scope.clientRunID, mediaGeneration: scope.mediaGeneration)
+        defer {
+            if let pendingPause {
+                self.pendingPause = nil
+                setPaused(pendingPause, scope: scope)
+            }
+        }
         return try PlaybackObservation(
             scope: scope, sequence: sequence, status: .ready, positionMs: position,
             durationMs: 60000, paused: paused, rate: 1, seekable: !ended, buffering: false, ended: ended,
@@ -191,9 +199,15 @@ private actor SessionPlayer: PlaybackPort {
         position = 60000
     }
     func setPaused(_ paused: Bool, scope: PlaybackScope) {
+        if delayPause {
+            delayPause = false
+            pendingPause = paused
+            return
+        }
         if self.paused != paused { sequence += 1 }
         self.paused = paused
     }
+    func delayNextPause() { delayPause = true }
     func seek(to positionMs: Int64, scope: PlaybackScope) throws {
         try Task.checkCancellation()
         sequence += 1
@@ -219,6 +233,21 @@ private actor SessionPlayer: PlaybackPort {
         if ContinuousClock.now >= end { throw HelperSessionFailure.timeout }
         try await Task.sleep(for: .milliseconds(10))
     }
+}
+
+@Test(arguments: [true, false]) func pauseCorrectionWaitsForNativeReadback(_ paused: Bool) async throws {
+    let native = try PlaybackScope.fresh().replacingMedia()
+    let wire = try PlaybackScope(clientRunID: "helper-run", mediaGeneration: 7)
+    let player = SessionPlayer(native)
+    await player.setPaused(!paused, scope: native)
+    await player.delayNextPause()
+    let frame = Data("""
+        {"v":1,"id":"cmd-1","type":"player.setPaused","clientRunId":"helper-run","mediaGeneration":7,"payload":{"paused":\(paused)}}
+        """.utf8) + Data([10])
+    let command = try PlayerCorrection.decode(frame, wireScope: wire)
+    let actual = try await command.apply(to: player, nativeScope: native, authorizedHandle: "media-1")
+    let reply = try HelperJSON.object(command.result(actual, nativeScope: native))
+    #expect((reply["payload"] as? [String: Any])?["paused"] as? Bool == paused)
 }
 
 @Test @MainActor func sessionPublicationReplayAndFailure() async throws {

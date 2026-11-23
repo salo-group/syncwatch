@@ -138,11 +138,14 @@ internal static class HelperSessionChecks
         internal int Seeks { get; private set; }
         internal int Closes { get; private set; }
         private bool ended;
+        private bool delayPause;
+        private bool? pendingPause;
         internal void FinishMedia() { sequence++; ended = true; Paused = true; Position = 60000; }
+        internal void DelayNextPause() => delayPause = true;
         public Task<PlaybackObservation> ObserveAsync(PlaybackScope scope, CancellationToken cancellation = default)
         {
             cancellation.ThrowIfCancellationRequested(); owner.Check(scope.ClientRunId, scope.MediaGeneration);
-            return Task.FromResult(new PlaybackObservation
+            var observation = new PlaybackObservation
             {
                 Scope = scope,
                 Sequence = sequence,
@@ -152,10 +155,23 @@ internal static class HelperSessionChecks
                 Paused = Paused,
                 Seekable = !ended,
                 Ended = ended
-            });
+            };
+            if (pendingPause is bool next)
+            {
+                pendingPause = null;
+                if (Paused != next) sequence++;
+                Paused = next;
+            }
+            return Task.FromResult(observation);
         }
         public Task SetPausedAsync(bool paused, PlaybackScope scope, CancellationToken cancellation = default)
-        { cancellation.ThrowIfCancellationRequested(); if (Paused != paused) sequence++; Paused = paused; return Task.CompletedTask; }
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (delayPause) { delayPause = false; pendingPause = paused; return Task.CompletedTask; }
+            if (Paused != paused) sequence++;
+            Paused = paused;
+            return Task.CompletedTask;
+        }
         public Task SeekAsync(long positionMs, PlaybackScope scope, CancellationToken cancellation = default)
         { cancellation.ThrowIfCancellationRequested(); sequence++; Position = positionMs; Seeks++; return Task.CompletedTask; }
         public Task LoadAsync(string file, PlaybackScope scope, CancellationToken cancellation = default) => throw new InvalidOperationException();
@@ -327,10 +343,30 @@ internal static class HelperSessionChecks
         }
         Require(new SyncplayAdmission(new string('A', 64), "member-run").ToString() == "[redacted]");
     }
+    private static async Task PauseCorrectionWaitsForNativeReadback(bool paused)
+    {
+        var native = PlaybackScope.Create().ReplacingMedia();
+        var wire = new PlaybackScope("helper-run", 7);
+        var player = new Player(native);
+        await player.SetPausedAsync(!paused, native);
+        player.DelayNextPause();
+        var frame = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            v = 1, id = "cmd-1", type = "player.setPaused", clientRunId = wire.ClientRunId,
+            mediaGeneration = wire.MediaGeneration, payload = new { paused }
+        }).Concat(new byte[] { 10 }).ToArray();
+        var correction = PlayerCorrection.Decode(frame, wire);
+        var actual = await correction.ApplyAsync(player, native, "media-1");
+        using var reply = JsonDocument.Parse(correction.Result(actual, native));
+        if (reply.RootElement.GetProperty("payload").GetProperty("paused").GetBoolean() != paused)
+            throw new InvalidDataException("Correction acknowledged the previous pause state");
+    }
     internal static void Run()
     {
         new OwnerContext().Run(async () =>
         {
+            await PauseCorrectionWaitsForNativeReadback(true);
+            await PauseCorrectionWaitsForNativeReadback(false);
             await AdmissionChecks();
             await StationaryHandshake();
             await ReadinessPulse(false); await ReadinessPulse(true);

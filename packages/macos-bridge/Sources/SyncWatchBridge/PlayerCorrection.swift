@@ -75,9 +75,18 @@ public struct PlayerCorrection: Sendable, Equatable {
             guard handle == authorizedHandle else { throw PlayerCorrectionFailure.unauthorizedHandle }
         // Selection already owns this loaded file. Never reopen or rewind it.
         }
-        let observation = try await player.observe(nativeScope)
-        try validate(observation, nativeScope: nativeScope)
-        return observation
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while true {
+            try Task.checkCancellation()
+            let observation = try await player.observe(nativeScope)
+            try validate(observation, nativeScope: nativeScope)
+            if case .pause(let expected) = operation, observation.paused != expected {
+                guard ContinuousClock.now < deadline else { throw PlayerCorrectionFailure.unavailable }
+                try await Task.sleep(for: .milliseconds(20))
+            } else {
+                return observation
+            }
+        }
     }
 
     public func result(_ observation: PlaybackObservation, nativeScope: PlaybackScope) throws -> Data {
