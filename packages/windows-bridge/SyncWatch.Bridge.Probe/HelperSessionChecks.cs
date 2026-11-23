@@ -352,8 +352,12 @@ internal static class HelperSessionChecks
         player.DelayNextPause();
         var frame = JsonSerializer.SerializeToUtf8Bytes(new
         {
-            v = 1, id = "cmd-1", type = "player.setPaused", clientRunId = wire.ClientRunId,
-            mediaGeneration = wire.MediaGeneration, payload = new { paused }
+            v = 1,
+            id = "cmd-1",
+            type = "player.setPaused",
+            clientRunId = wire.ClientRunId,
+            mediaGeneration = wire.MediaGeneration,
+            payload = new { paused }
         }).Concat(new byte[] { 10 }).ToArray();
         var correction = PlayerCorrection.Decode(frame, wire);
         var actual = await correction.ApplyAsync(player, native, "media-1");
