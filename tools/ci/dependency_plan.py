@@ -1,4 +1,4 @@
-"""Partition the validated dependency matrix without changing selected builds."""
+"""Schedule the selected dependencies without changing build inputs."""
 
 import json
 import os
@@ -7,13 +7,18 @@ import sys
 
 
 PLATFORMS = {"linux-x64": "linux", "macos-arm64": "macos", "windows-x64": "windows"}
+MACOS_SUPPORT_COMPONENTS = {
+    "fastjsonschema", "design-generator", "syncplay-engine-sources", "zlib",
+    "cpython-startup-sources", "hacl-hash", "cpython-bootstrap-stdlib", "cpython-unicode-types",
+    "cpython-siphash", "cpython-hashtable", "cpython-embedded",
+}
 
 
 def partition(matrix):
     if (not isinstance(matrix, dict) or set(matrix) != {"include"}
             or not isinstance(matrix["include"], list) or not 0 < len(matrix["include"]) <= 256):
         raise ValueError("Dependency selection must contain a bounded matrix")
-    result = {name: {"include": []} for name in PLATFORMS.values()}
+    groups = {name: {} for name in PLATFORMS.values()}
     seen = set()
     for entry in matrix["include"]:
         if (not isinstance(entry, dict) or set(entry) != {"component", "platform", "cold"}
@@ -25,10 +30,19 @@ def partition(matrix):
         if identity in seen:
             raise ValueError("Dependency selection contains a duplicate build")
         seen.add(identity)
-        result[PLATFORMS[entry["platform"]]]["include"].append(entry)
-    if any(not matrix["include"] for matrix in result.values()):
+        component, platform = identity
+        group = None if platform == "macos-arm64" and component in MACOS_SUPPORT_COMPONENTS else component
+        key = group, entry["cold"]
+        target = groups[PLATFORMS[platform]].setdefault(
+            key, {"platform": platform, "cold": entry["cold"], "components": []})
+        target["components"].append(component)
+    if any(not platform_groups for platform_groups in groups.values()):
         raise ValueError("Dependency selection must retain every platform baseline")
-    return result
+    return {name: {"include": [
+        {"label": target["components"][0] if len(target["components"]) == 1
+         else "support (cold)" if target["cold"] else "support", **target}
+        for target in platform_groups.values()
+    ]} for name, platform_groups in groups.items()}
 
 
 def main():

@@ -86,6 +86,10 @@
           "run": "node --test tools/ci/tests/sdk_cache.test.mjs tools/ci/tests/linux_runtime_cache.test.mjs tools/ci/tests/git_cache.test.mjs"
         },
         {
+          "name": "Dependency job regression tests",
+          "run": "node --test tools/ci/tests/dependency_group.test.mjs"
+        },
+        {
           "name": "Dependency infrastructure tests",
           "run": "python3 -m unittest discover -s tools/dependencies/tests -v\nnode --test tools/dependencies/tests/cache.test.mjs"
         },
@@ -409,7 +413,7 @@
       "if": "${{ needs.dependency-plan.outputs.mode == 'full' }}"
     },
     "dependencies-linux": {
-      "name": "Dependency ${{ matrix.component }} / ${{ matrix.platform }}",
+      "name": "Dependency ${{ matrix.label }} / ${{ matrix.platform }}",
       "needs": [
         "dependency-plan"
       ],
@@ -419,14 +423,14 @@
       },
       "uses": "./.github/workflows/dependency-build.yml",
       "with": {
-        "component": "${{ matrix.component }}",
+        "components": "${{ toJSON(matrix.components) }}",
         "platform": "${{ matrix.platform }}",
         "cold": "${{ matrix.cold }}"
       },
       "if": "${{ needs.dependency-plan.result == 'success' }}"
     },
     "dependencies-macos": {
-      "name": "Dependency ${{ matrix.component }} / ${{ matrix.platform }}",
+      "name": "Dependency ${{ matrix.label }} / ${{ matrix.platform }}",
       "needs": [
         "dependency-plan"
       ],
@@ -436,14 +440,14 @@
       },
       "uses": "./.github/workflows/dependency-build.yml",
       "with": {
-        "component": "${{ matrix.component }}",
+        "components": "${{ toJSON(matrix.components) }}",
         "platform": "${{ matrix.platform }}",
         "cold": "${{ matrix.cold }}"
       },
       "if": "${{ needs.dependency-plan.result == 'success' }}"
     },
     "dependencies-windows": {
-      "name": "Dependency ${{ matrix.component }} / ${{ matrix.platform }}",
+      "name": "Dependency ${{ matrix.label }} / ${{ matrix.platform }}",
       "needs": [
         "dependency-plan"
       ],
@@ -453,7 +457,7 @@
       },
       "uses": "./.github/workflows/dependency-build.yml",
       "with": {
-        "component": "${{ matrix.component }}",
+        "components": "${{ toJSON(matrix.components) }}",
         "platform": "${{ matrix.platform }}",
         "cold": "${{ matrix.cold }}"
       },

@@ -26,8 +26,30 @@ class DependencyPlanChecks(unittest.TestCase):
         kotlin = {"component": "kotlin-stdlib", "platform": "linux-x64", "cold": True}
         result, outputs = self.run_partition({"include": [linux, macos, windows, kotlin]})
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outputs, {"linux": {"include": [linux, kotlin]}, "macos": {"include": [macos]},
-                                   "windows": {"include": [windows]}})
+        for platform, entries in {"linux": [linux, kotlin], "macos": [macos], "windows": [windows]}.items():
+            self.assertEqual(outputs[platform], {"include": [
+                {"label": entry["component"], "components": [entry["component"]],
+                 "platform": entry["platform"], "cold": entry["cold"]} for entry in entries
+            ]})
+
+    def test_macos_support_builds_share_a_runner_without_changing_the_selection(self):
+        macos = [{"component": name, "platform": "macos-arm64", "cold": cold} for name, cold in (
+            ("fastjsonschema", False), ("libvlc", False), ("design-generator", False),
+            ("syncplay-runtime", False), ("cpython-unicode-types", False),
+            ("zlib", True), ("hacl-hash", True), ("new-component", False),
+        )]
+        others = [{"component": "fastjsonschema", "platform": platform, "cold": False}
+                  for platform in ("linux-x64", "windows-x64")]
+        result, outputs = self.run_partition({"include": [*macos, *others]})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        groups = outputs["macos"]["include"]
+        self.assertCountEqual([group["components"] for group in groups], [
+            ["fastjsonschema", "design-generator", "cpython-unicode-types"], ["libvlc"],
+            ["syncplay-runtime"], ["zlib", "hacl-hash"], ["new-component"],
+        ])
+        flattened = [{"component": name, "platform": group["platform"], "cold": group["cold"]}
+                     for group in groups for name in group["components"]]
+        self.assertCountEqual(flattened, macos)
 
     def test_native_lanes_wait_only_for_their_own_verified_platform(self):
         root = Path(__file__).resolve().parents[3]
