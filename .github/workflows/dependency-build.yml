@@ -3,7 +3,7 @@
   "on": {
     "workflow_call": {
       "inputs": {
-        "component": {
+        "components": {
           "required": true,
           "type": "string"
         },
@@ -45,7 +45,7 @@
           "name": "Verify source inputs, build, and retain artifacts",
           "uses": "./.github/actions/dependency-build",
           "with": {
-            "component": "${{ inputs.component }}",
+            "components": "${{ inputs.components }}",
             "platform": "${{ inputs.platform }}",
             "cold": "${{ inputs.cold }}",
             "cache-token": "${{ github.token }}"

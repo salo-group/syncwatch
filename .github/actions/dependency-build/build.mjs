@@ -1,19 +1,22 @@
 import {spawnSync} from 'node:child_process';
 import {access, appendFile, readFile} from 'node:fs/promises';
 import {delimiter, dirname, resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {restoreCache} from '../../../tools/dependencies/cache.mjs';
 import {main as upload} from '../../../tools/ci/artifact_upload.mjs';
 import {warmSdkArchives, publishSdkArchives} from '../../../tools/ci/sdk_cache.mjs';
 import {warmGitSources, publishGitSources} from '../../../tools/ci/git_cache.mjs';
 
-async function main() {
-    const component = process.env.INPUT_COMPONENT;
-    const platform = process.env.INPUT_PLATFORM;
-    const cold = process.env.INPUT_COLD === 'true';
-    if (!/^[a-z][a-z0-9-]{0,47}$/.test(component)
-        || !['linux-x64', 'macos-arm64', 'windows-x64'].includes(platform)) throw new Error('Invalid dependency job');
+export function publishesDependencyCache(environment) {
+    return ['push', 'schedule', 'workflow_dispatch'].includes(environment.GITHUB_EVENT_NAME)
+        && environment.GITHUB_REF === 'refs/heads/main' && environment.GITHUB_RUN_ATTEMPT === '1';
+}
+
+async function buildComponent(component, platform, cold) {
     const root = process.env.GITHUB_WORKSPACE;
     const directory = resolve(root, 'artifacts/dependencies', component, platform);
+    const dependencyArchive = resolve(directory, 'artifact.zip');
+    const artifactSuffix = `${platform}-${process.env.GITHUB_SHA}-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
     const python = process.platform === 'win32' ? 'python' : 'python3';
     function runCommand(command) {
         const environment = {...process.env};
@@ -70,10 +73,8 @@ async function main() {
         console.log(`Trusted dependency cache: ${restored.hit ? 'downloaded and digest-verified' : 'miss'}`);
     }
     const succeeded = run('build');
-    await access(resolve(directory, 'artifact.zip'));
-    process.env.INPUT_ARCHIVE = resolve(directory, 'artifact.zip');
-    process.env.INPUT_NAME = `syncwatch-dependency-${component}-${platform}-${process.env.GITHUB_SHA}-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
-    await upload();
+    await access(dependencyArchive);
+    await upload({archive: dependencyArchive, name: `syncwatch-dependency-${component}-${artifactSuffix}`});
     if (!succeeded) throw new Error('Dependency build failed');
     if (component === 'libvlc') {
         // Decoder SDK acceptance and application consumers have separate reports.
@@ -81,11 +82,8 @@ async function main() {
         const accepted = provisioned && runCommand([python, 'tools/playback/ci.py', 'check']);
         const playbackArchive = resolve(root, 'artifacts/playback', platform + '.zip');
         if (await access(playbackArchive).then(() => true, () => false)) {
-            process.env.INPUT_ARCHIVE = playbackArchive;
-            process.env.INPUT_NAME = `syncwatch-playback-${platform}-${process.env.GITHUB_SHA}-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
-            await upload();
+            await upload({archive: playbackArchive, name: `syncwatch-playback-${artifactSuffix}`});
         }
-        process.env.INPUT_ARCHIVE = resolve(directory, 'artifact.zip');
         if (!accepted) throw new Error('Native playback consumer acceptance failed');
     }
     if (component === 'syncplay-runtime') {
@@ -93,10 +91,7 @@ async function main() {
             || !runCommand([python, 'tools/bridge/ci.py', 'check'])) {
             throw new Error('Owned helper and native pipe acceptance failed');
         }
-        process.env.INPUT_ARCHIVE = resolve(root, 'artifacts/helper', platform + '.zip');
-        process.env.INPUT_NAME = `syncwatch-helper-${platform}-${process.env.GITHUB_SHA}-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
-        await upload();
-        process.env.INPUT_ARCHIVE = resolve(directory, 'artifact.zip');
+        await upload({archive: resolve(root, 'artifacts/helper', platform + '.zip'), name: `syncwatch-helper-${artifactSuffix}`});
     }
     if (component === 'design-generator') {
         if (!runCommand([python, 'tools/design/resources.py', '--check'])
@@ -104,11 +99,9 @@ async function main() {
             throw new Error('Native design resource validation failed');
         }
     }
-    const trusted = ['push', 'schedule', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME)
-        && process.env.GITHUB_REF === 'refs/heads/main';
+    const trusted = publishesDependencyCache(process.env);
     if (trusted && !process.exitCode) {
-        process.env.INPUT_NAME = `syncwatch-dependency-cache-${prepared.key}`;
-        await upload();
+        await upload({archive: dependencyArchive, name: `syncwatch-dependency-cache-${prepared.key}`});
     }
     if (sdkSelection && !process.exitCode) await publishSdkArchives(sdkSelection, {root, component, platform, trusted});
     if (!process.exitCode) await publishGitSources(gitSelection, {root, component, platform, cold, trusted});
@@ -117,10 +110,26 @@ async function main() {
     }
 }
 
-try {
-    await main();
-} catch {
-    // Never expose service errors, runtime identities, tokens, or signed URLs.
-    console.error('::error::Dependency job failed; inspect the validation stage and retained report');
-    process.exitCode = 1;
+export async function runDependencies(componentsInput, platform, coldInput, build = buildComponent) {
+    const components = JSON.parse(componentsInput);
+    if (!['linux-x64', 'macos-arm64', 'windows-x64'].includes(platform)
+        || !['true', 'false'].includes(coldInput) || !Array.isArray(components) || !components.length
+        || components.length > (platform === 'macos-arm64' ? 16 : 1)
+        || components.some(component => typeof component !== 'string' || !/^[a-z][a-z0-9-]{0,47}$/.test(component))
+        || new Set(components).size !== components.length) throw new Error('Invalid dependency job');
+    for (const component of components) {
+        console.log(`Verifying dependency ${component} / ${platform}`);
+        await build(component, platform, coldInput === 'true');
+        if (process.exitCode) throw new Error('Dependency publication failed');
+    }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    try {
+        await runDependencies(process.env.INPUT_COMPONENTS, process.env.INPUT_PLATFORM, process.env.INPUT_COLD);
+    } catch {
+        // Never expose service errors, runtime identities, tokens, or signed URLs.
+        console.error('::error::Dependency job failed; inspect the validation stage and retained report');
+        process.exitCode = 1;
+    }
 }
