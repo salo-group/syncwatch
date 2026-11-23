@@ -169,8 +169,15 @@ internal sealed class MeetController(RoomController room, Func<Uri, Cancellation
         if (value.State is "complete" or "cancelled" or "failed" or "expired")
         { permission = null; permissionStatus = null; model.BrowserProof = ""; browserOpened = false; if (value.State == "complete") call = null; }
     }
+    private static bool CanEnd(RoomCallStatus value) =>
+        !value.AuthorizationRequired && value.State is ("ready" or "endFailed");
     private void Apply(RoomCallStatus value)
-    { if (call?.CallId != value.CallId || call?.Generation != value.Generation) { endTarget = null; notice = null; } call = value; }
+    {
+        bool callChanged = call?.CallId != value.CallId || call?.Generation != value.Generation;
+        if (callChanged || !CanEnd(value)) endTarget = null;
+        if (callChanged) notice = null;
+        call = value;
+    }
     private void Render()
     {
         if (membership is not { } member || !room.IsCurrent(member) || closing) { model = new(); Changed?.Invoke(); return; }
@@ -194,11 +201,9 @@ internal sealed class MeetController(RoomController room, Func<Uri, Cancellation
                 next.EnabledActions.Add("meetRetry");
                 if (member.IsOwner && call.AuthorizationRequired) next.EnabledActions.Add("meetAuthorize");
                 if (call.State == "ready") next.EnabledActions.Add("meetOpen");
-                if (member.IsOwner && !call.AuthorizationRequired)
-                {
-                    if (call.State is "idle" or "ended" or "creationFailed") next.EnabledActions.Add("meetStart");
-                    if (call.State is "ready" or "endFailed") next.EnabledActions.Add("meetEnd");
-                }
+                if (member.IsOwner && !call.AuthorizationRequired && call.State is ("idle" or "ended" or "creationFailed"))
+                    next.EnabledActions.Add("meetStart");
+                if (member.IsOwner && CanEnd(call)) next.EnabledActions.Add("meetEnd");
                 if (endTarget is not null && endTarget.CallId == call.CallId && endTarget.Generation == call.Generation)
                 { next.Status = "meetEndConfirmation"; next.EnabledActions = ["close", "meetConfirmEnd", "meetCancelEnd"]; }
             }

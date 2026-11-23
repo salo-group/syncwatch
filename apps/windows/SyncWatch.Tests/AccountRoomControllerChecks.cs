@@ -31,6 +31,7 @@ internal static class AccountRoomControllerChecks
             peer.BindAccount(guestAuthority, guestDevice.Account.Name);
             host.Connect(); await Settles(() => host.Connected);
             Require(host.Editor.Owner && host.Editor.AccountName == ownerDevice.Account.Name);
+            await MeetControllerChecks.ObsoleteEndConfirmation(host);
             var superseded = await host.InvitationForCopyAsync() ?? throw new Exception("No invitation");
             Require(await host.InvitationForCopyAsync() is not null && !host.CanCopy(superseded));
             foreach (string outcome in new[] { "cancel", "deny", "approve" })

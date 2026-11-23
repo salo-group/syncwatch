@@ -7,6 +7,31 @@ namespace SyncWatch;
 
 internal static class MeetControllerChecks
 {
+    internal static async Task ObsoleteEndConfirmation(RoomController host)
+    {
+        var current = new RoomCallStatus("ready", new string('A', 43), 1, "https://meet.google.com/abc-defg-hij", null, false, 1000);
+        bool observedEnd = false;
+        var meet = new MeetController(host, (_, _) => throw new Exception("A call status update must leave the browser closed"),
+            (_, _) =>
+            {
+                observedEnd = current.State == "ended";
+                return Task.FromResult(current);
+            });
+        try
+        {
+            meet.Present();
+            await Settles(() => meet.Presentation.EnabledActions.Contains("meetEnd"));
+            meet.Action("meetEnd");
+            Require(meet.Presentation.EnabledActions.Contains("meetConfirmEnd"));
+            current = current with { State = "ended", MeetUri = null };
+            await Settles(() => observedEnd);
+            if (meet.Presentation.Status != "meetEnded" || meet.Presentation.EnabledActions.Contains("meetConfirmEnd"))
+                throw new Exception($"The ended call left the owner panel in {meet.Presentation.Status}");
+            Console.WriteLine("SYNCWATCH_MEET_OBSOLETE_END_CONFIRMATION_OK");
+        }
+        finally { await meet.CloseAsync(); }
+    }
+
     internal static async Task Run(RoomController host, RoomController peer, Uri service, string fixtureToken, AccountProfile account, Action<bool> setAccountAvailable)
     {
         Uri? authorization = null; int opens = 0;

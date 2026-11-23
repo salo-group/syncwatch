@@ -188,7 +188,15 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
             if (value.state == "complete") call = null
         }
     }
-    private fun apply(value: RoomCallStatus) { if (call?.callId != value.callId || call?.generation != value.generation) { endTarget = null; notice = null }; call = value }
+    private fun canEnd(value: RoomCallStatus): Boolean =
+        !value.authorizationRequired && (value.state == "ready" || value.state == "endFailed")
+
+    private fun apply(value: RoomCallStatus) {
+        val callChanged = call?.callId != value.callId || call?.generation != value.generation
+        if (callChanged || !canEnd(value)) endTarget = null
+        if (callChanged) notice = null
+        call = value
+    }
     private fun render() {
         val member = membership
         if (member == null || !room.isCurrent(member) || closing) { model = MeetPresentation(); return }
@@ -212,10 +220,10 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
                 if (observed != null) {
                     if (member.isOwner && observed.authorizationRequired) actions += "meetAuthorize"
                     if (observed.state == "ready") actions += "meetOpen"
-                    if (member.isOwner && !observed.authorizationRequired) {
-                        if (observed.state in setOf("idle", "ended", "creationFailed")) actions += "meetStart"
-                        if (observed.state in setOf("ready", "endFailed")) actions += "meetEnd"
+                    if (member.isOwner && !observed.authorizationRequired && observed.state in setOf("idle", "ended", "creationFailed")) {
+                        actions += "meetStart"
                     }
+                    if (member.isOwner && canEnd(observed)) actions += "meetEnd"
                     val target = endTarget
                     if (target != null && target.callId == observed.callId && target.generation == observed.generation) {
                         status = "meetEndConfirmation"; actions = mutableSetOf("close", "meetConfirmEnd", "meetCancelEnd")

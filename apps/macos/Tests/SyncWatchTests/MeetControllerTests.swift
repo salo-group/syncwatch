@@ -4,6 +4,48 @@ import Testing
 
 @testable import SyncWatch
 
+@MainActor func meetObsoleteEndConfirmationCheck(host: RoomController) async throws {
+    let callID = String(repeating: "A", count: 43)
+    func status(_ state: String, uri: String?) throws -> RoomCallStatus {
+        try RoomCallStatus.decode(
+            JSONSerialization.data(withJSONObject: [
+                "status": state, "callId": callID, "generation": 1, "meetUri": uri as Any? ?? NSNull(),
+                "reason": NSNull(), "authorizationRequired": false, "pollAfterMs": 1000,
+            ]))
+    }
+    @MainActor final class StatusSource {
+        var current: RoomCallStatus
+        var observedEnd = false
+        init(_ current: RoomCallStatus) { self.current = current }
+    }
+    let source = try StatusSource(status("ready", uri: "https://meet.google.com/abc-defg-hij"))
+    let ended = try status("ended", uri: nil)
+    let meet = MeetController(
+        room: host,
+        readCallStatus: { _ in
+            source.observedEnd = source.current.state == "ended"
+            return source.current
+        },
+        openBrowser: { _ in
+            Issue.record("A call status update must leave the browser closed")
+            return false
+        })
+    meet.present()
+    do {
+        try await meetSettles { meet.presentation.enabledActions.contains("meetEnd") }
+        meet.action("meetEnd")
+        try #require(meet.presentation.enabledActions.contains("meetConfirmEnd"))
+        source.current = ended
+        try await meetSettles { source.observedEnd }
+        try #require(meet.presentation.status == "meetEnded")
+        try #require(!meet.presentation.enabledActions.contains("meetConfirmEnd"))
+    } catch {
+        await meet.close()
+        throw error
+    }
+    await meet.close()
+}
+
 @MainActor func meetApplicationChecks(
     host: RoomController, peer: RoomController, service: URL,
     fixtureToken: String, account: AccountProfile, setAccountAvailable: (Bool) -> Void

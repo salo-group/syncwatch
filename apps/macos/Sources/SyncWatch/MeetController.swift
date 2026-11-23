@@ -287,11 +287,13 @@ import SyncWatchRoom
             if value.state == "complete" { call = nil }
         }
     }
+    private static func canEnd(_ call: RoomCallStatus) -> Bool {
+        !call.authorizationRequired && (call.state == "ready" || call.state == "endFailed")
+    }
     private func apply(_ value: RoomCallStatus) {
-        if call?.callID != value.callID || call?.generation != value.generation {
-            endTarget = nil
-            notice = nil
-        }
+        let callChanged = call?.callID != value.callID || call?.generation != value.generation
+        if callChanged || !Self.canEnd(value) { endTarget = nil }
+        if callChanged { notice = nil }
         call = value
     }
     private func render() {
@@ -342,12 +344,12 @@ import SyncWatchRoom
                 next.enabledActions.insert("meetRetry")
                 if member.isOwner && call.authorizationRequired { next.enabledActions.insert("meetAuthorize") }
                 if call.state == "ready" { next.enabledActions.insert("meetOpen") }
-                if member.isOwner && !call.authorizationRequired {
-                    if ["idle", "ended", "creationFailed"].contains(call.state) {
-                        next.enabledActions.insert("meetStart")
-                    }
-                    if ["ready", "endFailed"].contains(call.state) { next.enabledActions.insert("meetEnd") }
+                if member.isOwner && !call.authorizationRequired
+                    && ["idle", "ended", "creationFailed"].contains(call.state)
+                {
+                    next.enabledActions.insert("meetStart")
                 }
+                if member.isOwner && Self.canEnd(call) { next.enabledActions.insert("meetEnd") }
                 if let target = endTarget, target.callID == call.callID, target.generation == call.generation {
                     next.status = "meetEndConfirmation"
                     next.enabledActions = ["close", "meetConfirmEnd", "meetCancelEnd"]

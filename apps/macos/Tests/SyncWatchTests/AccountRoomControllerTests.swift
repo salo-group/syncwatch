@@ -30,6 +30,7 @@ func accountRoomApprovalCancellationAndScopeReplacement() async throws {
         host.connect()
         try await roomSettles { host.connected }
         #expect(host.editor.owner && host.editor.accountName == ownerDevice.account.name)
+        try await meetObsoleteEndConfirmationCheck(host: host)
         let superseded = try #require(await host.invitationForCopy())
         _ = try #require(await host.invitationForCopy())
         #expect(!host.canCopy(superseded))

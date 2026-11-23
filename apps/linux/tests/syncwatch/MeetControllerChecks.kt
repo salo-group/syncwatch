@@ -8,6 +8,29 @@ import java.time.Duration
 import kotlinx.coroutines.*
 import syncwatch.room.*
 
+internal suspend fun meetObsoleteEndConfirmationCheck(scope: CoroutineScope, host: RoomController) {
+    var current = RoomCallStatus("ready", "A".repeat(43), 1, "https://meet.google.com/abc-defg-hij", null, false, 1000)
+    var observedEnd = false
+    val meet = MeetController(scope, host, readCallStatus = {
+        observedEnd = current.state == "ended"
+        current
+    }, openBrowser = { error("A call status update must leave the browser closed") })
+    try {
+        meet.present()
+        withTimeout(5_000) { while ("meetEnd" !in meet.presentation.enabledActions) delay(20) }
+        meet.action("meetEnd")
+        check("meetConfirmEnd" in meet.presentation.enabledActions)
+        current = current.copy(state = "ended", meetUri = null)
+        withTimeout(5_000) { while (!observedEnd) delay(20) }
+        check(meet.presentation.status == "meetEnded" && "meetConfirmEnd" !in meet.presentation.enabledActions) {
+            "The ended call left the owner panel in ${meet.presentation.status}"
+        }
+        println("SYNCWATCH_MEET_OBSOLETE_END_CONFIRMATION_OK")
+    } finally {
+        meet.close()
+    }
+}
+
 internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomController, peer: RoomController, service: URI,
     fixtureToken: String, account: AccountProfile, setAccountAvailable: (Boolean) -> Unit) {
     var authorization: URI? = null
