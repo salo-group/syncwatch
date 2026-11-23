@@ -1,5 +1,8 @@
 """Actual upstream TLS acceptance using the shared controlled-server fixture."""
 
+from syncplay import constants
+
+
 def run(root):
     failures, sessions, listeners = [], [], []
     report = {"realUpstreamServer": True, "realUpstreamClients": True, "simulatedPlayerOnly": True,
@@ -26,6 +29,7 @@ def run(root):
         # Match the native helper: media selection is application-owned, not a
         # second stock-player playlist that may asynchronously reopen/rewind it.
         session.getConfig()["sharedPlaylistEnabled"] = False
+        session.getConfig()["unpauseAction"] = constants.UNPAUSE_ALWAYS_MODE
         session.handshake_timeout = 2.0
         session.media_loaded("owned-handle-" + name, "acceptance-film.mkv", 600000, 4096)
         session.connect()
@@ -80,8 +84,45 @@ def run(root):
             yield wait_for(lambda: pa.paused and pb.paused and pa.current() > 85000 and pb.current() > 85000,
                            "shared pause at the observed seek position")
             report["playback"]["pause"] = True
+            pb.set_paused(False)
+            b.bridge_player.observe(False, pb.current(), user_initiated=True)
+            yield wait_for(lambda: not pa.paused, "shared resume")
+            pb.set_paused(True)
+            b.bridge_player.observe(True, pb.current(), user_initiated=True)
+            pb.set_position(145000)
+            b.bridge_player.observe(True, pb.current(), user_initiated=True)
+            yield wait_for(lambda: pa.paused and abs(pa.current() - 145000) < 1500,
+                           "remote pause followed immediately by seek")
+            report["playback"]["rapidPauseThenSeek"] = True
+            pa.set_paused(False)
+            a.bridge_player.observe(False, pa.current(), user_initiated=True)
+            yield wait_for(lambda: not pb.paused, "resume before a rapid seek and pause")
+            pa.set_position(205000)
+            a.bridge_player.observe(False, pa.current(), user_initiated=True)
+            pa.set_paused(True)
+            after_pause = len(pa.commands)
+            a.bridge_player.observe(True, pa.current(), user_initiated=True)
+            yield wait_for(lambda: pb.paused and abs(pb.current() - 205000) < 1500,
+                           "remote seek followed immediately by pause")
+            assert pa.paused and ("pause", False) not in pa.commands[after_pause:]
+            report["playback"]["rapidSeekThenPause"] = True
+            yield wait_for(lambda: a.getGlobalPaused() and not a._protocol.clientIgnoringOnTheFly,
+                           "sender acknowledged the initial paused state")
+            pa.set_paused(False)
+            a.bridge_player.observe(False, pa.current(), user_initiated=True)
+            assert a.getGlobalPaused() and a._protocol.clientIgnoringOnTheFly
+            pa.set_position(265000)
+            a.bridge_player.observe(False, pa.current(), user_initiated=True)
+            pa.set_paused(True)
+            after_pause = len(pa.commands)
+            a.bridge_player.observe(True, pa.current(), user_initiated=True)
+            yield wait_for(lambda: pb.paused and abs(pb.current() - 265000) < 1500,
+                           "play, seek and return to pause before the play acknowledgement")
+            assert pa.paused and ("pause", False) not in pa.commands[after_pause:]
+            report["playback"]["rapidPlaySeekThenPause"] = True
             late, pl, _ = client(port, "acceptance-late")
-            yield wait_for(lambda: late.isConnectedAndInARoom() and pl.current() > 85000 and pl.paused, "late join current state")
+            yield wait_for(lambda: late.isConnectedAndInARoom() and abs(pl.current() - 265000) < 1500 and pl.paused,
+                           "late join current state")
             report["playback"]["lateJoin"] = True
             before = len(factory.hellos)
             a._protocol.transport.abortConnection()

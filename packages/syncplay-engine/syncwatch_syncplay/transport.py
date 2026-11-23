@@ -30,6 +30,45 @@ class StrictClientProtocol(SyncClientProtocol):
         self._phase = "new"
         self._deadline = None
         self._cancel_admission = None
+        self._deferred_playstate = None
+        self._sent_pause = None
+
+    @property
+    def unconfirmed_pause(self):
+        if self._deferred_playstate is not None:
+            return self._deferred_playstate[1]
+        if self.clientIgnoringOnTheFly:
+            return self._sent_pause
+        return None
+
+    def sendState(self, position, paused, doSeek, latencyCalculation, stateChange=False):
+        pending = self._deferred_playstate
+        if self.clientIgnoringOnTheFly and not self.serverIgnoringOnTheFly:
+            if stateChange:
+                # The upstream sender omits playstate while its previous change
+                # is in flight. Keep the latest observation and any unsent seek.
+                self._deferred_playstate = (position, paused, doSeek or bool(pending and pending[2]))
+                return
+        elif pending is not None:
+            if stateChange:
+                doSeek = doSeek or pending[2]
+            else:
+                position, paused, doSeek = pending
+            self._deferred_playstate = None
+            stateChange = True
+        if stateChange:
+            self._sent_pause = paused
+        super().sendState(position, paused, doSeek, latencyCalculation, stateChange)
+
+    def handleState(self, state):
+        if (self._deferred_playstate is not None and self.clientIgnoringOnTheFly
+                and state.get("ignoringOnTheFly", {}).get("client") == self.clientIgnoringOnTheFly
+                and state.get("playstate", {}).get("setBy") == self._client.getUsername()):
+            # Process the acknowledgement and ping without correcting the
+            # native player back to the older local choice.
+            state = state.copy()
+            del state["playstate"]
+        super().handleState(state)
 
     def connectionMade(self):
         self._client.initProtocol(self)
