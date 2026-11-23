@@ -1,4 +1,8 @@
+import {setTimeout as pause} from 'node:timers/promises';
 import {archiveMetadata, downloadArchive} from '../ci/artifact_download.mjs';
+
+const transientHttpStatuses = new Set([502, 503, 504]);
+const retryDelays = [250, 750];
 
 export function trustedRun(run, repositoryId) {
     return run.status === 'completed' && run.conclusion === 'success'
@@ -8,13 +12,22 @@ export function trustedRun(run, repositoryId) {
         && run.path === '.github/workflows/repository.yml';
 }
 
-export async function restoreCache({repository, repositoryId, token, name, destination}, request = fetch) {
+export async function restoreCache({repository, repositoryId, token, name, destination}, request = fetch, wait = pause) {
     if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)
         || !/^syncwatch-dependency-cache-[0-9a-f]{64}$/.test(name)
         || !Number.isSafeInteger(repositoryId) || !token) throw new Error('Invalid cache request');
     const base = `https://api.github.com/repos/${repository}`;
+    async function read(url, options) {
+        for (const delay of retryDelays) {
+            const response = await request(url, options);
+            if (!transientHttpStatuses.has(response.status)) return response;
+            await response.body?.cancel();
+            await wait(delay, undefined, {signal: options.signal});
+        }
+        return request(url, options);
+    }
     async function api(path) {
-        const result = await request(base + path, {
+        const result = await read(base + path, {
             redirect: 'manual', signal: AbortSignal.timeout(60000),
             headers: {Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2026-03-10'},
         });
@@ -31,7 +44,7 @@ export async function restoreCache({repository, repositoryId, token, name, desti
         const run = await (await api(`/actions/runs/${artifact.workflow_run.id}`)).json();
         if (!trustedRun(run, repositoryId)) continue;
         archiveMetadata(artifact);
-        await downloadArchive({redirect: await api(`/actions/artifacts/${artifact.id}/zip`), artifact, destination}, request);
+        await downloadArchive({redirect: await api(`/actions/artifacts/${artifact.id}/zip`), artifact, destination}, read);
         return {hit: true, artifactId: artifact.id, sourceCommit: run.head_sha};
     }
     return {hit: false};
