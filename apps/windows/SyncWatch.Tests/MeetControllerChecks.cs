@@ -7,6 +7,31 @@ namespace SyncWatch;
 
 internal static class MeetControllerChecks
 {
+    internal static async Task ObsoleteEndConfirmation(RoomController host)
+    {
+        var current = new RoomCallStatus("ready", new string('A', 43), 1, "https://meet.google.com/abc-defg-hij", null, false, 1000);
+        bool observedEnd = false;
+        var meet = new MeetController(host, (_, _) => throw new Exception("A call status update must leave the browser closed"),
+            (_, _) =>
+            {
+                observedEnd = current.State == "ended";
+                return Task.FromResult(current);
+            });
+        try
+        {
+            meet.Present();
+            await Settles(() => meet.Presentation.EnabledActions.Contains("meetEnd"));
+            meet.Action("meetEnd");
+            Require(meet.Presentation.EnabledActions.Contains("meetConfirmEnd"));
+            current = current with { State = "ended", MeetUri = null };
+            await Settles(() => observedEnd);
+            if (meet.Presentation.Status != "meetEnded" || meet.Presentation.EnabledActions.Contains("meetConfirmEnd"))
+                throw new Exception($"The ended call left the owner panel in {meet.Presentation.Status}");
+            Console.WriteLine("SYNCWATCH_MEET_OBSOLETE_END_CONFIRMATION_OK");
+        }
+        finally { await meet.CloseAsync(); }
+    }
+
     internal static async Task Run(RoomController host, RoomController peer, Uri service, string fixtureToken, AccountProfile account, Action<bool> setAccountAvailable)
     {
         Uri? authorization = null; int opens = 0;
@@ -17,7 +42,12 @@ internal static class MeetControllerChecks
             if (uri.GetLeftPart(UriPartial.Authority) == service.GetLeftPart(UriPartial.Authority) && uri.AbsolutePath == "/auth/google/meet-start") { authorization = uri; return true; }
             Require(uri.Host == "meet.google.com"); opens++; entered.TrySetResult(true); await release.Task; return true;
         });
-        var guest = new MeetController(peer, (_, _) => throw new Exception("Guest browser must remain explicit"));
+        int failGuestStatus = 0;
+        var guest = new MeetController(peer, (_, _) => throw new Exception("Guest browser must remain explicit"), (member, cancellation) =>
+        {
+            if (Interlocked.Exchange(ref failGuestStatus, 0) != 0) throw new RoomProtocolException("unavailable");
+            return member.Owner.CallStatusAsync(cancellation);
+        });
         try
         {
             owner.Present(); guest.Present();
@@ -58,6 +88,11 @@ internal static class MeetControllerChecks
             owner.Action("meetConfirm"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetStart"));
             owner.Action("meetStart"); await Settles(() => owner.Presentation.EnabledActions.Contains("meetOpen") && guest.Presentation.EnabledActions.Contains("meetOpen"));
             Require(!guest.Presentation.EnabledActions.Contains("meetEnd"));
+            Interlocked.Exchange(ref failGuestStatus, 1);
+            await Settles(() => guest.Presentation.Status == "meetUnavailable");
+            Require(!guest.Presentation.EnabledActions.Overlaps(["meetOpen", "meetStart", "meetEnd"]));
+            await Settles(() => guest.Presentation.Status == "meetReady");
+            Require(guest.Presentation.EnabledActions.Contains("meetOpen"));
             owner.Action("meetEnd"); Require(owner.Presentation.EnabledActions.Contains("meetConfirmEnd"));
             owner.Action("meetCancelEnd"); Require(owner.Presentation.EnabledActions.Contains("meetEnd"));
             Require((await host.CallMembership()!.Owner.CallStatusAsync()).State == "ready");

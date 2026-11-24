@@ -64,6 +64,12 @@ Closing the call releases the profile lease, the browser processes and media. Sy
 
 For the pinned CEF candidate, a disk-backed cache enables persistent browser storage. Qualify normal provider cookies first. Keep the default expiry behavior for session-only cookies unless a separate provider compatibility check requires a supported setting. A successful synthetic restart proves browser storage behavior only. Before enabling retention, verify encrypted storage, profile isolation, restart, removal, and actual Google reuse on macOS, Windows and Linux. [Pinned CEF settings](https://github.com/chromiumembedded/cef/blob/8ea0c73b5dbed1389c8dafb911a98c41246bb8cb/include/internal/cef_types.h#L282-L336).
 
+## Call status during a connection loss
+
+When the call window is open, retry a failed status read after a transient transport error or service-unavailable response. Use delays of one, two, four and eight seconds. Hide actions that depend on the old call state. Restore them only after a fresh response for the same membership.
+
+Stop automatic retries after the fourth retry fails. Leave an explicit status check available. Never retry an action that starts or ends a call. Closing the window or losing membership cancels pending reads and retries. Movie playback remains independent of call status.
+
 ## Lifecycle and truthful state
 
 1. Join an authorized SyncWatch room without starting capture or remote audio.

@@ -23,6 +23,7 @@ internal suspend fun accountRoomControllerChecks(scope: CoroutineScope) {
         host.bindAccount(ownerAuthority, ownerDevice.account.name); peer.bindAccount(guestAuthority, guestDevice.account.name)
         host.connect(); roomSettles { host.connected }
         check(host.editor.owner && host.editor.accountName == ownerDevice.account.name)
+        meetObsoleteEndConfirmationCheck(scope, host)
         val superseded = checkNotNull(host.invitationForCopy()); checkNotNull(host.invitationForCopy()); check(!host.canCopy(superseded))
         for (outcome in listOf("cancel", "deny", "approve")) {
             val transfer = checkNotNull(host.invitationForCopy()); check(host.canCopy(transfer))
