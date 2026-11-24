@@ -8,6 +8,29 @@ import java.time.Duration
 import kotlinx.coroutines.*
 import syncwatch.room.*
 
+internal suspend fun meetObsoleteEndConfirmationCheck(scope: CoroutineScope, host: RoomController) {
+    var current = RoomCallStatus("ready", "A".repeat(43), 1, "https://meet.google.com/abc-defg-hij", null, false, 1000)
+    var observedEnd = false
+    val meet = MeetController(scope, host, readCallStatus = {
+        observedEnd = current.state == "ended"
+        current
+    }, openBrowser = { error("A call status update must leave the browser closed") })
+    try {
+        meet.present()
+        withTimeout(5_000) { while ("meetEnd" !in meet.presentation.enabledActions) delay(20) }
+        meet.action("meetEnd")
+        check("meetConfirmEnd" in meet.presentation.enabledActions)
+        current = current.copy(state = "ended", meetUri = null)
+        withTimeout(5_000) { while (!observedEnd) delay(20) }
+        check(meet.presentation.status == "meetEnded" && "meetConfirmEnd" !in meet.presentation.enabledActions) {
+            "The ended call left the owner panel in ${meet.presentation.status}"
+        }
+        println("SYNCWATCH_MEET_OBSOLETE_END_CONFIRMATION_OK")
+    } finally {
+        meet.close()
+    }
+}
+
 internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomController, peer: RoomController, service: URI,
     fixtureToken: String, account: AccountProfile, setAccountAvailable: (Boolean) -> Unit) {
     var authorization: URI? = null
@@ -19,7 +42,14 @@ internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomCont
         if (uri.authority == service.authority && uri.path == "/auth/google/meet-start") { authorization = uri; true }
         else { check(uri.host == "meet.google.com"); opens++; entered.complete(Unit); withContext(NonCancellable) { release.await() } }
     }
-    val guest = MeetController(scope, peer) { error("Guest browser must remain explicit") }
+    var failGuestStatus = false
+    val guest = MeetController(scope, peer, readCallStatus = { member ->
+        if (failGuestStatus) {
+            failGuestStatus = false
+            throw RoomProtocolException("unavailable")
+        }
+        member.owner.callStatus()
+    }) { error("Guest browser must remain explicit") }
     suspend fun settles(stage: String, condition: () -> Boolean) {
         try { withTimeout(25_000) { while (!condition()) delay(20) } }
         catch (_: TimeoutCancellationException) {
@@ -65,6 +95,11 @@ internal suspend fun meetApplicationChecks(scope: CoroutineScope, host: RoomCont
         owner.action("meetConfirm"); settles("reauthorization-granted") { "meetStart" in owner.presentation.enabledActions }
         owner.action("meetStart"); settles("first-call-ready") { "meetOpen" in owner.presentation.enabledActions && "meetOpen" in guest.presentation.enabledActions }
         check("meetEnd" !in guest.presentation.enabledActions)
+        failGuestStatus = true
+        settles("guest-status-unavailable") { guest.presentation.status == "meetUnavailable" }
+        check(guest.presentation.enabledActions.intersect(setOf("meetOpen", "meetStart", "meetEnd")).isEmpty())
+        settles("guest-status-restored") { guest.presentation.status == "meetReady" }
+        check("meetOpen" in guest.presentation.enabledActions)
         owner.action("meetEnd"); check("meetConfirmEnd" in owner.presentation.enabledActions)
         owner.action("meetCancelEnd"); check("meetEnd" in owner.presentation.enabledActions)
         check(checkNotNull(host.callMembership()).owner.callStatus().state == "ready")

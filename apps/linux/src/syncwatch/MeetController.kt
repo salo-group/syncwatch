@@ -3,14 +3,23 @@ package syncwatch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import java.io.EOFException
+import java.net.SocketException
+import java.net.SocketTimeoutException
 import java.net.URI
+import java.net.UnknownHostException
+import java.net.http.HttpTimeoutException
+import java.util.concurrent.CompletionException
 import kotlinx.coroutines.*
 import syncwatch.design.LibraryPresentation
 import syncwatch.design.MeetPresentation
 import syncwatch.room.*
 
+private val meetStatusRetryDelays = longArrayOf(1000, 2000, 4000, 8000)
+
 /** Room-owned permission and explicit browser handoff, independent of watch/player ownership. */
 internal class MeetController(private val scope: CoroutineScope, private val room: RoomController,
+    private val readCallStatus: suspend (RoomCallMembership) -> RoomCallStatus = { it.owner.callStatus() },
     private val openBrowser: suspend (URI) -> Boolean = { uri -> withContext(Dispatchers.IO) {
         try { java.awt.Desktop.getDesktop().browse(uri); true } catch (_: Exception) { false }
     } }) {
@@ -129,6 +138,7 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
             try {
                 body(member, token)
                 if (!valid(token, member)) return@launch; busy = false; render()
+                var statusFailures = 0
                 while (valid(token, member)) {
                     val wait: Long
                     val flow = permission
@@ -136,8 +146,20 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
                         val result = member.owner.meetAuthorizationStatus(flow)
                         if (!valid(token, member)) return@launch; apply(result); wait = flow.pollAfterMs
                     } else {
-                        val result = member.owner.callStatus()
-                        if (!valid(token, member)) return@launch; apply(result); wait = result.pollAfterMs
+                        wait = try {
+                            val result = readCallStatus(member)
+                            if (!valid(token, member)) return@launch
+                            if (statusFailures > 0) { notice = null; statusFailures = 0 }
+                            apply(result)
+                            result.pollAfterMs
+                        } catch (error: Exception) {
+                            if (!valid(token, member)) return@launch
+                            call = null
+                            endTarget = null
+                            if (!isTransientStatusFailure(error) || statusFailures >= meetStatusRetryDelays.size) throw error
+                            notice = "meetUnavailable"
+                            meetStatusRetryDelays[statusFailures++]
+                        }
                     }
                     render(); delay(wait)
                 }
@@ -148,6 +170,15 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
         }
     }
     private suspend fun valid(token: Long, member: RoomCallMembership): Boolean = currentCoroutineContext().isActive && !closing && visible && generation == token && room.isCurrent(member)
+    private fun isTransientStatusFailure(error: Exception): Boolean {
+        val failure = if (error is CompletionException) error.cause else error
+        return when (failure) {
+            is RoomProtocolException -> failure.code == "unavailable"
+            is EOFException, is SocketException, is SocketTimeoutException, is UnknownHostException,
+            is HttpTimeoutException, is TimeoutCancellationException -> true
+            else -> false
+        }
+    }
     private fun apply(value: RoomMeetAuthorizationStatus) {
         permissionStatus = value
         if (value.state == "expired") notice = "meetPermissionExpired"
@@ -157,7 +188,15 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
             if (value.state == "complete") call = null
         }
     }
-    private fun apply(value: RoomCallStatus) { if (call?.callId != value.callId || call?.generation != value.generation) { endTarget = null; notice = null }; call = value }
+    private fun canEnd(value: RoomCallStatus): Boolean =
+        !value.authorizationRequired && (value.state == "ready" || value.state == "endFailed")
+
+    private fun apply(value: RoomCallStatus) {
+        val callChanged = call?.callId != value.callId || call?.generation != value.generation
+        if (callChanged || !canEnd(value)) endTarget = null
+        if (callChanged) notice = null
+        call = value
+    }
     private fun render() {
         val member = membership
         if (member == null || !room.isCurrent(member) || closing) { model = MeetPresentation(); return }
@@ -181,10 +220,10 @@ internal class MeetController(private val scope: CoroutineScope, private val roo
                 if (observed != null) {
                     if (member.isOwner && observed.authorizationRequired) actions += "meetAuthorize"
                     if (observed.state == "ready") actions += "meetOpen"
-                    if (member.isOwner && !observed.authorizationRequired) {
-                        if (observed.state in setOf("idle", "ended", "creationFailed")) actions += "meetStart"
-                        if (observed.state in setOf("ready", "endFailed")) actions += "meetEnd"
+                    if (member.isOwner && !observed.authorizationRequired && observed.state in setOf("idle", "ended", "creationFailed")) {
+                        actions += "meetStart"
                     }
+                    if (member.isOwner && canEnd(observed)) actions += "meetEnd"
                     val target = endTarget
                     if (target != null && target.callId == observed.callId && target.generation == observed.generation) {
                         status = "meetEndConfirmation"; actions = mutableSetOf("close", "meetConfirmEnd", "meetCancelEnd")
