@@ -140,8 +140,16 @@ internal static class HelperSessionChecks
         private bool ended;
         private bool delayPause;
         private bool? pendingPause;
+        private bool delaySeek;
+        private long? pendingSeek;
+        private bool bufferNextObservation;
         internal void FinishMedia() { sequence++; ended = true; Paused = true; Position = 60000; }
         internal void DelayNextPause() => delayPause = true;
+        internal void DelayNextSeek(bool buffering)
+        {
+            delaySeek = true;
+            bufferNextObservation = buffering;
+        }
         public Task<PlaybackObservation> ObserveAsync(PlaybackScope scope, CancellationToken cancellation = default)
         {
             cancellation.ThrowIfCancellationRequested(); owner.Check(scope.ClientRunId, scope.MediaGeneration);
@@ -156,6 +164,17 @@ internal static class HelperSessionChecks
                 Seekable = !ended,
                 Ended = ended
             };
+            if (bufferNextObservation)
+            {
+                bufferNextObservation = false;
+                observation = new() { Scope = scope, Sequence = sequence, Status = PlaybackStatus.Loading, Paused = true, Buffering = true };
+            }
+            if (pendingSeek is long target)
+            {
+                pendingSeek = null;
+                Position = target;
+                sequence++;
+            }
             if (pendingPause is bool next)
             {
                 pendingPause = null;
@@ -173,7 +192,19 @@ internal static class HelperSessionChecks
             return Task.CompletedTask;
         }
         public Task SeekAsync(long positionMs, PlaybackScope scope, CancellationToken cancellation = default)
-        { cancellation.ThrowIfCancellationRequested(); sequence++; Position = positionMs; Seeks++; return Task.CompletedTask; }
+        {
+            cancellation.ThrowIfCancellationRequested();
+            Seeks++;
+            if (delaySeek)
+            {
+                delaySeek = false;
+                pendingSeek = positionMs;
+                return Task.CompletedTask;
+            }
+            sequence++;
+            Position = positionMs;
+            return Task.CompletedTask;
+        }
         public Task LoadAsync(string file, PlaybackScope scope, CancellationToken cancellation = default) => throw new InvalidOperationException();
         public Task SetRateAsync(double rate, PlaybackScope scope, CancellationToken cancellation = default) => throw new InvalidOperationException();
         public Task SetVolumeAsync(double volume, bool muted, PlaybackScope scope, CancellationToken cancellation = default) => throw new InvalidOperationException();
@@ -365,12 +396,37 @@ internal static class HelperSessionChecks
         if (reply.RootElement.GetProperty("payload").GetProperty("paused").GetBoolean() != paused)
             throw new InvalidDataException("Correction acknowledged the previous pause state");
     }
+    private static async Task SeekCorrectionWaitsForNativePosition(bool buffering)
+    {
+        var native = PlaybackScope.Create().ReplacingMedia();
+        var wire = new PlaybackScope("helper-run", 7);
+        var player = new Player(native);
+        player.DelayNextSeek(buffering);
+        var frame = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            v = 1,
+            id = "cmd-1",
+            type = "player.setPosition",
+            clientRunId = wire.ClientRunId,
+            mediaGeneration = wire.MediaGeneration,
+            payload = new { positionMs = 36000 }
+        }).Concat(new byte[] { 10 }).ToArray();
+        var correction = PlayerCorrection.Decode(frame, wire);
+        var actual = await correction.ApplyAsync(player, native, "media-1");
+        using var reply = JsonDocument.Parse(correction.Result(actual, native));
+        if (reply.RootElement.GetProperty("payload").GetProperty("positionMs").GetInt64() != 36000)
+            throw new InvalidDataException("Correction acknowledged the previous position");
+        Require(player.Seeks == 1);
+    }
+
     internal static void Run()
     {
         new OwnerContext().Run(async () =>
         {
             await PauseCorrectionWaitsForNativeReadback(true);
             await PauseCorrectionWaitsForNativeReadback(false);
+            await SeekCorrectionWaitsForNativePosition(false);
+            await SeekCorrectionWaitsForNativePosition(true);
             await AdmissionChecks();
             await StationaryHandshake();
             await ReadinessPulse(false); await ReadinessPulse(true);

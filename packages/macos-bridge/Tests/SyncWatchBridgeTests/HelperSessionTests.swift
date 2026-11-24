@@ -178,14 +178,29 @@ private actor SessionPlayer: PlaybackPort {
     private var ended = false
     private var delayPause = false
     private var pendingPause: Bool?
+    private var delaySeek = false
+    private var pendingSeek: Int64?
+    private var bufferNextObservation = false
     init(_ scope: PlaybackScope) { self.scope = scope }
     func observe(_ scope: PlaybackScope) throws -> PlaybackObservation {
         try self.scope.check(clientRunID: scope.clientRunID, mediaGeneration: scope.mediaGeneration)
         defer {
+            if let pendingSeek {
+                self.pendingSeek = nil
+                position = pendingSeek
+                sequence += 1
+            }
             if let pendingPause {
                 self.pendingPause = nil
                 setPaused(pendingPause, scope: scope)
             }
+        }
+        if bufferNextObservation {
+            bufferNextObservation = false
+            return try PlaybackObservation(
+                scope: scope, sequence: sequence, status: .loading, positionMs: 0,
+                durationMs: nil, paused: true, rate: 1, seekable: false, buffering: true, ended: false,
+                width: 0, height: 0, videoOutputs: 0, volume: nil, muted: false)
         }
         return try PlaybackObservation(
             scope: scope, sequence: sequence, status: .ready, positionMs: position,
@@ -208,11 +223,20 @@ private actor SessionPlayer: PlaybackPort {
         self.paused = paused
     }
     func delayNextPause() { delayPause = true }
+    func delayNextSeek(buffering: Bool) {
+        delaySeek = true
+        bufferNextObservation = buffering
+    }
     func seek(to positionMs: Int64, scope: PlaybackScope) throws {
         try Task.checkCancellation()
+        seeks += 1
+        if delaySeek {
+            delaySeek = false
+            pendingSeek = positionMs
+            return
+        }
         sequence += 1
         position = positionMs
-        seeks += 1
     }
     func load(_ localFile: URL, scope: PlaybackScope) throws { throw HelperSessionFailure.unavailable }
     func setRate(_ rate: Double, scope: PlaybackScope) throws { throw HelperSessionFailure.unavailable }
@@ -250,6 +274,23 @@ private actor SessionPlayer: PlaybackPort {
     let actual = try await command.apply(to: player, nativeScope: native, authorizedHandle: "media-1")
     let reply = try HelperJSON.object(command.result(actual, nativeScope: native))
     #expect((reply["payload"] as? [String: Any])?["paused"] as? Bool == paused)
+}
+
+@Test(arguments: [false, true]) func seekCorrectionWaitsForNativePosition(_ buffering: Bool) async throws {
+    let native = try PlaybackScope.fresh().replacingMedia()
+    let wire = try PlaybackScope(clientRunID: "helper-run", mediaGeneration: 7)
+    let player = SessionPlayer(native)
+    await player.delayNextSeek(buffering: buffering)
+    let frame =
+        Data(
+            """
+            {"v":1,"id":"cmd-1","type":"player.setPosition","clientRunId":"helper-run","mediaGeneration":7,"payload":{"positionMs":36000}}
+            """.utf8) + Data([10])
+    let command = try PlayerCorrection.decode(frame, wireScope: wire)
+    let actual = try await command.apply(to: player, nativeScope: native, authorizedHandle: "media-1")
+    let reply = try HelperJSON.object(command.result(actual, nativeScope: native))
+    #expect((reply["payload"] as? [String: Any])?["positionMs"] as? Int64 == 36_000)
+    #expect(await player.seeks == 1)
 }
 
 @Test @MainActor func sessionPublicationReplayAndFailure() async throws {

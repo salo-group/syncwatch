@@ -127,13 +127,21 @@ private class SessionPlayer(private val scope: PlaybackScope) : PlaybackPort {
     private var ended = false
     private var delayPause = false
     private var pendingPause: Boolean? = null
+    private var delaySeek = false
+    private var pendingSeek: Long? = null
+    private var bufferNextObservation = false
     fun finishMedia() { sequence++; ended = true; paused = true; position = 60000 }
     var closes = 0
         private set
     override suspend fun observe(scope: PlaybackScope): PlaybackObservation {
         this.scope.check(scope)
-        val observation = PlaybackObservation(scope, sequence, PlaybackStatus.ready, position, 60000, paused, 1.0,
+        val observation = if (bufferNextObservation) {
+            bufferNextObservation = false
+            PlaybackObservation(scope, sequence, PlaybackStatus.loading, 0, null, true, 1.0,
+                false, true, false, 0, 0, 0, null, false)
+        } else PlaybackObservation(scope, sequence, PlaybackStatus.ready, position, 60000, paused, 1.0,
             !ended, false, ended, 0, 0, 0, null, false)
+        pendingSeek?.let { pendingSeek = null; position = it; sequence++ }
         pendingPause?.let { pendingPause = null; setPaused(it, scope) }
         return observation
     }
@@ -143,7 +151,20 @@ private class SessionPlayer(private val scope: PlaybackScope) : PlaybackPort {
         this.paused = paused
     }
     fun delayNextPause() { delayPause = true }
-    override suspend fun seek(positionMs: Long, scope: PlaybackScope) { sequence++; position = positionMs; seeks++ }
+    fun delayNextSeek(buffering: Boolean) {
+        delaySeek = true
+        bufferNextObservation = buffering
+    }
+    override suspend fun seek(positionMs: Long, scope: PlaybackScope) {
+        seeks++
+        if (delaySeek) {
+            delaySeek = false
+            pendingSeek = positionMs
+            return
+        }
+        sequence++
+        position = positionMs
+    }
     override suspend fun load(localFile: Path, scope: PlaybackScope): Unit = error("Unexpected load")
     override suspend fun setRate(rate: Double, scope: PlaybackScope): Unit = error("Unexpected rate")
     override suspend fun setVolume(volume: Double, muted: Boolean, scope: PlaybackScope): Unit = error("Unexpected volume")
@@ -316,10 +337,24 @@ private suspend fun pauseCorrectionWaitsForNativeReadback(paused: Boolean) {
     check(Json.`object`(reply["payload"])["paused"] == paused) { "Correction acknowledged the previous pause state" }
 }
 
+private suspend fun seekCorrectionWaitsForNativePosition(buffering: Boolean) {
+    val native = PlaybackScope.fresh().replacingMedia()
+    val wire = PlaybackScope("helper-run", 7)
+    val player = SessionPlayer(native)
+    player.delayNextSeek(buffering)
+    val frame = ("""{"v":1,"id":"cmd-1","type":"player.setPosition","clientRunId":"helper-run","mediaGeneration":7,"payload":{"positionMs":36000}}""" + "\n").toByteArray()
+    val command = PlayerCorrection.decode(frame, wire)
+    val actual = command.apply(player, native, "media-1")
+    val reply = PlayerCorrection.frameValue(command.result(actual, native))
+    check(Json.`object`(reply["payload"])["positionMs"] == 36000L) { "Correction acknowledged the previous position" }
+    check(player.seeks == 1)
+}
+
 internal fun helperSessionChecks() {
     Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
         runBlocking(dispatcher) {
             for (paused in listOf(true, false)) pauseCorrectionWaitsForNativeReadback(paused)
+            for (buffering in listOf(false, true)) seekCorrectionWaitsForNativePosition(buffering)
             admissionChecks(this)
             stationaryHandshake(this)
             for (beforeAck in listOf(false, true)) readinessPulse(this, beforeAck)

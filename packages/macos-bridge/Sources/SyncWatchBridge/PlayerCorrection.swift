@@ -79,13 +79,22 @@ public struct PlayerCorrection: Sendable, Equatable {
         while true {
             try Task.checkCancellation()
             let observation = try await player.observe(nativeScope)
-            try validate(observation, nativeScope: nativeScope)
-            if case .pause(let expected) = operation, observation.paused != expected {
-                guard ContinuousClock.now < deadline else { throw PlayerCorrectionFailure.unavailable }
-                try await Task.sleep(for: .milliseconds(20))
-            } else {
+            try nativeScope.check(
+                clientRunID: observation.scope.clientRunID, mediaGeneration: observation.scope.mediaGeneration)
+            switch (operation, observation.status) {
+            case (.pause(let expected), .ready) where observation.paused == expected:
                 return observation
+            case (.seek(let target), .ready) where abs(observation.positionMs - target) <= 250:
+                return observation
+            case (.pause, .ready), (.seek, .ready), (.pause, .loading), (.seek, .loading):
+                break
+            case (_, .ready):
+                return observation
+            default:
+                throw PlayerCorrectionFailure.unavailable
             }
+            guard ContinuousClock.now < deadline else { throw PlayerCorrectionFailure.unavailable }
+            try await Task.sleep(for: .milliseconds(20))
         }
     }
 

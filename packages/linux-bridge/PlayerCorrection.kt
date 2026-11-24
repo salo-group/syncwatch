@@ -2,6 +2,7 @@ package syncwatch.bridge
 
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
+import kotlin.math.abs
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -34,12 +35,20 @@ class PlayerCorrection private constructor(
             is Operation.KeepLoaded -> if (action.handle != authorizedHandle) throw WatchFailure("unauthorizedHandle")
         } // The selection owner already loaded this file; never reopen or rewind.
         val deadline = System.nanoTime() + 2_000_000_000L
-        val pause = operation as? Operation.Pause
         while (true) {
             currentCoroutineContext().ensureActive()
             val observation = player.observe(nativeScope)
-            validate(observation, nativeScope)
-            if (pause == null || observation.paused == pause.paused) return observation
+            nativeScope.check(observation.scope)
+            if (observation.status == PlaybackStatus.ready) {
+                val reachedTarget = when (val action = operation) {
+                    is Operation.Pause -> observation.paused == action.paused
+                    is Operation.Seek -> abs(observation.positionMs - action.positionMs) <= 250
+                    is Operation.Rate, is Operation.KeepLoaded -> true
+                }
+                if (reachedTarget) return observation
+            } else if (observation.status != PlaybackStatus.loading || (operation !is Operation.Pause && operation !is Operation.Seek)) {
+                throw WatchFailure("unavailable")
+            }
             if (System.nanoTime() - deadline >= 0) throw WatchFailure("unavailable")
             delay(20)
         }

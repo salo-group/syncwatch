@@ -81,8 +81,17 @@ public sealed class PlayerCorrection
         {
             cancellation.ThrowIfCancellationRequested();
             var observation = await player.ObserveAsync(nativeScope, cancellation).ConfigureAwait(false);
-            Validate(observation, nativeScope);
-            if (Kind != CorrectionKind.Pause || observation.Paused == Paused) return observation;
+            observation.Validate();
+            nativeScope.Check(observation.Scope.ClientRunId, observation.Scope.MediaGeneration);
+            bool reachedTarget = (Kind, observation.Status) switch
+            {
+                (CorrectionKind.Pause, PlaybackStatus.Ready) => observation.Paused == Paused,
+                (CorrectionKind.Seek, PlaybackStatus.Ready) => Math.Abs(observation.PositionMs - PositionMs) <= 250,
+                (CorrectionKind.Pause or CorrectionKind.Seek, PlaybackStatus.Loading) => false,
+                (_, PlaybackStatus.Ready) => true,
+                _ => throw new PlayerCorrectionException("unavailable")
+            };
+            if (reachedTarget) return observation;
             if (wait.Elapsed >= TimeSpan.FromSeconds(2)) throw new PlayerCorrectionException("unavailable");
             await Task.Delay(20, cancellation).ConfigureAwait(false);
         }
