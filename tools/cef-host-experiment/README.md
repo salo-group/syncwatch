@@ -51,6 +51,11 @@ This exception does not authorize product adoption.
 The preparation command verifies the fixed digest and size before extraction.
 It rejects unsafe archive paths and preserves complete vendor notices.
 It records each prepared file without executing vendor code.
+CMake requires Python 3.12 or later. Keep `preparation.json` next to the SDK directory.
+Configuration checks the receipt identity and file inventory before loading CEF's CMake modules.
+The build checks the same inventory before compiling the CEF wrapper.
+Run `python3 tools/cef-host-experiment/prepare.py --verify-sdk SDK` for an independent read-only check.
+Production qualification still follows the open items in `inputs.json`.
 CMake reads dimensions and the window title from shared Design sources.
 The host requires a new installation root and rejects reuse of an existing directory.
 By default, it rejects other navigation, popups, downloads, file dialogs and capture permissions.

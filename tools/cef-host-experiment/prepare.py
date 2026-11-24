@@ -1,6 +1,7 @@
 """Prepare a pinned vendor experiment without running its browser engine."""
 
 import hashlib
+import json
 from pathlib import Path, PurePosixPath
 import posixpath
 import tarfile
@@ -13,13 +14,17 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def sdk_name(asset):
+    return PurePosixPath(urllib.parse.urlsplit(asset["url"]).path).name.removesuffix(".tar.bz2")
+
+
 def materialize(asset, archive, destination):
     archive, destination = Path(archive), Path(destination)
     if archive.stat().st_size != asset["compressedBytes"] or digest(archive) != asset["sha256"]:
         raise ValueError("Experimental CEF archive differs from the fixed input")
     if destination.exists() or destination.is_symlink():
         raise FileExistsError("Experimental SDK destination already exists")
-    name = PurePosixPath(urllib.parse.urlsplit(asset["url"]).path).name.removesuffix(".tar.bz2")
+    name = sdk_name(asset)
     with tarfile.open(archive, "r:bz2") as package:
         entries = package.getmembers()
         seen = set()
@@ -61,18 +66,50 @@ def inventory(directory):
             result[name] = {"link": path.readlink().as_posix()}
         elif path.is_file():
             result[name] = {"sha256": digest(path), "bytes": path.stat().st_size}
+        elif not path.is_dir() or path.is_junction():
+            raise ValueError("Prepared CEF SDK contains an unsupported file type")
     return result
+
+
+def preparation_identity(source, target, asset):
+    return {"schemaVersion": 1, "target": target, "productionQualified": False,
+            "inputsSha256": digest(source), "archiveSha256": asset["sha256"],
+            "sdkDirectory": sdk_name(asset), "browserExecuted": False}
+
+
+def verify_prepared_sdk(sdk, identity):
+    receipt_path = sdk.parent / "preparation.json"
+    try:
+        if not receipt_path.is_file() or receipt_path.is_symlink():
+            raise ValueError
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ValueError("Prepared CEF SDK receipt is missing or invalid") from error
+    if (not isinstance(receipt, dict) or sdk.is_symlink() or sdk.is_junction()
+            or not sdk.is_dir() or sdk.name != identity["sdkDirectory"]):
+        raise ValueError("Prepared CEF SDK receipt is missing or invalid")
+    files = receipt.pop("files", None)
+    if (receipt != identity or any(type(receipt[key]) is not type(value) for key, value in identity.items())
+            or not isinstance(files, dict) or not files):
+        raise ValueError("Prepared CEF SDK receipt is missing or invalid")
+    if inventory(sdk) != files:
+        raise ValueError("Prepared CEF SDK inventory differs from the receipt")
 
 
 def main():
     import argparse
-    import json
     import platform
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--archive", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--archive", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--verify-sdk", type=Path)
     args = parser.parse_args()
+    if args.verify_sdk is not None:
+        if args.archive is not None or args.output is not None:
+            parser.error("--verify-sdk cannot be used with --archive or --output")
+    elif args.archive is None or args.output is None:
+        parser.error("Provide --archive and --output, or use --verify-sdk")
     target = {("Darwin", "arm64"): "macos-arm64", ("Linux", "x86_64"): "linux-x64",
               ("Windows", "AMD64"): "windows-x64"}.get((platform.system(), platform.machine()))
     source = Path(__file__).with_name("inputs.json")
@@ -80,10 +117,15 @@ def main():
     if target not in inputs["assets"] or inputs["productionQualified"] is not False:
         raise ValueError("Unsupported or reclassified experiment input")
     asset = inputs["assets"][target]
+    identity = preparation_identity(source, target, asset)
+    if args.verify_sdk is not None:
+        try:
+            verify_prepared_sdk(args.verify_sdk, identity)
+        except (OSError, ValueError) as error:
+            parser.exit(1, f"{error}\n")
+        return
     sdk = materialize(asset, args.archive, args.output)
-    receipt = {"schemaVersion": 1, "target": target, "productionQualified": False,
-               "inputsSha256": digest(source), "archiveSha256": asset["sha256"],
-               "sdkDirectory": sdk.name, "files": inventory(sdk), "browserExecuted": False}
+    receipt = {**identity, "files": inventory(sdk)}
     (args.output / "preparation.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"target": target, "sdk": str(sdk), "files": len(receipt["files"]),
                       "browserExecuted": False}, sort_keys=True))
