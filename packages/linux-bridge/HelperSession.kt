@@ -253,7 +253,9 @@ class HelperSession(
         } finally { deadline = null }
     }
     private suspend fun correct(command: PlayerCorrection) {
-        val task = scope.async { command.apply(player, nativeScope, media.handle) }
+        // The playback port serializes native calls. Its readback can proceed
+        // independently of display updates while the owner keeps the fence.
+        val task = scope.async(Dispatchers.IO) { command.apply(player, nativeScope, media.handle) }
         applying = task; setDeadline(2)
         try {
             val actual = task.await(); checkOpen()

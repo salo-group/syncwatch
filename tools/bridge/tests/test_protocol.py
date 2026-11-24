@@ -146,6 +146,7 @@ class ProtocolTests(unittest.TestCase):
         self.controller.request("player.setPaused", {"paused": True})
         request = json.loads(self.sent[-1])
         self.assertEqual(request["afterUserAction"], 0)
+        self.controller.request("player.setPosition", {"positionMs": 10000})
         state = self.command("player.state", payload={"status": "ready", "positionMs": 1000,
             "durationMs": 60000, "paused": False, "rate": 1, "seekable": True}, origin="user", actionSequence=1)
         self.receive(state)
@@ -154,10 +155,12 @@ class ProtocolTests(unittest.TestCase):
         reply["replyTo"] = "cmd-1"
         self.receive(reply)
         self.assertEqual(self.controller.pending, {})
+        self.assertEqual([json.loads(frame)["type"] for frame in self.sent],
+                         ["bridge.ready", "player.setPaused"])
         self.rejection("duplicate", state)
         self.controller.request("player.setPaused", {"paused": False})
         self.assertEqual(json.loads(self.sent[-1])["afterUserAction"], 1)
-        reply["replyTo"] = "cmd-2"
+        reply["replyTo"] = "cmd-3"
         self.rejection("unavailable", reply)
 
     def test_timeout_and_bounded_engine_queue(self):
@@ -169,6 +172,51 @@ class ProtocolTests(unittest.TestCase):
         self.now = 6
         with self.assertRaisesRegex(ContractError, "timeout"):
             self.controller.tick()
+
+    def test_queued_correction_gets_full_acknowledgement_budget(self):
+        self.receive(self.command())
+        self.controller.request("player.setPosition", {"positionMs": 16488})
+        self.controller.request("player.setPaused", {"paused": True})
+        before_result = [json.loads(frame)["type"] for frame in self.sent]
+
+        def applied(identifier, paused):
+            value = self.command("player.result", payload={"status": "applied", "positionMs": 16488, "paused": paused})
+            del value["id"]
+            self.receive(value | {"replyTo": identifier})
+
+        self.now = 3
+        applied("cmd-1", False)
+        self.assertEqual(json.loads(self.sent[-1])["type"], "player.setPaused")
+        self.now = 6
+        self.controller.tick()
+        applied("cmd-2", True)
+        self.assertEqual(before_result, ["bridge.ready", "player.setPosition"])
+        self.assertEqual(self.controller.engine.actions, [
+            ("result", {"status": "applied", "positionMs": 16488, "paused": False}),
+            ("result", {"status": "applied", "positionMs": 16488, "paused": True}),
+        ])
+
+    def test_repeated_targets_do_not_delay_new_corrections(self):
+        self.receive(self.command())
+        self.controller.request("player.setPosition", {"positionMs": 12000})
+        self.controller.request("player.setPaused", {"paused": True})
+        self.controller.request("player.setPosition", {"positionMs": 12000})
+        self.controller.request("player.setPaused", {"paused": True})
+        self.controller.request("player.setPaused", {"paused": False})
+        self.controller.request("player.setPaused", {"paused": True})
+
+        for kind, payload, paused in [
+            ("player.setPosition", {"positionMs": 12000}, False),
+            ("player.setPaused", {"paused": True}, True),
+            ("player.setPaused", {"paused": False}, False),
+            ("player.setPaused", {"paused": True}, True),
+        ]:
+            sent = json.loads(self.sent[-1])
+            self.assertEqual((sent["type"], sent["payload"]), (kind, payload))
+            reply = self.command("player.result", payload={"status": "applied", "positionMs": 12000, "paused": paused})
+            del reply["id"]
+            self.receive(reply | {"replyTo": sent["id"]})
+        self.assertEqual(len(self.sent), 5)
 
     def test_helper_compiles_only_its_authority_with_the_same_contract_rules(self):
         from syncwatch_ipc.contracts import Registry as SharedRegistry
