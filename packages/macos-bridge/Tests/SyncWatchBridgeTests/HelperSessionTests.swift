@@ -241,9 +241,11 @@ private actor SessionPlayer: PlaybackPort {
     let player = SessionPlayer(native)
     await player.setPaused(!paused, scope: native)
     await player.delayNextPause()
-    let frame = Data("""
-        {"v":1,"id":"cmd-1","type":"player.setPaused","clientRunId":"helper-run","mediaGeneration":7,"payload":{"paused":\(paused)}}
-        """.utf8) + Data([10])
+    let frame =
+        Data(
+            """
+            {"v":1,"id":"cmd-1","type":"player.setPaused","clientRunId":"helper-run","mediaGeneration":7,"payload":{"paused":\(paused)}}
+            """.utf8) + Data([10])
     let command = try PlayerCorrection.decode(frame, wireScope: wire)
     let actual = try await command.apply(to: player, nativeScope: native, authorizedHandle: "media-1")
     let reply = try HelperJSON.object(command.result(actual, nativeScope: native))
