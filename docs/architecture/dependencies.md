@@ -24,7 +24,7 @@ The Kotlin stdlib's Linux domain checks and the Compose SDK's Linux application/
 | `3rdparty/fastjsonschema` | `v2.21.2` / `4f1ed6d9c0462f3522a66f49c8f3dc482300101b` | Offline Draft 7 contract validation from pinned Python source | BSD 3-Clause; `LICENSE` |
 | `3rdparty/jvm-annotations` | `26.0.2` / `5ed7516e96eebef2a0cedc470d776b7351f52d6b` | JVM annotation classpath and named-module APIs | Apache 2.0; original license, repository declaration and source headers |
 | `3rdparty/openjdk` | `jdk-21.0.12.1-ga` / `eac07229cf6cacc8a22eb79f4929e7fed61338b7` | Separately source-built Linux application JVM; qualification in progress | GPLv2 with per-file Classpath exception, assembly exception and retained bundled/module notices |
-| `3rdparty/jbr-api` | `v1.9.0` / `bf95b3ebdadbb81c193fdf45b8947fb20163d5dc` | Optional JBR service interfaces in the planned desktop graph | Apache 2.0; full license, original headers and build-source change notice |
+| `3rdparty/jbr-api` | `v1.9.0` / `bf95b3ebdadbb81c193fdf45b8947fb20163d5dc` | Optional JBR service interfaces in the desktop graph | Apache 2.0, full license and original headers |
 | `3rdparty/kotlin-stdlib` | `v2.3.20` / `d57eb4a26ed01ab03cf195da686c8047032ff16f` | Selected JVM stdlib source package and generator references | Apache-2.0, BSD-3-Clause and BSL-1.0 for the selected files; full original notices |
 | `3rdparty/unicode-data` | `release-20210720-u13` / `84a95001ba850554e65234dde62cbdb0ad41105a` | Two Unicode 13.0.0 files verified against the published release for titlecase provenance | Unicode-DFS-2016; full original permission notice and data attribution |
 | `3rdparty/jspecify` | `v1.0.0` / `b2a10e14bb81c1b7cb6e488c112fe55cb2218d7d` | JVM nullness annotations and original module descriptor | Apache-2.0; original license and source headers |
@@ -110,7 +110,10 @@ Python and Node.js are developer/runner toolchains. The CI artifact and dependen
 
 The [annotations build](../jvm-annotations.md) uses only its pinned Java sources and the separately declared Temurin developer JDK. The JDK is a compiler SDK exception, with complete vendor legal files preserved and exact archive/installation hashes checked; it is not an application library or bundled JVM. This exception does not extend to the Kotlin standard library, Compose, Skiko/Skia, fonts or other JVM libraries. The annotations component runs its license/source/API verifier on cold builds and restored caches before success or distribution.
 
-The [JBR API build](../jbr-api.md) uses this verified compiler SDK to build its own processor, compatibility plugin and optional-service interfaces from pinned sources. It has no external library dependency and includes no JBR runtime. The API's SDK module references do not clear packaging of a JVM. Its deterministic build-source modification, generated source, complete notices and artifacts are verified on cold builds and cache reuse.
+The JBR API build compiles the pinned upstream processor, compatibility
+plugin, and service interfaces with the verified compiler SDK. The
+verifier checks the original sources, generated source, notices, and
+JAR digests on cold builds and cache reads. [JBR API build](../jbr-api.md).
 
 The [Kotlin stdlib source package](../kotlin-stdlib-sources.md) has a complete selected file/license inventory and an offline check of common/JVM titlecase provenance against pinned, published Unicode 13 data. Only reviewed source exports are packaged; compiler, Gradle and generator references are not executed. This source-only component preserves original bytes. The separate [Kotlin runtime build](../kotlin-stdlib.md) compiles those sources and source-built Java Annotations into an owned runtime, with an explicit version substitution and original JPMS descriptor. Its developer compiler SDK is separately pinned and verified, with the complete vendor legal inventory and SPDX document retained. This build-platform exception includes only the compiler process; SDK JARs cannot enter application compilation or runtime. It does not qualify Compose, its native/font graph or a packaged JVM.
 

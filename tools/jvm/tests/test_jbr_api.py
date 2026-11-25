@@ -28,30 +28,21 @@ class JbrApiTests(unittest.TestCase):
             p = self.source / name
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_bytes(data)
-        self.patch = {"schemaVersion": 1, "file": "tools/javac/SourceGenerator.java",
-                      "notice": "Modified by SyncWatch: fixture ordering.",
-                      "replacements": [{"before": "class SourceGenerator {}", "after": "// Modified by SyncWatch: fixture ordering.\nclass SourceGenerator {}"}]}
-        self.patch_path = self.root / "tools/jvm/patches/ordering.json"
-        self.patch_path.parent.mkdir(parents=True)
-        self.patch_path.write_bytes(jbr_api.encoded(self.patch))
-        self.modified = self.files[self.patch["file"]].replace(self.patch["replacements"][0]["before"].encode(),
-                                                            self.patch["replacements"][0]["after"].encode())
+        generator = "tools/javac/SourceGenerator.java"
+        generated = b"/* Original generator fixture output. */\n"
+        (self.root / "tools/jvm").mkdir(parents=True)
         self.profile = {"schemaVersion": 1, "coordinate": "org.jetbrains.runtime:jbr-api:1.9.0", "sourcePath": "3rdparty/jbr-api",
                         "revision": "f" * 40, "license": "Apache-2.0", "javaRelease": 8, "moduleRelease": 9,
                         "sources": {"src/fixture/Service.java": jbr_api.digest(self.files["src/fixture/Service.java"])},
-                        "buildSources": {self.patch["file"]: jbr_api.digest(self.files[self.patch["file"]])},
+                        "buildSources": {generator: jbr_api.digest(self.files[generator])},
                         "provenance": {n: jbr_api.digest(self.files[n]) for n in ("LICENSE", "README.md")},
-                        "modifications": {self.patch["file"]: {"patch": "tools/jvm/patches/ordering.json",
-                                                              "patchSha256": jbr_api.digest(self.patch_path.read_bytes()),
-                                                              "sha256": jbr_api.digest(self.modified)}},
-                        "generatedSources": {jbr_api.GENERATED: jbr_api.digest(b"// Modified by SyncWatch: fixture generation.\n")}}
+                        "generatedSources": {jbr_api.GENERATED: jbr_api.digest(generated)}}
         context = patch.object(jbr_api, "ROOT", self.root)
         context.start()
         self.addCleanup(context.stop)
         common = jbr_api.common_entries(self.files, self.profile, "fixture")
         products = {jbr_api.BINARY: jbr_api.jar_bytes({"fixture/Service.class": b"Fixture bytecode"} | common),
-                    jbr_api.SOURCES: jbr_api.jar_bytes(self.files | {jbr_api.GENERATED: b"// Modified by SyncWatch: fixture generation.\n",
-                                                                  "META-INF/modified-build-sources/" + self.patch["file"]: self.modified} | common)}
+                    jbr_api.SOURCES: jbr_api.jar_bytes(self.files | {jbr_api.GENERATED: generated} | common)}
         self.profile["expectedJars"] = {n: jbr_api.digest(d) for n, d in products.items()}
         for name, data in (products | jbr_api.support_files(self.files, self.profile, "fixture")).items():
             p = self.output / name
@@ -84,11 +75,8 @@ class JbrApiTests(unittest.TestCase):
                         jbr_api.main()
                     self.assertEqual(failure.exception.code, 2)
 
-    def test_complete_original_modified_generated_and_license_inventories_pass(self):
+    def test_complete_original_generated_and_license_inventories_pass(self):
         self.assertEqual(jbr_api.source_files(self.source, self.profile), self.files)
-        effective, patches = jbr_api.modified_sources(self.files, self.profile)
-        self.assertEqual(effective[self.patch["file"]], self.modified)
-        self.assertEqual(patches["ordering.json"], self.patch_path.read_bytes())
         self.verify()
 
     def test_changed_source_or_new_source_or_notice_requires_review(self):
@@ -112,21 +100,11 @@ class JbrApiTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "original Apache header"):
             jbr_api.source_files(self.source, self.profile)
 
-    def test_changed_patch_or_removed_modification_notice_fails(self):
-        self.patch_path.write_bytes(self.patch_path.read_bytes() + b" ")
-        with self.assertRaisesRegex(ValueError, "patch digest"):
-            jbr_api.modified_sources(self.files, self.profile)
-        self.profile["modifications"][self.patch["file"]]["patchSha256"] = jbr_api.digest(self.patch_path.read_bytes())
-        self.patch["replacements"][0]["after"] = "class SourceGenerator { int change; }"
-        self.patch_path.write_bytes(jbr_api.encoded(self.patch))
-        self.profile["modifications"][self.patch["file"]]["patchSha256"] = jbr_api.digest(self.patch_path.read_bytes())
-        with self.assertRaisesRegex(ValueError, "prominent modification notice"):
-            jbr_api.modified_sources(self.files, self.profile)
-
-    def test_patch_must_apply_exactly_once_to_reviewed_source(self):
-        for data in (b"no matching source", self.files[self.patch["file"]] * 2):
-            with self.subTest(data=data), self.assertRaisesRegex(ValueError, "exactly once"):
-                jbr_api.modified_sources(self.files | {self.patch["file"]: data}, self.profile)
+    def test_unreviewed_source_member_is_rejected_after_outer_digest_rewrite(self):
+        self.rewrite_jar(jbr_api.SOURCES, lambda entries: entries.update({
+            "META-INF/modified-build-sources/tools/javac/SourceGenerator.java": b"Unreviewed source"}))
+        with self.assertRaisesRegex(ValueError, "source JAR inventory"):
+            self.verify()
 
     def test_corrupted_payload_or_binary_fails_before_cache_success(self):
         (self.output / jbr_api.BINARY).write_bytes(b"corrupted cache")
@@ -141,9 +119,9 @@ class JbrApiTests(unittest.TestCase):
         with self.assertRaises((ValueError, KeyError)):
             self.verify()
 
-    def test_original_modified_and_generated_source_corruption_is_rejected(self):
+    def test_original_and_generated_source_corruption_is_rejected(self):
         original = (self.output / jbr_api.SOURCES).read_bytes()
-        for name in ("src/fixture/Service.java", jbr_api.GENERATED, "META-INF/modified-build-sources/" + self.patch["file"]):
+        for name in ("src/fixture/Service.java", "tools/javac/SourceGenerator.java", jbr_api.GENERATED):
             with self.subTest(name=name):
                 (self.output / jbr_api.SOURCES).write_bytes(original)
                 self.rewrite_jar(jbr_api.SOURCES, lambda entries: entries.update({name: b"changed source"}))

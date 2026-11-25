@@ -56,21 +56,14 @@
     "api-blob": "bd373816247f672f83f8bac0d59672a7e14d2c4be2aabec399cae10c58538bfe"
   },
   "expectedJars": {
-    "jbr-api-1.9.0-syncwatch.jar": "282bde5817b74760311621dc68598711487b1a2418fe65579a31a9ae44c711f6",
-    "jbr-api-1.9.0-syncwatch-sources.jar": "cd0d2998c25ea1af71c53a5727970d402f838aea096a4773ea3927a545749925"
-  },
-  "modifications": {
-    "tools/javac/SourceGenerator.java": {
-      "patch": "tools/jvm/patches/jbr-api-ordering.json",
-      "patchSha256": "9d54c6e3873ef2e8532fd611a0c88b237b8cffe20b0b7ccea165437d0020a6d7",
-      "sha256": "16cfc05c30dfe4f3d344d11842b4df4841c802f5ae777850a5db3f9f19dd103e"
-    }
+    "jbr-api-1.9.0-syncwatch.jar": "d10ec6a88beb284b27a79663de9d60b85a145912fbd1fdc2ddaa50dab428d82e",
+    "jbr-api-1.9.0-syncwatch-sources.jar": "e8e1509b1d9f6898e35365a0424d0bafd9e2df790bcfa83d306ffe4b96205627"
   },
   "compatibilityCheck": {
-    "processorVersion": "1.9.1",
-    "message": "Compatibility status of API changes: PATCH \ud83d\udc85\nVersion increment: 1.9.0 -> 1.9.1\n"
+    "processorVersion": "1.9.0",
+    "message": ""
   },
   "generatedSources": {
-    "generated/com/jetbrains/JBR.java": "2775a0a30893de563255c8854cdd71cf4b35abb0dbc0de3d6be516a5818530ff"
+    "generated/com/jetbrains/JBR.java": "cecbe1f4ad28d1fee2922d5f8f35f0f550fe6b94349ea9c235a631d79200a1c5"
   }
 }
