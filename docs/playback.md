@@ -30,6 +30,8 @@ VLC ignores installed-user configuration and uses the selected owned output modu
 
 On the first seek away from zero, a paused native video may need to prepare its decoder before VLC can show the requested picture. The playback worker verifies mute and deselects audio before it starts this brief local preparation. It confirms Pause and restores the audio selection and mute state before it submits the seek. The worker stops the input if it cannot safely restore the prior state. This sequence runs inside the playback owner and sends no room commands.
 
+On AppKit, a paused seek can also retain the picture from earlier playback. For an existing picture, the worker starts preparation at the target with a reduced rate. It restores the prior rate before it submits the final seek.
+
 The present player layout places its toolbar and footer outside the video rectangle. Linux supplies its Canvas through the design library's `NativePlayerSurface` slot to the same declarative Player layout and presentation gates used by the native adapters. Window content minimums and video background come from shared design tokens; playback owns neither layout nor styling. WPF popovers and future overlapping controls still require the architecture's separate owned overlay-window integration and DPI/focus acceptance. The development surface does not qualify those workflows, a physical display or speaker output. Linux JNI/X11 and application-controller acceptance do not qualify visible desktop output or its runtime dependency closure.
 
 ## Development entry

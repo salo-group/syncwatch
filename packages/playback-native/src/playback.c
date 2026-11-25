@@ -291,7 +291,7 @@ int sw_playback_pause(sw_playback *p, uint64_t generation, int paused) {
 }
 
 /* Leave time for the normal seek readback within the bridge correction budget. */
-enum { SW_PREROLL_MS = 800, SW_RESTORE_MS = 200, SW_POLL_MS = 10 };
+enum { SW_PREROLL_MS = 800, SW_RESTORE_MS = 200, SW_POLL_MS = 10, SW_PREVIEW_RATE_DIVISOR = 4 };
 
 static uint64_t playback_monotonic_ms(void) {
 #ifdef _WIN32
@@ -328,10 +328,10 @@ static int wait_mute(sw_playback *p, int muted, uint64_t deadline) {
     return 1;
 }
 
-/* VLC can report a paused clock and create a video output before presenting
- * the first picture. Prime the decoder with its audio track deselected on
- * this worker, then restore Pause and the selected track before the seek. */
-static int prime_paused_video(sw_playback *p) {
+/* VLC can report a paused clock before presenting the requested picture.
+ * Prepare the decoder with audio disabled. If the AppKit surface has already
+ * displayed video, prepare at the target to replace its previous picture. */
+static int prime_paused_video(sw_playback *p, int64_t target, int from_target) {
     uint64_t started = playback_monotonic_ms();
     if (started == UINT64_MAX) return SW_OK;
     libvlc_media_t *media = p->api.libvlc_media_player_get_media(p->player);
@@ -347,6 +347,19 @@ static int prime_paused_video(sw_playback *p) {
     if (previous_mute < 0) {
         p->api.libvlc_media_release(media);
         return SW_OK;
+    }
+    float previous_rate = 1;
+    if (from_target) {
+        previous_rate = p->api.libvlc_media_player_get_rate(p->player);
+        if (!isfinite(previous_rate) || previous_rate < .25f || previous_rate > 4.f) {
+            p->api.libvlc_media_release(media);
+            return SW_OK;
+        }
+        p->api.libvlc_media_player_set_time(p->player, target);
+        if (p->api.libvlc_media_player_set_rate(p->player, 1.f / SW_PREVIEW_RATE_DIVISOR)) {
+            p->api.libvlc_media_release(media);
+            return SW_OK;
+        }
     }
     uint64_t deadline = started + SW_PREROLL_MS;
     int prepared = 0;
@@ -378,6 +391,7 @@ static int prime_paused_video(sw_playback *p) {
     while (p->api.libvlc_media_player_get_state(p->player) != libvlc_Paused) {
         if (!wait_playback_poll(deadline)) goto failed;
     }
+    if (from_target && p->api.libvlc_media_player_set_rate(p->player, previous_rate)) goto failed;
     if (p->api.libvlc_audio_get_track(p->player) != previous_track &&
         (p->api.libvlc_audio_set_track(p->player, previous_track) ||
          !wait_audio_track(p, previous_track, deadline))) goto failed;
@@ -387,6 +401,7 @@ static int prime_paused_video(sw_playback *p) {
     return SW_OK;
 failed:
     release_input(p);
+    if (from_target) p->api.libvlc_media_player_set_rate(p->player, previous_rate);
     p->api.libvlc_audio_set_mute(p->player, previous_mute);
     p->failed = 1;
     return SW_ENGINE;
@@ -397,11 +412,14 @@ int sw_playback_seek(sw_playback *p, uint64_t generation, int64_t target) {
     int64_t duration = p->api.libvlc_media_player_get_length(p->player);
     if (target < 0 || duration < 0 || target > duration || target > INT64_C(604800000)) return SW_INVALID;
     if (!p->api.libvlc_media_player_is_seekable(p->player)) return SW_UNAVAILABLE;
-    if (p->output != SW_OUTPUT_HEADLESS && !p->played_video && target > 0 && target < duration &&
-        duration - p->api.libvlc_media_player_get_time(p->player) > SW_PREROLL_MS &&
+    int from_target = p->output == SW_OUTPUT_APPKIT && p->played_video;
+    int prepare = from_target ? duration - target > SW_PREROLL_MS / SW_PREVIEW_RATE_DIVISOR :
+        !p->played_video && target > 0 && target < duration &&
+        duration - p->api.libvlc_media_player_get_time(p->player) > SW_PREROLL_MS;
+    if (p->output != SW_OUTPUT_HEADLESS && prepare &&
         p->api.libvlc_media_player_get_state(p->player) == libvlc_Paused &&
         p->api.libvlc_video_get_track(p->player) >= 0) {
-        code = prime_paused_video(p);
+        code = prime_paused_video(p, target, from_target);
         if (code != SW_OK) return code;
         if (!valid_input(p)) return SW_UNAVAILABLE;
     }
