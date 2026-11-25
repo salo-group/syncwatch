@@ -11,7 +11,7 @@ struct HelperConfiguration: Sendable {
         }
         return Self(
             package: value.map { URL(filePath: $0).standardizedFileURL }
-                ?? bundle.appendingPathComponent("Contents/Frameworks/Syncplay", isDirectory: true))
+                ?? BundledRuntime.package("Syncplay", bundle: bundle))
     }
 
     func verify() async throws -> HelperRuntime {

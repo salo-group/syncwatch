@@ -10,7 +10,7 @@ struct MediaConfiguration: Sendable {
         let value = index.flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil }
         return Self(
             package: value.map { URL(filePath: $0).standardizedFileURL }
-                ?? bundle.appendingPathComponent("Contents/Frameworks/Media", isDirectory: true))
+                ?? BundledRuntime.package("Media", bundle: bundle))
     }
 
     func verify() throws { _ = try MediaRuntime(package: package) }
