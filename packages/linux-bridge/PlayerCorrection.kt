@@ -2,7 +2,9 @@ package syncwatch.bridge
 
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
+import kotlin.math.abs
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import syncwatch.domain.PlaybackObservation
 import syncwatch.domain.PlaybackPort
@@ -32,7 +34,24 @@ class PlayerCorrection private constructor(
             is Operation.Rate -> player.setRate(action.rate, nativeScope)
             is Operation.KeepLoaded -> if (action.handle != authorizedHandle) throw WatchFailure("unauthorizedHandle")
         } // The selection owner already loaded this file; never reopen or rewind.
-        return player.observe(nativeScope).also { validate(it, nativeScope) }
+        val deadline = System.nanoTime() + 2_000_000_000L
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val observation = player.observe(nativeScope)
+            nativeScope.check(observation.scope)
+            if (observation.status == PlaybackStatus.ready) {
+                val reachedTarget = when (val action = operation) {
+                    is Operation.Pause -> observation.paused == action.paused
+                    is Operation.Seek -> abs(observation.positionMs - action.positionMs) <= 250
+                    is Operation.Rate, is Operation.KeepLoaded -> true
+                }
+                if (reachedTarget) return observation
+            } else if (observation.status != PlaybackStatus.loading || (operation !is Operation.Pause && operation !is Operation.Seek)) {
+                throw WatchFailure("unavailable")
+            }
+            if (System.nanoTime() - deadline >= 0) throw WatchFailure("unavailable")
+            delay(20)
+        }
     }
 
     fun result(observation: PlaybackObservation, nativeScope: PlaybackScope): ByteArray {

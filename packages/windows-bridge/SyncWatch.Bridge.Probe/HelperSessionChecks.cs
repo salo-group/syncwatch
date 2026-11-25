@@ -130,7 +130,7 @@ internal static class HelperSessionChecks
         internal int UserCount => sent.Count(v => v.TryGetProperty("origin", out var origin) && origin.GetString() == "user");
     }
 
-    private sealed class Player(PlaybackScope owner) : IPlaybackPort
+    private sealed class Player(PlaybackScope owner, int videoOutputs = 0) : IPlaybackPort
     {
         private ulong sequence = 1;
         internal bool Paused { get; private set; }
@@ -138,11 +138,24 @@ internal static class HelperSessionChecks
         internal int Seeks { get; private set; }
         internal int Closes { get; private set; }
         private bool ended;
+        private bool delayPause;
+        private bool? pendingPause;
+        private bool delaySeek;
+        private long? pendingSeek;
+        private bool bufferNextObservation;
         internal void FinishMedia() { sequence++; ended = true; Paused = true; Position = 60000; }
+        internal void DelayNextPause() => delayPause = true;
+        internal void DelayNextSeek(bool buffering)
+        {
+            delaySeek = true;
+            bufferNextObservation = buffering;
+        }
+        private bool rejectSeek;
+        internal void RejectNextSeek() => rejectSeek = true;
         public Task<PlaybackObservation> ObserveAsync(PlaybackScope scope, CancellationToken cancellation = default)
         {
             cancellation.ThrowIfCancellationRequested(); owner.Check(scope.ClientRunId, scope.MediaGeneration);
-            return Task.FromResult(new PlaybackObservation
+            var observation = new PlaybackObservation
             {
                 Scope = scope,
                 Sequence = sequence,
@@ -151,13 +164,55 @@ internal static class HelperSessionChecks
                 DurationMs = 60000,
                 Paused = Paused,
                 Seekable = !ended,
-                Ended = ended
-            });
+                Ended = ended,
+                VideoOutputs = videoOutputs
+            };
+            if (bufferNextObservation)
+            {
+                bufferNextObservation = false;
+                observation = new() { Scope = scope, Sequence = sequence, Status = PlaybackStatus.Loading, Paused = true, Buffering = true };
+            }
+            if (pendingSeek is long target)
+            {
+                pendingSeek = null;
+                Position = target;
+                sequence++;
+            }
+            if (pendingPause is bool next)
+            {
+                pendingPause = null;
+                if (Paused != next) sequence++;
+                Paused = next;
+            }
+            return Task.FromResult(observation);
         }
         public Task SetPausedAsync(bool paused, PlaybackScope scope, CancellationToken cancellation = default)
-        { cancellation.ThrowIfCancellationRequested(); if (Paused != paused) sequence++; Paused = paused; return Task.CompletedTask; }
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (delayPause) { delayPause = false; pendingPause = paused; return Task.CompletedTask; }
+            if (Paused != paused) sequence++;
+            Paused = paused;
+            return Task.CompletedTask;
+        }
         public Task SeekAsync(long positionMs, PlaybackScope scope, CancellationToken cancellation = default)
-        { cancellation.ThrowIfCancellationRequested(); sequence++; Position = positionMs; Seeks++; return Task.CompletedTask; }
+        {
+            cancellation.ThrowIfCancellationRequested();
+            Seeks++;
+            if (rejectSeek)
+            {
+                rejectSeek = false;
+                throw new InvalidOperationException("Paused picture unavailable");
+            }
+            if (delaySeek)
+            {
+                delaySeek = false;
+                pendingSeek = positionMs;
+                return Task.CompletedTask;
+            }
+            sequence++;
+            Position = positionMs;
+            return Task.CompletedTask;
+        }
         public Task LoadAsync(string file, PlaybackScope scope, CancellationToken cancellation = default) => throw new InvalidOperationException();
         public Task SetRateAsync(double rate, PlaybackScope scope, CancellationToken cancellation = default) => throw new InvalidOperationException();
         public Task SetVolumeAsync(double volume, bool muted, PlaybackScope scope, CancellationToken cancellation = default) => throw new InvalidOperationException();
@@ -327,10 +382,84 @@ internal static class HelperSessionChecks
         }
         Require(new SyncplayAdmission(new string('A', 64), "member-run").ToString() == "[redacted]");
     }
+    private static async Task PauseCorrectionWaitsForNativeReadback(bool paused)
+    {
+        var native = PlaybackScope.Create().ReplacingMedia();
+        var wire = new PlaybackScope("helper-run", 7);
+        var player = new Player(native);
+        await player.SetPausedAsync(!paused, native);
+        player.DelayNextPause();
+        var frame = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            v = 1,
+            id = "cmd-1",
+            type = "player.setPaused",
+            clientRunId = wire.ClientRunId,
+            mediaGeneration = wire.MediaGeneration,
+            payload = new { paused }
+        }).Concat(new byte[] { 10 }).ToArray();
+        var correction = PlayerCorrection.Decode(frame, wire);
+        var actual = await correction.ApplyAsync(player, native, "media-1");
+        using var reply = JsonDocument.Parse(correction.Result(actual, native));
+        if (reply.RootElement.GetProperty("payload").GetProperty("paused").GetBoolean() != paused)
+            throw new InvalidDataException("Correction acknowledged the previous pause state");
+    }
+    private static async Task SeekCorrectionWaitsForNativePosition(bool buffering)
+    {
+        var native = PlaybackScope.Create().ReplacingMedia();
+        var wire = new PlaybackScope("helper-run", 7);
+        var player = new Player(native);
+        player.DelayNextSeek(buffering);
+        var frame = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            v = 1,
+            id = "cmd-1",
+            type = "player.setPosition",
+            clientRunId = wire.ClientRunId,
+            mediaGeneration = wire.MediaGeneration,
+            payload = new { positionMs = 36000 }
+        }).Concat(new byte[] { 10 }).ToArray();
+        var correction = PlayerCorrection.Decode(frame, wire);
+        var actual = await correction.ApplyAsync(player, native, "media-1");
+        using var reply = JsonDocument.Parse(correction.Result(actual, native));
+        if (reply.RootElement.GetProperty("payload").GetProperty("positionMs").GetInt64() != 36000)
+            throw new InvalidDataException("Correction acknowledged the previous position");
+        Require(player.Seeks == 1);
+    }
+
+    private static async Task UserPauseRefreshesOnlyVisibleVideo(int outputs, bool refreshRejected = false)
+    {
+        var native = PlaybackScope.Create().ReplacingMedia();
+        var player = new Player(native, outputs);
+        var peer = new Peer();
+        await using var session = new HelperSession(peer, player, native, new("localhost", 8999, "room", "Viewer"),
+            new("media-1", "Movie.mkv", 60000, 1234), Revision);
+        session.Start(); await Eventually(() => session.State.PlaybackReady);
+        session.Pause(false); await Eventually(() => peer.UserCount == 1);
+        Require(peer.UserMatches(1200, false));
+        if (refreshRejected) player.RejectNextSeek();
+        session.Pause(true); await Eventually(() => peer.UserCount == 2);
+        Require(peer.UserMatches(1200, true));
+        if (outputs == 1) await Eventually(() => player.Seeks == 1);
+        session.Pause(false); await Eventually(() => peer.UserCount == 3);
+        peer.GateUserWrite(); session.Pause(true); await Eventually(() => peer.UserWriteHeld);
+        session.Pause(false); peer.ReleaseUserWrite();
+        await Eventually(() => peer.UserCount == 5);
+        await session.DisposeAsync();
+        Require(player.Seeks == outputs && peer.UserMatches(1200, false));
+    }
+
     internal static void Run()
     {
         new OwnerContext().Run(async () =>
         {
+            await UserPauseRefreshesOnlyVisibleVideo(0);
+            await UserPauseRefreshesOnlyVisibleVideo(1);
+            await UserPauseRefreshesOnlyVisibleVideo(1, refreshRejected: true);
+            await PauseCorrectionWaitsForNativeReadback(true);
+            await PauseCorrectionWaitsForNativeReadback(false);
+            await SeekCorrectionWaitsForNativePosition(false);
+            await SeekCorrectionWaitsForNativePosition(true);
             await AdmissionChecks();
             await StationaryHandshake();
             await ReadinessPulse(false); await ReadinessPulse(true);

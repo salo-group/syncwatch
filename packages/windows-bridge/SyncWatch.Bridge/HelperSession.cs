@@ -241,7 +241,10 @@ public sealed class HelperSession : IAsyncDisposable
     private async Task UserAsync(Intent intent)
     {
         SetDeadline(2);
-        bool? pause = intent.Kind is IntentKind.Pause or IntentKind.PlayFrom ? intent.Paused : intent.Kind == IntentKind.Toggle ? !(await player.ObserveAsync(nativeScope, workCancellation.Token)).Paused : null;
+        bool wasPlaying = (intent.Kind == IntentKind.Toggle || (intent.Kind == IntentKind.Pause && intent.Paused))
+            && !(await player.ObserveAsync(nativeScope, workCancellation.Token)).Paused;
+        bool? pause = intent.Kind is IntentKind.Pause or IntentKind.PlayFrom ? intent.Paused
+            : intent.Kind == IntentKind.Toggle ? wasPlaying : null;
         long? position = intent.Kind is IntentKind.Seek or IntentKind.PlayFrom ? intent.PositionMs : null;
         if (position is long target) await player.SeekAsync(target, nativeScope, workCancellation.Token);
         if (pause is bool value) await player.SetPausedAsync(value, nativeScope, workCancellation.Token);
@@ -255,7 +258,25 @@ public sealed class HelperSession : IAsyncDisposable
                 {
                     if (!fence.CanPublish(intent.Sequence, nativeScope)) return;
                     await SendAsync(commands.UserObservation(NextId(), intent.Sequence, actual, nativeScope));
-                    fence.DidPublish(intent.Sequence, actual); observationHigh = actual.Sequence; return;
+                    fence.DidPublish(intent.Sequence, actual); observationHigh = actual.Sequence;
+                    if (pause == true && wasPlaying && actual.Seekable && !actual.Ended
+                        && actual.VideoOutputs > 0 && actual.PositionMs < media.DurationMs
+                        && fence.IssuedSequence == intent.Sequence)
+                    {
+                        try
+                        {
+                            await player.SeekAsync(actual.PositionMs, nativeScope, workCancellation.Token);
+                        }
+                        catch (Exception)
+                        {
+                            CheckOpen();
+                            var settled = await player.ObserveAsync(nativeScope, workCancellation.Token);
+                            CheckOpen(); Validate(settled);
+                            if (!settled.Paused || settled.Ended || Math.Abs(settled.PositionMs - actual.PositionMs) > 250)
+                                throw;
+                        }
+                    }
+                    return;
                 }
                 await Task.Delay(20, workCancellation.Token);
             }
