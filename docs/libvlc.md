@@ -53,7 +53,17 @@ VideoToolbox/CVPX modules are selected on macOS, and D3D11VA on Windows. Hardwar
 
 The payload contains headers, owned dynamic libraries, selected plugins, full notices, per-source original ZIPs, exact configured VLC and FFmpeg files, first-party rebuild recipes, source inventories, compiler SDK identity, command flags, import closure and a payload digest report. ZIP entries preserve original bytes; executable modes are reconstructed from the retained profile inventory. The SDK and its build executables are not distributed as application libraries. Dynamic dependencies must remain replaceable when packaging an application.
 
-VLC configuration derivatives have explicit source correspondence and dated notices. `src/revision.txt` records the base source pin. `configure.ac` uses that original commit's date instead of the current clock. `lib/media_player.c` inherits an explicitly configured audio-filter list when creating a player: the original empty variable otherwise masks the initialization setting, leaving normalization inactive. `modules/common.am` links Windows plugins to the owned shared codec libraries while retaining static compiler support, replacing the upstream assumption that every contrib library is static. The changed files retain their original grants and a dated change notice. The exact configured files accompany the original sources; this is a modified build of the recorded base revision.
+The build uses the original VLC configure and plugin Make templates.
+The upstream version date populates desktop application metadata, outside
+the selected SDK payload. On Windows, a SyncWatch Make file links
+plugins to the owned shared codec libraries and keeps compiler support
+static. [Windows plugin configuration](../tools/vlc/windows-plugins.mk).
+
+The generated `src/revision.txt` records the base source pin. The
+configured `lib/media_player.c` inherits the audio-filter list when
+creating a player. The modified player, demux, codec and decoder files
+include the original grants and dated change notices. The payload
+includes those configured files and the original sources.
 
 The GNU iconv mirror's pinned MSVC patch is reversed only in an isolated source tree. Every restored file must match the complete original GNU release inventory. The libraries and public headers are built; the GPL command-line program is not packaged. macOS selects VLC's original pipe/dup fallbacks for its deployment floor. VLC uses C11 explicitly, and its Windows configure step sees the Windows 10 API baseline so that its synchronization import-library check matches the compiler headers.
 

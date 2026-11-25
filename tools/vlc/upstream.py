@@ -14,7 +14,7 @@ def build(context, sources, profile):
     source = sources["vlc"]
     build = context.work / "vlc-build"
     build.mkdir()
-    original = {name: (source / name).read_bytes() for name in ["configure.ac", "lib/media_player.c", "modules/common.am",
+    original = {name: (source / name).read_bytes() for name in ["lib/media_player.c",
                 "modules/codec/avcodec/fourcc.c", "modules/demux/avformat/demux.c", "src/input/decoder.c"]}
     derivatives = vlc_files(original, profile)
     for name, data in derivatives.items():
@@ -60,9 +60,12 @@ def build(context, sources, profile):
                 env=environment)
     for name in ["compat", "src", "lib"]:
         context.run("vlc-" + name, ["make", "-j4", "-C", name, "all"], cwd=build, shell=True)
+    plugin_command = ["make", "-j4", "-C", "modules"]
     if context.target == "windows-x64":
         # Explicit plugin targets do not trigger Automake's BUILT_SOURCES rule.
         context.run("vlc-resources", ["make", "-C", "modules", "module.rc.lo"], cwd=build, shell=True)
-    context.run("vlc-plugins", ["make", "-j4", "-C", "modules",
-        *("lib" + name + "_plugin.la" for name in selected_plugins(profile, context.target))], cwd=build, shell=True)
+        flags = shell_path(Path(__file__).with_name("windows-plugins.mk"))
+        plugin_command.extend(["-f", "Makefile", "-f", flags])
+    plugin_command.extend("lib" + name + "_plugin.la" for name in selected_plugins(profile, context.target))
+    context.run("vlc-plugins", plugin_command, cwd=build, shell=True)
     return build

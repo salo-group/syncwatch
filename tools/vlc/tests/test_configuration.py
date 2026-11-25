@@ -32,6 +32,11 @@ class ConfigurationChecks(unittest.TestCase):
         }
         self.profile = {"sourceDateEpoch": 1, "sources": {"vlc": {"revision": "a" * 40}}}
 
+    def test_configure_and_plugin_link_inputs_use_original_templates(self):
+        configured = vlc_files(self.original, self.profile)
+        self.assertNotIn("configure.ac", configured)
+        self.assertNotIn("modules/common.am", configured)
+
     def test_aliases_keep_original_bytes_and_existing_reverse_mapping(self):
         before = copy.deepcopy(self.original)
         first = vlc_files(self.original, self.profile)
