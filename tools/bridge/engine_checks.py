@@ -203,18 +203,13 @@ def bridge_run(root):
                            and b.current() > 85000 and abs(a.current() - b.current()) < 1500,
                            "pipe shared seek while playing")
             b.tick()
-            before_pause = len(b.commands)
             b.set_paused(True)
-            paused_position = b.current()
             b.publish(user=True)
             yield wait_for(lambda: a.paused, "pipe shared pause")
-            yield wait_for(lambda: ("position", paused_position) in b.commands[before_pause:],
-                           "pipe sender picture refresh")
             assert set(factory.hellos) == {"pipe-a", "pipe-b"}
             assert b'"Hello"' not in b"".join(factory.wire)
             assert a.cancelled_corrections > 0
-            report.update(play=True, seek=True, pause=True, senderPictureRefresh=True,
-                          noPlaintextIdentity=True, staleCorrectionsCancelled=True)
+            report.update(play=True, seek=True, pause=True, noPlaintextIdentity=True, staleCorrectionsCancelled=True)
             # Interrupt the real owned server-side TLS connection. Keep the
             # same helper process, pipes, media handle and command counters.
             before = len(a.events)

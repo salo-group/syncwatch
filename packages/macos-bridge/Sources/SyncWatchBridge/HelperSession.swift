@@ -383,9 +383,14 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
     private func user(_ sequence: UInt64, _ intent: Intent) async throws {
         var targetPause: Bool?
         var targetPosition: Int64?
+        var wasPlaying = false
         switch intent {
-        case .pause(let value): targetPause = value
-        case .toggle: targetPause = !(try await player.observe(nativeScope)).paused
+        case .pause(let value):
+            targetPause = value
+            if value { wasPlaying = !(try await player.observe(nativeScope)).paused }
+        case .toggle:
+            wasPlaying = !(try await player.observe(nativeScope)).paused
+            targetPause = wasPlaying
         case .seek(let position): targetPosition = position
         case .playFrom(let position):
             targetPosition = position
@@ -408,6 +413,12 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
                     commands.userObservation(nextID(), sequence: sequence, value: actual, nativeScope: nativeScope))
                 try fence.didPublish(sequence, observation: actual)
                 observationHigh = actual.sequence
+                if targetPause == true, wasPlaying, actual.seekable, !actual.ended,
+                    actual.videoOutputs > 0, actual.positionMs < media.durationMs,
+                    fence.issuedSequence == sequence
+                {
+                    try await player.seek(to: actual.positionMs, scope: nativeScope)
+                }
                 return
             }
             try await Task.sleep(for: .milliseconds(20))

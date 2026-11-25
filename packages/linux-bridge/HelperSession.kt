@@ -235,7 +235,8 @@ class HelperSession(
     }
     private suspend fun user(sequence: Long, intent: Intent) {
         setDeadline(2)
-        val pause = when (intent) { is Intent.Pause -> intent.value; is Intent.PlayFrom -> false; Intent.Toggle -> !player.observe(nativeScope).paused; else -> null }
+        val wasPlaying = (intent == Intent.Toggle || intent is Intent.Pause && intent.value) && !player.observe(nativeScope).paused
+        val pause = when (intent) { is Intent.Pause -> intent.value; is Intent.PlayFrom -> false; Intent.Toggle -> wasPlaying; else -> null }
         val position = when (intent) { is Intent.Seek -> intent.positionMs; is Intent.PlayFrom -> intent.positionMs; else -> null }
         if (position != null) player.seek(position, nativeScope)
         if (pause != null) player.setPaused(pause, nativeScope)
@@ -246,7 +247,13 @@ class HelperSession(
                 if ((pause == null || pause == actual.paused) && (position == null || kotlin.math.abs(position - actual.positionMs) <= 250)) {
                     if (!fence.canPublish(sequence, nativeScope)) return
                     send(commands.userObservation(nextId(), sequence, actual, nativeScope))
-                    fence.didPublish(sequence, actual); observationHigh = actual.sequence; return
+                    fence.didPublish(sequence, actual); observationHigh = actual.sequence
+                    if (pause == true && wasPlaying && actual.seekable && !actual.ended
+                        && actual.videoOutputs > 0 && actual.positionMs < media.durationMs
+                        && fence.issuedSequence == sequence) {
+                        player.seek(actual.positionMs, nativeScope)
+                    }
+                    return
                 }
                 delay(20)
             }

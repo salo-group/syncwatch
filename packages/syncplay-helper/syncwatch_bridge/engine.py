@@ -19,16 +19,9 @@ class PlayerPort:
         return bool(self.controller.pending)
 
     def observe(self, state, *, notify=True, user_initiated=False):
-        was_playing = self.state is not None and self.state["paused"] is False
         self.state = dict(state)
         if notify and self.observer is not None and not self.released:
             self.observer(state["paused"], state["positionMs"], user_initiated=user_initiated)
-            if (user_initiated and was_playing and state["paused"] and state["status"] == "ready"
-                    and state["seekable"] and state["positionMs"] < state["durationMs"]):
-                # VLC can hold a buffered picture ahead of its paused input clock.
-                # Refill at the same position published to Syncplay. The native
-                # correction uses this action's fence and has observation authority.
-                self.set_position(state["positionMs"])
 
     def set_paused(self, value):
         self.controller.request("player.setPaused", {"paused": value})

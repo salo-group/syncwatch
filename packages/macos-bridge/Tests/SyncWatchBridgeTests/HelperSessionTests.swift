@@ -181,7 +181,11 @@ private actor SessionPlayer: PlaybackPort {
     private var delaySeek = false
     private var pendingSeek: Int64?
     private var bufferNextObservation = false
-    init(_ scope: PlaybackScope) { self.scope = scope }
+    private let videoOutputs: Int
+    init(_ scope: PlaybackScope, videoOutputs: Int = 0) {
+        self.scope = scope
+        self.videoOutputs = videoOutputs
+    }
     func observe(_ scope: PlaybackScope) throws -> PlaybackObservation {
         try self.scope.check(clientRunID: scope.clientRunID, mediaGeneration: scope.mediaGeneration)
         defer {
@@ -205,7 +209,7 @@ private actor SessionPlayer: PlaybackPort {
         return try PlaybackObservation(
             scope: scope, sequence: sequence, status: .ready, positionMs: position,
             durationMs: 60000, paused: paused, rate: 1, seekable: !ended, buffering: false, ended: ended,
-            width: 0, height: 0, videoOutputs: 0, volume: nil, muted: false)
+            width: 0, height: 0, videoOutputs: videoOutputs, volume: nil, muted: false)
     }
     func finishMedia() {
         sequence += 1
@@ -256,6 +260,39 @@ private actor SessionPlayer: PlaybackPort {
     while try await !predicate() {
         if ContinuousClock.now >= end { throw HelperSessionFailure.timeout }
         try await Task.sleep(for: .milliseconds(10))
+    }
+}
+
+@Test(arguments: [0, 1]) @MainActor func userPauseRefreshesOnlyVisibleVideo(_ outputs: Int) async throws {
+    let native = try PlaybackScope.fresh().replacingMedia()
+    let player = SessionPlayer(native, videoOutputs: outputs)
+    let peer = SessionPeer()
+    let session = try HelperSession(
+        transport: peer, player: player, nativeScope: native,
+        endpoint: SyncplayEndpoint(host: "localhost", port: 8999, room: "room", username: "Viewer"),
+        media: SharedMedia(handle: "media-1", name: "Movie.mkv", durationMs: 60000, fileSizeBytes: 1234),
+        revision: sessionRevision)
+    do {
+        try session.start()
+        try await eventually { session.state.playbackReady }
+        try session.pause(false)
+        try await eventually { try await peer.userMatches(position: 1200, paused: false) }
+        try session.pause(true)
+        try await eventually { try await peer.userMatches(position: 1200, paused: true) }
+        if outputs == 1 { try await eventually { await player.seeks == 1 } }
+        try session.pause(false)
+        try await eventually { try await peer.userCount() == 3 }
+        await peer.gateUserWrite()
+        try session.pause(true)
+        try await eventually { await peer.userWriteHeld }
+        try session.pause(false)
+        await peer.releaseUserWrite()
+        try await eventually { try await peer.userCount() == 5 }
+        await session.close()
+        #expect(await player.seeks == outputs)
+    } catch {
+        await session.close()
+        throw error
     }
 }
 

@@ -130,7 +130,7 @@ internal static class HelperSessionChecks
         internal int UserCount => sent.Count(v => v.TryGetProperty("origin", out var origin) && origin.GetString() == "user");
     }
 
-    private sealed class Player(PlaybackScope owner) : IPlaybackPort
+    private sealed class Player(PlaybackScope owner, int videoOutputs = 0) : IPlaybackPort
     {
         private ulong sequence = 1;
         internal bool Paused { get; private set; }
@@ -162,7 +162,8 @@ internal static class HelperSessionChecks
                 DurationMs = 60000,
                 Paused = Paused,
                 Seekable = !ended,
-                Ended = ended
+                Ended = ended,
+                VideoOutputs = videoOutputs
             };
             if (bufferNextObservation)
             {
@@ -419,10 +420,33 @@ internal static class HelperSessionChecks
         Require(player.Seeks == 1);
     }
 
+    private static async Task UserPauseRefreshesOnlyVisibleVideo(int outputs)
+    {
+        var native = PlaybackScope.Create().ReplacingMedia();
+        var player = new Player(native, outputs);
+        var peer = new Peer();
+        await using var session = new HelperSession(peer, player, native, new("localhost", 8999, "room", "Viewer"),
+            new("media-1", "Movie.mkv", 60000, 1234), Revision);
+        session.Start(); await Eventually(() => session.State.PlaybackReady);
+        session.Pause(false); await Eventually(() => peer.UserCount == 1);
+        Require(peer.UserMatches(1200, false));
+        session.Pause(true); await Eventually(() => peer.UserCount == 2);
+        Require(peer.UserMatches(1200, true));
+        if (outputs == 1) await Eventually(() => player.Seeks == 1);
+        session.Pause(false); await Eventually(() => peer.UserCount == 3);
+        peer.GateUserWrite(); session.Pause(true); await Eventually(() => peer.UserWriteHeld);
+        session.Pause(false); peer.ReleaseUserWrite();
+        await Eventually(() => peer.UserCount == 5);
+        await session.DisposeAsync();
+        Require(player.Seeks == outputs && peer.UserMatches(1200, false));
+    }
+
     internal static void Run()
     {
         new OwnerContext().Run(async () =>
         {
+            await UserPauseRefreshesOnlyVisibleVideo(0);
+            await UserPauseRefreshesOnlyVisibleVideo(1);
             await PauseCorrectionWaitsForNativeReadback(true);
             await PauseCorrectionWaitsForNativeReadback(false);
             await SeekCorrectionWaitsForNativePosition(false);

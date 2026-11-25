@@ -116,7 +116,7 @@ private class SessionPeer : HelperTransport {
     @Synchronized fun userCount() = sent.count { it["origin"] == "user" }
 }
 
-private class SessionPlayer(private val scope: PlaybackScope) : PlaybackPort {
+private class SessionPlayer(private val scope: PlaybackScope, private val videoOutputs: Int = 0) : PlaybackPort {
     private var sequence = 1uL
     @Volatile var paused = false
         private set
@@ -140,7 +140,7 @@ private class SessionPlayer(private val scope: PlaybackScope) : PlaybackPort {
             PlaybackObservation(scope, sequence, PlaybackStatus.loading, 0, null, true, 1.0,
                 false, true, false, 0, 0, 0, null, false)
         } else PlaybackObservation(scope, sequence, PlaybackStatus.ready, position, 60000, paused, 1.0,
-            !ended, false, ended, 0, 0, 0, null, false)
+            !ended, false, ended, 0, 0, videoOutputs, null, false)
         pendingSeek?.let { pendingSeek = null; position = it; sequence++ }
         pendingPause?.let { pendingPause = null; setPaused(it, scope) }
         return observation
@@ -350,9 +350,29 @@ private suspend fun seekCorrectionWaitsForNativePosition(buffering: Boolean) {
     check(player.seeks == 1)
 }
 
+private suspend fun userPauseRefreshesOnlyVisibleVideo(owner: CoroutineScope, outputs: Int) {
+    val native = PlaybackScope.fresh().replacingMedia()
+    val player = SessionPlayer(native, outputs)
+    val peer = SessionPeer()
+    val session = HelperSession(peer, player, native, SyncplayEndpoint("localhost", 8999, "room", "Viewer"),
+        SharedMedia("media-1", "Movie.mkv", 60000, 1234), SESSION_REVISION, owner)
+    try {
+        session.start(); eventually { session.state.playbackReady }
+        session.pause(false); eventually { peer.userMatches(1200, false) }
+        session.pause(true); eventually { peer.userMatches(1200, true) }
+        if (outputs == 1) eventually { player.seeks == 1 }
+        session.pause(false); eventually { peer.userCount() == 3 }
+        peer.gateUserWrite(); session.pause(true); eventually { peer.userWriteHeld }
+        session.pause(false); peer.releaseUserWrite()
+        eventually { peer.userCount() == 5 }
+    } finally { session.close() }
+    check(player.seeks == outputs && peer.userMatches(1200, false))
+}
+
 internal fun helperSessionChecks() {
     Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
         runBlocking(dispatcher) {
+            for (outputs in 0..1) userPauseRefreshesOnlyVisibleVideo(this, outputs)
             for (paused in listOf(true, false)) pauseCorrectionWaitsForNativeReadback(paused)
             for (buffering in listOf(false, true)) seekCorrectionWaitsForNativePosition(buffering)
             admissionChecks(this)
