@@ -45,6 +45,40 @@ class EnginePortTests(unittest.TestCase):
         self.assertEqual(self.observed, [(True, 0, False)])
         self.assertEqual(self.engine.port.state["paused"], True)
 
+    def test_user_pause_refills_the_picture_at_the_published_position(self):
+        order = []
+        self.engine.session._protocol = SimpleNamespace(logged=True)
+        self.engine.port.controller.request = lambda kind, payload: order.append((kind, payload))
+        self.engine.port.request_state(lambda paused, position, **origin: order.append(
+            ("observe", paused, position, origin["user_initiated"])))
+        self.engine.observe(self.state)
+        paused = self.state | {"paused": True, "positionMs": 1457}
+        self.engine.observe(paused, user_initiated=True)
+        self.engine.player_result({"positionMs": 1457, "paused": True})
+        self.engine.observe(paused | {"positionMs": 3400}, user_initiated=True)
+        self.assertEqual(order, [
+            ("observe", False, 1200, False),
+            ("observe", True, 1457, True),
+            ("player.setPosition", {"positionMs": 1457}),
+            ("observe", True, 1457, False),
+            ("observe", True, 3400, True),
+        ])
+
+    def test_picture_refill_requires_an_authenticated_seekable_user_pause(self):
+        self.engine.port.controller.request = lambda *args: self.fail("Unexpected picture refill")
+        for logged, user, seekable, position in (
+            (False, True, True, 1200),
+            (True, False, True, 1200),
+            (True, True, False, 1200),
+            (True, True, True, 60000),
+        ):
+            with self.subTest(logged=logged, user=user, seekable=seekable, position=position):
+                self.engine.session._protocol = SimpleNamespace(logged=logged)
+                self.engine.observe(self.state)
+                self.engine.observe(self.state | {
+                    "paused": True, "seekable": seekable, "positionMs": position,
+                }, user_initiated=user)
+
     def test_readiness_request_does_not_publish_optimistic_state(self):
         self.engine.port.state = dict(self.state)
         self.engine.status = "connected"
