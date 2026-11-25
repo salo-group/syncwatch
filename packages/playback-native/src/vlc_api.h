@@ -21,9 +21,11 @@
  X(void, libvlc_media_add_option, (libvlc_media_t *, const char *)) \
  X(void, libvlc_media_add_option_flag, (libvlc_media_t *, const char *, unsigned)) \
  X(void, libvlc_media_release, (libvlc_media_t *)) \
+ X(int, libvlc_media_get_stats, (libvlc_media_t *, libvlc_media_stats_t *)) \
  X(libvlc_media_player_t *, libvlc_media_player_new, (libvlc_instance_t *)) \
  X(void, libvlc_media_player_release, (libvlc_media_player_t *)) \
  X(void, libvlc_media_player_set_media, (libvlc_media_player_t *, libvlc_media_t *)) \
+ X(libvlc_media_t *, libvlc_media_player_get_media, (libvlc_media_player_t *)) \
  X(int, libvlc_media_player_play, (libvlc_media_player_t *)) \
  X(int, libvlc_media_player_add_slave, (libvlc_media_player_t *, libvlc_media_slave_type_t, const char *, bool)) \
  X(void, libvlc_video_set_key_input, (libvlc_media_player_t *, unsigned)) \
@@ -38,6 +40,7 @@
  X(float, libvlc_media_player_get_rate, (libvlc_media_player_t *)) \
  X(int, libvlc_media_player_set_rate, (libvlc_media_player_t *, float)) \
  X(unsigned, libvlc_media_player_has_vout, (libvlc_media_player_t *)) \
+ X(int, libvlc_video_get_track, (libvlc_media_player_t *)) \
  X(int, libvlc_video_get_size, (libvlc_media_player_t *, unsigned, unsigned *, unsigned *)) \
  X(int, libvlc_audio_get_volume, (libvlc_media_player_t *)) \
  X(int, libvlc_audio_output_set, (libvlc_media_player_t *, const char *)) \
