@@ -15,6 +15,11 @@ TARGETS = {
     "windows": ("x64", "SyncWatch/SyncWatch.exe"),
     "linux": ("x64", "SyncWatch/SyncWatch"),
 }
+REQUIRED_FILES = {
+    "macos": ("SyncWatch.app/Contents/Info.plist",),
+    "windows": ("SyncWatch/SyncWatch.dll", "SyncWatch/SyncWatch.deps.json", "SyncWatch/SyncWatch.runtimeconfig.json"),
+    "linux": ("SyncWatch/launch.args", "SyncWatch/Runtime/bin/java"),
+}
 SOURCE = {"sourceCommit": "a" * 40, "sourceHead": "b" * 40, "sourceTree": "c" * 40, "runId": "1234"}
 
 
@@ -29,10 +34,24 @@ class CandidateSetTests(unittest.TestCase):
         self.root = Path(temporary.name)
         self.archives = {}
 
-    def write_archive(self, platform, *, manifest_changes=None, executable=b"fixture application", can_launch=True):
+    def write_archive(self, platform, *, manifest_changes=None, executable=b"fixture application",
+                      can_launch=True, omit=None):
         architecture, launcher = TARGETS[platform]
-        directory_names = tuple(parent.as_posix() for parent in Path(launcher).parents if parent.name)
-        expected_executable = b"fixture application"
+        payload = {
+            name: (b"fixture metadata", name.endswith("/bin/java"))
+            for name in REQUIRED_FILES[platform] if name != omit
+        }
+        payload[launcher] = (b"fixture application", can_launch)
+        directory_names = {
+            parent.as_posix() for name in payload for parent in Path(name).parents if parent.name
+        }
+        files = {name: {"kind": "directory"} for name in directory_names}
+        files.update({
+            name: {"kind": "file", "sha256": hashlib.sha256(data).hexdigest(),
+                   "bytes": len(data), "executable": executable}
+            for name, (data, executable) in payload.items()
+        })
+        component = launcher.split("/")[0]
         receipt = json_bytes({
             "schemaVersion": 1,
             "platform": f"{platform}-{architecture}",
@@ -40,10 +59,8 @@ class CandidateSetTests(unittest.TestCase):
             "sourceInputs": {"commit": SOURCE["sourceCommit"], "localChanges": False},
             "developmentCandidate": True,
             "releaseReady": False,
-            "files": {name: {"kind": "directory"} for name in directory_names} | {
-                launcher: {"kind": "file", "sha256": hashlib.sha256(expected_executable).hexdigest(),
-                           "bytes": len(expected_executable), "executable": can_launch}
-            },
+            "components": {component: {name.split("/", 1)[1]: entry for name, entry in files.items() if name != component}},
+            "files": files,
         })
         validation = b"<testsuite/>"
         manifest = json_bytes({
@@ -62,14 +79,16 @@ class CandidateSetTests(unittest.TestCase):
                 item = ZipInfo(f"candidate/contents/{directory}/")
                 item.external_attr = (stat.S_IFDIR | 0o755) << 16
                 package.writestr(item, b"")
-            item = ZipInfo(f"candidate/contents/{launcher}")
-            item.external_attr = (stat.S_IFREG | (0o755 if can_launch else 0o644)) << 16
-            package.writestr(item, executable)
+            for name, (data, mode) in payload.items():
+                item = ZipInfo(f"candidate/contents/{name}")
+                item.external_attr = (stat.S_IFREG | (0o755 if mode else 0o644)) << 16
+                package.writestr(item, executable if name == launcher else data)
         self.archives[platform] = {"path": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
-    def run_check(self):
+    def run_check(self, *, request_exists=True):
         request = self.root / "request.json"
-        request.write_bytes(json_bytes(SOURCE | {"archives": self.archives}))
+        if request_exists:
+            request.write_bytes(json_bytes(SOURCE | {"archives": self.archives}))
         return subprocess.run([sys.executable, "-B", str(COMMAND), str(request)], cwd=self.root,
                               capture_output=True, text=True, timeout=15)
 
@@ -131,3 +150,21 @@ class CandidateSetTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("Expected one archive each", result.stderr)
         self.assertEqual(result.stdout, "")
+
+
+    def test_rejects_missing_platform_launch_inputs(self):
+        for platform in TARGETS:
+            self.write_archive(platform)
+        for platform in TARGETS:
+            with self.subTest(platform=platform):
+                self.write_archive(platform, omit=REQUIRED_FILES[platform][0])
+                result = self.run_check()
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn("Candidate launch input is missing", result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.write_archive(platform)
+
+    def test_missing_request_error_omits_local_path(self):
+        result = self.run_check(request_exists=False)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertNotIn(str(self.root), result.stderr)

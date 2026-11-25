@@ -135,7 +135,7 @@ run before downloading the three archives. Use the publisher's archive
 digests. A hash calculated from a downloaded file cannot establish its origin.
 
 Create a JSON request with these fields. Replace each placeholder with the
-value from the reviewed run. Archive paths are relative to the request file.
+value from the reviewed run. Resolve relative archive paths from the request file directory.
 
 ```json
 {
@@ -152,12 +152,12 @@ value from the reviewed run. Archive paths are relative to the request file.
 ```
 
 ```sh
-python3 tools/application/candidate_set.py request.json
+python3 -B tools/application/candidate_set.py request.json
 ```
 
 The check reads the archives without extracting them. It verifies the
-reviewed source and run, each complete file inventory, and the payload bytes
-and executable modes. It emits a JSON receipt after all three archives pass.
+reviewed source and run, each complete file inventory, the payload bytes,
+and the files and modes needed for native launch. It emits a JSON receipt after all three archives pass.
 A successful native job from an earlier attempt of the same run is valid.
 The receipt identifies development inputs. Release platform trust and
 clean-install acceptance are separate from this check.
