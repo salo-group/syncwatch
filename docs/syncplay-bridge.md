@@ -24,7 +24,7 @@ Each native bridge exposes an immutable `HelperRuntime` obtained through verific
 
 `tools/runtime-policy/generate.py` derives the native runtime policy from the registered `3rdparty/syncplay` Gitlink. Repository validation checks the generated Swift, C# and Kotlin adapters, so platform-specific runtime pins cannot drift independently. The policy belongs to the provider boundary and contains no Design values.
 
-Application-local configuration defines the package location: `Contents/Frameworks/Syncplay` in a macOS bundle, `Syncplay` beside the Windows executable, and `Syncplay` beside the Linux application classes or JAR. The configuration types also parse an explicit development package override. Room metadata cannot supply paths. The normal shared-watch coordinator verifies this package before transferring the selected native player to its helper session on every client.
+Application-local configuration defines the package location: `Contents/Resources/Syncplay` in a macOS bundle, `Syncplay` beside the Windows executable, and `Syncplay` beside the Linux application classes or JAR. The configuration types also parse an explicit development package override. Room metadata cannot supply paths. The normal shared-watch coordinator verifies this package before transferring the selected native player to its helper session on every client.
 
 These are development integrity receipts, not release signatures or atomic filesystem seals. Instrumented packages with unlisted test artifacts are rejected. Distribution authentication, installed-package ownership and complete normal Room Start acceptance remain release requirements; successful package verification or pipe handshakes alone do not establish readiness.
 

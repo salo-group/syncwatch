@@ -53,7 +53,7 @@ def candidate(package, output, bridge, binary_directory):
             prefix = "SyncWatch.app/Contents/"
             write(archive, binary_directory / "SyncWatch", prefix + "MacOS/SyncWatch")
             write(archive, ROOT / "apps/macos/Resources/Info.plist", prefix + "Info.plist")
-            media_prefix = prefix + "Frameworks/Media/"
+            media_prefix = prefix + "Resources/Media/"
         elif selected == "windows-x64":
             for path in sorted(binary_directory.rglob("*")):
                 if path.is_file():
