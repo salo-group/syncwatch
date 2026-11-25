@@ -6,6 +6,8 @@ import subprocess
 import queue
 from collections import deque
 
+from twisted.internet.threads import deferToThread
+
 
 class PipeServerProtocol(ObservedServerProtocol):
     def handleState(self, state):
@@ -279,7 +281,10 @@ def bridge_run(root):
             cleanup = []
             for p in players:
                 try:
-                    cleanup.append(p.close())
+                    # Let the TLS server process the peer's normal teardown
+                    # while the fixture waits for the child and its reader.
+                    result = yield deferToThread(p.close)
+                    cleanup.append(result)
                 except Exception:
                     from twisted.python.failure import Failure
                     failures.append(Failure())
