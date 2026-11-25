@@ -76,6 +76,22 @@ def inventory(root):
     return dict(sorted(result.items()))
 
 
+def matches_ci_receipt(receipt, platform, commit):
+    """Match the source identity required at CI publication and intake."""
+    if not isinstance(receipt, dict):
+        return False
+    inputs = receipt.get("sourceInputs")
+    return (
+        isinstance(inputs, dict)
+        and receipt.get("schemaVersion") == 1
+        and receipt.get("platform") == platform
+        and receipt.get("sourceCommit") == inputs.get("commit") == commit
+        and inputs.get("localChanges") is False
+        and receipt.get("developmentCandidate") is True
+        and receipt.get("releaseReady") is False
+    )
+
+
 def assemble(destination, components, *, platform, source_commit, source_inputs=None):
     """Reserve an owned output, validate copies, and publish one complete contents directory."""
     destination = Path(destination).absolute()
