@@ -49,7 +49,7 @@ does not require media, helper, bridge or developer runtime flags.
 
 | Target | Application input | Bundled runtime locations |
 | --- | --- | --- |
-| macOS | Built Swift executable | `SyncWatch.app/Contents/Frameworks/{Media,Syncplay}`; first-party playback ABI statically linked |
+| macOS | Built Swift executable | `SyncWatch.app/Contents/Resources/{Media,Syncplay}`; first-party playback ABI statically linked |
 | Windows | WPF project and declared .NET SDK | All published assemblies, `Media`, `Syncplay`, first-party playback DLL and private `Runtime` beside `SyncWatch.exe` |
 | Linux | Production application JAR | `Media`, `Syncplay`, JNI/ABI libraries, source-built `Runtime`, reviewed `Desktop` JARs, `Renderer` and dynamic X11 `Clients` beside the native launcher |
 
@@ -61,6 +61,12 @@ python3 tools/application/package.py --target macos-arm64 \
   --media-package /path/to/verified-media-payload \
   --helper-package /path/to/verified-helper-package --output /path/to/new-candidate
 ```
+
+The macOS recipe seals the completed development bundle with an ad hoc
+signature. It verifies the signature and checks that the copied runtime
+trees retain their original bytes and modes. The app can still read legacy
+development packages stored under `Contents/Frameworks`. Distribution
+requires separate publisher signing and notarization.
 
 Windows publishing uses the standard WinExe apphost with `AppHostRelativeDotNet`
 and `AppHostDotNetSearch=AppRelative`. SDK and framework runtime versions belong to

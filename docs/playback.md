@@ -38,7 +38,7 @@ After building the application and the owned SDK, launch the macOS executable wi
 SyncWatch.app/Contents/MacOS/SyncWatch --local-playback /absolute/movie.mkv
 ```
 
-The default media location is `Contents/Frameworks/Media` inside the macOS bundle, or `Media` beside the Windows application. For an unbundled build use `--media-package /absolute/sdk/payload`; Windows also accepts `--playback-bridge C:\absolute\syncwatch_playback.dll`. This explicit entry enables local playback only. Normal Library activation also uses the local WatchSession owner. Shared selection, helper/player coordination, track/settings menus, previews and Meet integration retain their own implementation gates.
+The default media location is `Contents/Resources/Media` inside the macOS bundle, or `Media` beside the Windows application. For an unbundled build use `--media-package /absolute/sdk/payload`; Windows also accepts `--playback-bridge C:\absolute\syncwatch_playback.dll`. This explicit entry enables local playback only. Normal Library activation also uses the local WatchSession owner. Shared selection, helper/player coordination, track/settings menus, previews and Meet integration retain their own implementation gates.
 
 The Linux `syncwatch.MainKt` development entry accepts `--local-playback`, `--media-package` and `--playback-bridge`, each followed by an absolute path. It requires the reviewed owned JVM/UI/renderer classpath and JNI bridge; there is no qualified bundled JVM installation yet. Display initialization precedes toolkit creation. The controller waits for the native surface, polls typed engine observations and completes serialized release before disposing its window.
 
