@@ -126,3 +126,38 @@ Artifact transport checks repository/run identity, exact commit-scoped names, pr
 Native validation artifacts contain `candidate/contents/`, `candidate/candidate.json`, the validation report, the outer build manifest and applicable Design renders. The outer manifest binds the candidate receipt; archive publication rechecks each runtime file while streaming it. An absent or changed package cannot produce successful native validation. The artifact preserves executable modes. Individual SDK/helper imports remain bounded to 256 MiB; complete native application uploads have a separate 512 MiB bound in the shared artifact policy. Uploads and downloads stream their bytes with bounded buffers; full application ZIPs are never loaded into one memory buffer.
 
 `applicationBuilt` describes completed assembly. `guiAccepted` and `physicalOutputAccepted` remain false in hosted CI: real-window interaction, audio/video output, error recovery and all six directed synchronization paths require separate acceptance on the actual native clients. Installation, authentication, Google Meet and full functional/visual parity are not implied by a successful package build.
+
+### Verify a native archive set
+
+Use the archive-set check to prepare input for release packaging. Obtain the
+expected commit, head, tree, run ID and SHA-256 values from the reviewed CI
+run before downloading the three archives. Use the publisher's archive
+digests. A hash calculated from a downloaded file cannot establish its origin.
+
+Create a JSON request with these fields. Replace each placeholder with the
+value from the reviewed run. Resolve relative archive paths from the request file directory.
+
+```json
+{
+  "sourceCommit": "REVIEWED_BUILD_COMMIT",
+  "sourceHead": "REVIEWED_HEAD_COMMIT",
+  "sourceTree": "REVIEWED_BUILD_TREE",
+  "runId": "RUN_ID",
+  "archives": {
+    "macos": {"path": "macos.zip", "sha256": "MACOS_ARCHIVE_SHA256"},
+    "windows": {"path": "windows.zip", "sha256": "WINDOWS_ARCHIVE_SHA256"},
+    "linux": {"path": "linux.zip", "sha256": "LINUX_ARCHIVE_SHA256"}
+  }
+}
+```
+
+```sh
+python3 -B tools/application/candidate_set.py request.json
+```
+
+The check reads the archives without extracting them. It verifies the
+reviewed source and run, each complete file inventory, the payload bytes,
+and the files and modes needed for native launch. It emits a JSON receipt after all three archives pass.
+A successful native job from an earlier attempt of the same run is valid.
+The receipt identifies development inputs. Release platform trust and
+clean-install acceptance are separate from this check.

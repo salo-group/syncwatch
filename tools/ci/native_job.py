@@ -206,15 +206,11 @@ def prepare_archive(root: Path, directory: Path, target: str, architecture: str,
     candidate = root / "artifacts/application-ci" / {"macos": "macos-arm64", "windows": "windows-x64", "linux": "linux-x64"}[target] / "candidate"
     if success:
         sys.path.insert(0, str(ROOT / "tools/application"))
-        from candidate_tree import inventory
+        from candidate_tree import inventory, matches_ci_receipt
         receipt = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
-        if (receipt.get("schemaVersion") != 1
-                or receipt.get("platform") != {"macos": "macos-arm64", "windows": "windows-x64", "linux": "linux-x64"}[target]
-                or receipt.get("developmentCandidate") is not True or receipt.get("releaseReady") is not False
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        if (not matches_ci_receipt(receipt, f"{target}-{architecture}", commit)
                 or inventory(candidate / "contents") != receipt["files"]
-                or receipt["sourceCommit"] != subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-                or receipt.get("sourceInputs", {}).get("commit") != receipt["sourceCommit"]
-                or receipt.get("sourceInputs", {}).get("localChanges") is not False
                 or any(value["kind"] == "link" for value in receipt["files"].values())):
             raise ValueError("Standalone application candidate is stale, incomplete or contains links")
         expected = {"candidate.json", *["contents/" + name for name, value in receipt["files"].items() if value["kind"] == "file"]}
