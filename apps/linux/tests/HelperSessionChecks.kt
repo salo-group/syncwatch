@@ -155,8 +155,14 @@ private class SessionPlayer(private val scope: PlaybackScope, private val videoO
         delaySeek = true
         bufferNextObservation = buffering
     }
+    private var rejectSeek = false
+    fun rejectNextSeek() { rejectSeek = true }
     override suspend fun seek(positionMs: Long, scope: PlaybackScope) {
         seeks++
+        if (rejectSeek) {
+            rejectSeek = false
+            error("Paused picture unavailable")
+        }
         if (delaySeek) {
             delaySeek = false
             pendingSeek = positionMs
@@ -350,7 +356,7 @@ private suspend fun seekCorrectionWaitsForNativePosition(buffering: Boolean) {
     check(player.seeks == 1)
 }
 
-private suspend fun userPauseRefreshesOnlyVisibleVideo(owner: CoroutineScope, outputs: Int) {
+private suspend fun userPauseRefreshesOnlyVisibleVideo(owner: CoroutineScope, outputs: Int, refreshRejected: Boolean = false) {
     val native = PlaybackScope.fresh().replacingMedia()
     val player = SessionPlayer(native, outputs)
     val peer = SessionPeer()
@@ -359,6 +365,7 @@ private suspend fun userPauseRefreshesOnlyVisibleVideo(owner: CoroutineScope, ou
     try {
         session.start(); eventually { session.state.playbackReady }
         session.pause(false); eventually { peer.userMatches(1200, false) }
+        if (refreshRejected) player.rejectNextSeek()
         session.pause(true); eventually { peer.userMatches(1200, true) }
         if (outputs == 1) eventually { player.seeks == 1 }
         session.pause(false); eventually { peer.userCount() == 3 }
@@ -373,6 +380,7 @@ internal fun helperSessionChecks() {
     Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
         runBlocking(dispatcher) {
             for (outputs in 0..1) userPauseRefreshesOnlyVisibleVideo(this, outputs)
+            userPauseRefreshesOnlyVisibleVideo(this, 1, refreshRejected = true)
             for (paused in listOf(true, false)) pauseCorrectionWaitsForNativeReadback(paused)
             for (buffering in listOf(false, true)) seekCorrectionWaitsForNativePosition(buffering)
             admissionChecks(this)

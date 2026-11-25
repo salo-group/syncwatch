@@ -231,9 +231,15 @@ private actor SessionPlayer: PlaybackPort {
         delaySeek = true
         bufferNextObservation = buffering
     }
+    private var rejectSeek = false
+    func rejectNextSeek() { rejectSeek = true }
     func seek(to positionMs: Int64, scope: PlaybackScope) throws {
         try Task.checkCancellation()
         seeks += 1
+        if rejectSeek {
+            rejectSeek = false
+            throw HelperSessionFailure.unavailable
+        }
         if delaySeek {
             delaySeek = false
             pendingSeek = positionMs
@@ -263,7 +269,9 @@ private actor SessionPlayer: PlaybackPort {
     }
 }
 
-@Test(arguments: [0, 1]) @MainActor func userPauseRefreshesOnlyVisibleVideo(_ outputs: Int) async throws {
+@Test(arguments: [(0, false), (1, false), (1, true)])
+@MainActor func userPauseRefreshesOnlyVisibleVideo(_ scenario: (outputs: Int, refreshRejected: Bool)) async throws {
+    let outputs = scenario.outputs
     let native = try PlaybackScope.fresh().replacingMedia()
     let player = SessionPlayer(native, videoOutputs: outputs)
     let peer = SessionPeer()
@@ -277,6 +285,7 @@ private actor SessionPlayer: PlaybackPort {
         try await eventually { session.state.playbackReady }
         try session.pause(false)
         try await eventually { try await peer.userMatches(position: 1200, paused: false) }
+        if scenario.refreshRejected { await player.rejectNextSeek() }
         try session.pause(true)
         try await eventually { try await peer.userMatches(position: 1200, paused: true) }
         if outputs == 1 { try await eventually { await player.seeks == 1 } }

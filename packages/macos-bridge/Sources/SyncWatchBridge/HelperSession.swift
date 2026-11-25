@@ -417,7 +417,17 @@ public enum HelperSessionFailure: String, Error { case malformed, unavailable, q
                     actual.videoOutputs > 0, actual.positionMs < media.durationMs,
                     fence.issuedSequence == sequence
                 {
-                    try await player.seek(to: actual.positionMs, scope: nativeScope)
+                    do {
+                        try await player.seek(to: actual.positionMs, scope: nativeScope)
+                    } catch {
+                        try checkOpen()
+                        let settled = try await player.observe(nativeScope)
+                        try checkOpen()
+                        try validate(settled)
+                        guard settled.paused, !settled.ended, abs(settled.positionMs - actual.positionMs) <= 250 else {
+                            throw error
+                        }
+                    }
                 }
                 return
             }

@@ -25,6 +25,10 @@ observation and adds no helper correction. Skip the refresh if the media has
 no video output, has ended, or cannot seek. A newer pending user action also
 skips the refresh.
 
+If the refresh fails, read the player again. Keep the published Pause if the
+same media is ready and paused within the 250 ms tolerance. Propagate the
+failure if room ownership, playback state, or the position check fails.
+
 A correction submission returns an actual `PlaybackObservation`. Only that observation supplies the correlated result's pause and position; the requested target never substitutes for native state. The coordinator must check its action fence before execution and after the native await, and publish a superseding actual user frame before sending a cancelled reply. This command boundary does not itself launch or connect the helper, decide drift, or establish room/media agreement. Native `HelperCommands` encodes the existing handshake, connection, media, readiness and shutdown messages. It validates metadata and endpoint bounds, fixes TLS, and serializes native state from an observation checked against the trusted native owner. Ordinary observations always have observation authority; a separate explicit method requires a valid user action sequence. Local volume, mute, track and presentation fields never enter these frames. The session owner remains responsible for serialized writes, sequence allocation and publication acknowledgement. `HelperReply` verifies each acknowledgement against its pending command, private wire scope and expected response kind; a handshake also matches the trusted Syncplay revision. Unknown or duplicate fields, malformed scalar values and contradictory acknowledgements fail closed. Structured provider rejection retains its code and retryability without retaining private provider text.
 
 The current helper accepts public trusted TLS endpoints. `secretHandle` fails as unavailable until the application credential broker is attached. Standard output contains protocol frames only. Upstream console text is suppressed; native adapters discard diagnostics without accumulating them.

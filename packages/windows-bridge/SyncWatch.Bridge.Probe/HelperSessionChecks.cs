@@ -150,6 +150,8 @@ internal static class HelperSessionChecks
             delaySeek = true;
             bufferNextObservation = buffering;
         }
+        private bool rejectSeek;
+        internal void RejectNextSeek() => rejectSeek = true;
         public Task<PlaybackObservation> ObserveAsync(PlaybackScope scope, CancellationToken cancellation = default)
         {
             cancellation.ThrowIfCancellationRequested(); owner.Check(scope.ClientRunId, scope.MediaGeneration);
@@ -196,6 +198,11 @@ internal static class HelperSessionChecks
         {
             cancellation.ThrowIfCancellationRequested();
             Seeks++;
+            if (rejectSeek)
+            {
+                rejectSeek = false;
+                throw new InvalidOperationException("Paused picture unavailable");
+            }
             if (delaySeek)
             {
                 delaySeek = false;
@@ -420,7 +427,7 @@ internal static class HelperSessionChecks
         Require(player.Seeks == 1);
     }
 
-    private static async Task UserPauseRefreshesOnlyVisibleVideo(int outputs)
+    private static async Task UserPauseRefreshesOnlyVisibleVideo(int outputs, bool refreshRejected = false)
     {
         var native = PlaybackScope.Create().ReplacingMedia();
         var player = new Player(native, outputs);
@@ -430,6 +437,7 @@ internal static class HelperSessionChecks
         session.Start(); await Eventually(() => session.State.PlaybackReady);
         session.Pause(false); await Eventually(() => peer.UserCount == 1);
         Require(peer.UserMatches(1200, false));
+        if (refreshRejected) player.RejectNextSeek();
         session.Pause(true); await Eventually(() => peer.UserCount == 2);
         Require(peer.UserMatches(1200, true));
         if (outputs == 1) await Eventually(() => player.Seeks == 1);
@@ -447,6 +455,7 @@ internal static class HelperSessionChecks
         {
             await UserPauseRefreshesOnlyVisibleVideo(0);
             await UserPauseRefreshesOnlyVisibleVideo(1);
+            await UserPauseRefreshesOnlyVisibleVideo(1, refreshRejected: true);
             await PauseCorrectionWaitsForNativeReadback(true);
             await PauseCorrectionWaitsForNativeReadback(false);
             await SeekCorrectionWaitsForNativePosition(false);

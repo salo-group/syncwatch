@@ -251,7 +251,15 @@ class HelperSession(
                     if (pause == true && wasPlaying && actual.seekable && !actual.ended
                         && actual.videoOutputs > 0 && actual.positionMs < media.durationMs
                         && fence.issuedSequence == sequence) {
-                        player.seek(actual.positionMs, nativeScope)
+                        try {
+                            player.seek(actual.positionMs, nativeScope)
+                        } catch (failure: Exception) {
+                            checkOpen()
+                            val settled = player.observe(nativeScope)
+                            checkOpen(); validate(settled)
+                            if (!settled.paused || settled.ended || kotlin.math.abs(settled.positionMs - actual.positionMs) > 250)
+                                throw failure
+                        }
                     }
                     return
                 }

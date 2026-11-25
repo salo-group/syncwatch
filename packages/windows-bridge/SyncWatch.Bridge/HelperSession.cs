@@ -262,7 +262,20 @@ public sealed class HelperSession : IAsyncDisposable
                     if (pause == true && wasPlaying && actual.Seekable && !actual.Ended
                         && actual.VideoOutputs > 0 && actual.PositionMs < media.DurationMs
                         && fence.IssuedSequence == intent.Sequence)
-                        await player.SeekAsync(actual.PositionMs, nativeScope, workCancellation.Token);
+                    {
+                        try
+                        {
+                            await player.SeekAsync(actual.PositionMs, nativeScope, workCancellation.Token);
+                        }
+                        catch (Exception)
+                        {
+                            CheckOpen();
+                            var settled = await player.ObserveAsync(nativeScope, workCancellation.Token);
+                            CheckOpen(); Validate(settled);
+                            if (!settled.Paused || settled.Ended || Math.Abs(settled.PositionMs - actual.PositionMs) > 250)
+                                throw;
+                        }
+                    }
                     return;
                 }
                 await Task.Delay(20, workCancellation.Token);
