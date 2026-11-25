@@ -47,6 +47,7 @@
  X(int, libvlc_audio_set_volume, (libvlc_media_player_t *, int)) \
  X(int, libvlc_audio_get_mute, (libvlc_media_player_t *)) \
  X(void, libvlc_audio_set_mute, (libvlc_media_player_t *, int)) \
+ X(int, libvlc_audio_get_track_count, (libvlc_media_player_t *)) \
  X(libvlc_track_description_t *, libvlc_audio_get_track_description, (libvlc_media_player_t *)) \
  X(libvlc_track_description_t *, libvlc_video_get_spu_description, (libvlc_media_player_t *)) \
  X(void, libvlc_track_description_list_release, (libvlc_track_description_t *)) \
