@@ -16789,7 +16789,6 @@
         "source/libcharset/COPYING.LIB"
       ],
       "exports": [
-        "libiconv.diff",
         "source"
       ],
       "executables": [
@@ -16828,7 +16827,6 @@
         "source/windows/windres-options"
       ],
       "files": {
-        "libiconv.diff": "b5d3a74f46e1416ab6a2f606814b264faea40d5af195e241924c6f717d9a647a",
         "source/ABOUT-NLS": "fbe8681a07eab3934d302edb4db8fbcea014b460232e3638e7f4cdb7da53e5aa",
         "source/AUTHORS": "ed10ef2a01effb12849006d43262ffde5cf72a7d5423bbc8aa66fc6959774c0c",
         "source/COPYING": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
@@ -17944,7 +17942,43 @@
         "source/woe32dll/iconv-exports.c": "f6ac6f4643000bc11afdc272248304ddd467f58ed494804845eb6f99bd82415d"
       },
       "unusedSubmodules": {},
-      "requires": []
+      "requires": [
+        "3rdparty/gnu-libiconv"
+      ]
+    },
+    "gnu-libiconv": {
+      "path": "3rdparty/gnu-libiconv",
+      "revision": "a8850dc314a906b7bbe49a7c60424c7b10f57236",
+      "license": "LGPL-2.1-or-later library and GPL build tools",
+      "notices": [
+        "COPYING",
+        "COPYING.LIB"
+      ],
+      "exports": [
+        "COPYING",
+        "COPYING.LIB",
+        "lib/encodings.def",
+        "lib/encodings_dos.def",
+        "lib/encodings_local.def",
+        "lib/genaliases.c",
+        "lib/genaliases2.c",
+        "lib/iconv.c"
+      ],
+      "executables": [],
+      "files": {
+        "COPYING": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+        "COPYING.LIB": "20e50fe7aae3e56378ebf0417d9de904f55a0e61e4df315333e632a4d3555d95",
+        "lib/encodings.def": "156cc484a53109241e3c4d23e0ac1d75c0e199eac48f3de8e9d9e87ecc1ce5f1",
+        "lib/encodings_dos.def": "6553229604776dd47c0c19db41c80018e192a08c5a9acbf3580767a8658b4612",
+        "lib/encodings_local.def": "c8af1898ee29d339cef59397339a1cc755dbc85bececd21e2117b7d29283c445",
+        "lib/genaliases.c": "6260cc1d84c5a0128f3cc3d2832d705abb3667ee23de4d4d8b1aaf2edf89676d",
+        "lib/genaliases2.c": "ea187342d4fc0c9a42138c4b93544cd729057eaa8cddbc485acf1e2ff1c42af2",
+        "lib/iconv.c": "af028d1aeb837e05ecf8a6e3a480ef1497d2b5545a14985f463eea7b49280afe"
+      },
+      "requires": [],
+      "unusedSubmodules": {
+        "gnulib": "The selected standalone sources use release inputs that already include the required Gnulib files."
+      }
     },
     "dav1d": {
       "path": "3rdparty/dav1d",

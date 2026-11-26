@@ -3,7 +3,6 @@
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -67,18 +66,3 @@ def materialize(directory, files, source, epoch):
         path.write_bytes(data)
         path.chmod(0o755 if name in source["executables"] else 0o644)
         os.utime(path, (epoch, epoch))
-
-
-def restore_iconv(directory):
-    """Remove exactly the mirror's pinned MSVC changes, then verify GNU originals."""
-    expected = json.loads((ROOT / "tools/vlc/iconv-original.json").read_text())["files"]
-    # A disposable Git root scopes the patch paths independently of the checkout.
-    subprocess.run(["git", "init", "-q", str(directory)], check=True)
-    for arguments in [["--reverse", "--check"], ["--reverse"]]:
-        subprocess.run(["git", "-C", str(directory), "-c", "core.autocrlf=false", "apply", *arguments,
-                        str(directory / "libiconv.diff")], check=True)
-    files = {p.relative_to(directory / "source").as_posix(): digest(p.read_bytes())
-             for p in (directory / "source").rglob("*") if p.is_file()}
-    if files != expected:
-        raise ValueError("Restored libiconv differs from the complete original GNU release")
-    return directory / "source"

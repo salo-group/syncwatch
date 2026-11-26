@@ -10,6 +10,7 @@ import subprocess
 import sys
 
 from build_context import BuildContext, native_target
+import iconv_source
 import libraries
 from native_audit import audit
 from native_package import assemble, relocate
@@ -54,8 +55,14 @@ def run(operation, directory, payload, original, profile):
     if operation == "build":
         trees = {}
         for name, specification in profile["sources"].items():
+            if name in {"libiconv", "gnu-libiconv"}:
+                continue
             trees[name] = work / "sources" / name
             materialize(trees[name], original[name], specification, profile["sourceDateEpoch"])
+        if context.target == "windows-x64":
+            trees["libiconv"] = work / "sources" / "libiconv"
+            iconv_source.materialize_release(
+                context, trees["libiconv"], original["libiconv"], original["gnu-libiconv"], profile)
         libraries.build(context, trees, profile)
         build = upstream.build(context, trees, profile)
         package = work / "package"

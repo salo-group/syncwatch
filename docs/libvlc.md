@@ -65,7 +65,17 @@ creating a player. The modified player, demux, codec and decoder files
 include the original grants and dated change notices. The payload
 includes those configured files and the original sources.
 
-The GNU iconv mirror's pinned MSVC patch is reversed only in an isolated source tree. Every restored file must match the complete original GNU release inventory. The libraries and public headers are built; the GPL command-line program is not packaged. macOS selects VLC's original pipe/dup fallbacks for its deployment floor. VLC uses C11 explicitly, and its Windows configure step sees the Windows 10 API baseline so that its synchronization import-library check matches the compiler headers.
+The Windows libiconv build selects original release files from the
+pinned release mirror and `iconv.c` from the GNU `v1.19` Git commit.
+The GNU generators use the verified release alias table to produce the
+canonical headers. The build checks the complete staged tree against
+the GNU release inventory before invoking `configure`. The payload
+contains the libraries and public headers. It excludes the GPL
+command-line program.
+
+macOS selects VLC's original pipe and `dup` fallbacks for its deployment
+floor. VLC uses C11. Its Windows configure step uses the Windows 10 API
+baseline for the synchronization import library check.
 
 The FFmpeg Matroska derivative retains `CueDuration` and `CueRelativePosition`.
 It restores indexed subtitle blocks that overlap a seek but precede its A/V cluster.

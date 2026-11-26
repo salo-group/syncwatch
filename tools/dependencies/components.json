@@ -3193,11 +3193,34 @@
             "source/libcharset/COPYING.LIB"
           ],
           "exports": [
-            "libiconv.diff",
             "source"
           ],
-          "requires": [],
+          "requires": [
+            "3rdparty/gnu-libiconv"
+          ],
           "unusedSubmodules": {}
+        },
+        "3rdparty/gnu-libiconv": {
+          "revision": "a8850dc314a906b7bbe49a7c60424c7b10f57236",
+          "license": "LGPL-2.1-or-later library and GPL build tools",
+          "notices": [
+            "COPYING",
+            "COPYING.LIB"
+          ],
+          "exports": [
+            "COPYING",
+            "COPYING.LIB",
+            "lib/encodings.def",
+            "lib/encodings_dos.def",
+            "lib/encodings_local.def",
+            "lib/genaliases.c",
+            "lib/genaliases2.c",
+            "lib/iconv.c"
+          ],
+          "requires": [],
+          "unusedSubmodules": {
+            "gnulib": "The selected standalone sources use release inputs that already include the required Gnulib files."
+          }
         },
         "3rdparty/dav1d": {
           "revision": "54706fc6bc0cdecab7e9593974a4039cc038fca7",
@@ -7264,6 +7287,7 @@
         "3rdparty/fontconfig",
         "3rdparty/expat",
         "3rdparty/libiconv",
+        "3rdparty/gnu-libiconv",
         "3rdparty/dav1d",
         "3rdparty/libsamplerate",
         "3rdparty/meson",

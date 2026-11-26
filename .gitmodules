@@ -436,3 +436,6 @@
 [submodule "3rdparty/jvm-libxinerama"]
 	path = 3rdparty/jvm-libxinerama
 	url = https://gitlab.freedesktop.org/xorg/lib/libxinerama.git
+[submodule "3rdparty/gnu-libiconv"]
+	path = 3rdparty/gnu-libiconv
+	url = https://https.git.savannah.gnu.org/git/libiconv.git

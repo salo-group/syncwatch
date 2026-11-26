@@ -4,11 +4,23 @@ import json
 import shutil
 
 from build_context import shell_path
-from source_profile import restore_iconv
 from native_libraries import cmake, meson, zlib
 from native_x11 import build as build_x11
 from configuration import pulse_version, ffmpeg_files
 from source_files import digest
+
+
+def build_iconv(context, source):
+    build = context.work / "iconv-build"
+    build.mkdir()
+    context.run("iconv-configure", [shell_path(source / "configure"),
+        "--prefix=" + shell_path(context.prefix), "--enable-shared", "--disable-static",
+        "--disable-nls", "--disable-rpath", "--host=x86_64-w64-mingw32",
+        "--build=x86_64-pc-msys"], cwd=build, shell=True)
+    # Build only the LGPL libraries and headers. The top-level target also builds the GPL CLI.
+    for part in ("libcharset", "lib"):
+        context.run("iconv-" + part, ["make", "-C", part, "-j4", "all", "install"], cwd=build, shell=True)
+    shutil.copy2(build / "include/iconv.h.inst", context.prefix / "include/iconv.h")
 
 
 def build(context, sources, profile):
@@ -37,19 +49,7 @@ def build(context, sources, profile):
     cmake(context, "libsamplerate", sources["libsamplerate"], ["-DBUILD_SHARED_LIBS=ON",
         "-DBUILD_TESTING=OFF", "-DLIBSAMPLERATE_EXAMPLES=OFF", "-DLIBSAMPLERATE_INSTALL=ON"])
     if context.target == "windows-x64":
-        original = restore_iconv(sources["libiconv"])
-        build = context.work / "iconv-build"
-        build.mkdir()
-        context.run("iconv-configure", [shell_path(original / "configure"),
-            "--prefix=" + shell_path(context.prefix), "--enable-shared", "--disable-static",
-            "--disable-nls", "--disable-rpath", "--host=x86_64-w64-mingw32",
-            "--build=x86_64-pc-msys"], cwd=build, shell=True)
-        # Only the LGPL libraries and headers are built/installed, not the CLI.
-        for part in ["libcharset", "lib"]:
-            context.run("iconv-" + part, ["make", "-C", part, "-j4", "all", "install"], cwd=build, shell=True)
-        # The top-level install recipe copies this configured public header.
-        # include/ has no Makefile; top-level all also builds the GPL CLI.
-        shutil.copy2(build / "include/iconv.h.inst", context.prefix / "include/iconv.h")
+        build_iconv(context, sources["libiconv"])
     cmake(context, "freetype", sources["freetype"], ["-DBUILD_SHARED_LIBS=ON", "-DFT_DISABLE_ZLIB=OFF",
         "-DZLIB_LIBRARY=" + str(context.prefix / "lib/libz.a"), "-DZLIB_INCLUDE_DIR=" + str(context.prefix / "include"),
         "-DFT_DISABLE_BZIP2=ON", "-DFT_DISABLE_PNG=ON", "-DFT_DISABLE_HARFBUZZ=ON", "-DFT_DISABLE_BROTLI=ON"])
