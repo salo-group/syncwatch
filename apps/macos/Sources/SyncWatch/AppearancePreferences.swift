@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import SwiftUI
 import SyncWatchDesign
@@ -198,6 +197,8 @@ import SyncWatchLibrary
     @State private var showAccount = false
     @State private var showMeet = false
     @State private var showSettings = false
+    @State private var showLibraryImporter = false
+    @State private var showSettingsImporter = false
     @State private var editor = SettingsEditor()
 
     var body: some View {
@@ -216,7 +217,7 @@ import SyncWatchLibrary
                             action == "openLibraryAudio" ? "audio" : "subtitles",
                             language: preferences.state.preferences.language)
                     } else if action == "chooseFolder" {
-                        chooseFolder()
+                        showLibraryImporter = library.canConfigure
                     } else if action == "rescan" {
                         library.rescan()
                     } else if action == "selectMovie", let value {
@@ -244,6 +245,11 @@ import SyncWatchLibrary
                 }.selectionHandlers(
                     menu: watch.playerPresented ? nil : library.tracks.menu,
                     onSelection: library.selectTrack, onDismiss: library.dismissTracks)), player: playerContent
+        )
+        .modifier(
+            MovieFolderImporter(
+                isPresented: $showLibraryImporter, language: preferences.state.preferences.language,
+                onResult: finishFolderImport)
         )
         .background(WindowCloseGate(close: close))
         .onReceive(library.$roomRevision) { revision in
@@ -321,10 +327,11 @@ import SyncWatchLibrary
                     library.errorKey ?? watch.errorKey ?? shared.errorKey ?? "libraryUnavailable",
                     language: preferences.state.preferences.language))
         }
-        .sheet(isPresented: $showSettings) {
+        .sheet(isPresented: $showSettings, onDismiss: { showSettingsImporter = false }) {
             SettingsDialog(
                 editor: $editor, language: preferences.state.preferences.language,
-                folderPath: library.folderPath, canChooseFolder: library.canConfigure, onChooseFolder: chooseFolder,
+                folderPath: library.folderPath, canChooseFolder: library.canConfigure,
+                onChooseFolder: { showSettingsImporter = library.canConfigure },
                 onSave: { values in
                     let options = editor.editableFields.contains("scanSubfolders")
                     guard !options || library.canConfigure else { return false }
@@ -336,7 +343,12 @@ import SyncWatchLibrary
                         watch.preferencesChanged()
                     }
                     return saved
-                }, onClose: { showSettings = false })
+                }, onClose: { showSettings = false }
+            )
+            .modifier(
+                MovieFolderImporter(
+                    isPresented: $showSettingsImporter, language: preferences.state.preferences.language,
+                    onResult: finishFolderImport))
         }
         .task(
             id: AccountRoomBinding(
@@ -393,24 +405,13 @@ import SyncWatchLibrary
         await account.close()
         await catalogOwner.closeAndWait()
     }
-    private func chooseFolder() {
-        guard library.canConfigure else { return }
-        let picker = NSOpenPanel()
-        picker.canChooseDirectories = true
-        picker.canChooseFiles = false
-        picker.allowsMultipleSelection = false
-        picker.title = SyncWatchCopy.text("folder", language: preferences.state.preferences.language)
-        picker.prompt = SyncWatchCopy.text("chooseFolder", language: preferences.state.preferences.language)
-        let selected: (NSApplication.ModalResponse) -> Void = { response in
-            if response == .OK, let url = picker.url { library.choose(url) }
-        }
-        if let window = NSApp.keyWindow {
-            picker.beginSheetModal(for: window, completionHandler: selected)
-        } else {
-            picker.begin(completionHandler: selected)
+
+    private func finishFolderImport(_ result: Result<URL, any Error>) {
+        switch result {
+        case .success(let folder): library.choose(folder)
+        case .failure: library.errorKey = "libraryUnavailable"
         }
     }
-
 }
 
 private struct AccountRoomBinding: Equatable {
