@@ -85,9 +85,10 @@ member and credential; it never creates a new room, identity or invitation.
 Only transport interruption permits automatic rebinding. The retry delay starts
 at 500 milliseconds, doubles after each wait, and stops growing at 4 seconds.
 The 25-second window starts at the first failure and allows at most eight
-retries. Each connection bootstrap has a limit of 20 seconds or the remaining
-window, whichever is shorter. An accepted connection resets the window and
-the delay. Invalid metadata,
+retries. Each connection bootstrap requests cancellation after 20 seconds
+or when the remaining window ends, whichever comes first. The monitor
+joins the attempt before rebinding. An accepted connection resets the window
+and the delay. Invalid metadata,
 identity/epoch/connection changes, authorization rejection and expired membership
 remain terminal. A failed recovery requires an explicit new connection decision.
 Before retrying a socket handshake, the retained HTTP membership refreshes its

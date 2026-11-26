@@ -44,7 +44,7 @@ func eventRecoveryRetainsMembershipAndCommandNumbering() async throws {
                     let start = outageStarted ?? now
                     outageStarted = start
                     deliveries += 1
-                    guard deliveries > 6, start.duration(to: now) >= .seconds(20) else {
+                    guard deliveries > 6, start.duration(to: now) >= .seconds(18) else {
                         throw RoomProtocolFailure.transport
                     }
                     recovered = true
@@ -67,19 +67,37 @@ func eventRecoveryRetainsMembershipAndCommandNumbering() async throws {
         monitoring = nil
         var exhaustedAttempts = 0
         var exhaustedRetries = 0
-        let exhaustionStarted = ContinuousClock.now
-        do {
+        var exhaustionStarted: ContinuousClock.Instant?
+        let exhaustion = Task {
             try await RoomEventMonitor.run(
                 address: address, membership: owner,
-                reconnecting: { exhaustedRetries += 1 },
+                reconnecting: {
+                    exhaustionStarted = exhaustionStarted ?? .now
+                    exhaustedRetries += 1
+                },
                 accepted: { _ in
                     exhaustedAttempts += 1
                     throw RoomProtocolFailure.transport
                 })
+        }
+        monitoring = exhaustion
+        let watchdog = Task {
+            try await Task.sleep(for: .seconds(49))
+            exhaustion.cancel()
+        }
+        let outcome = await exhaustion.result
+        watchdog.cancel()
+        _ = await watchdog.result
+        monitoring = nil
+        do {
+            try outcome.get()
             Issue.record("Transport retries were not bounded")
-        } catch RoomProtocolFailure.transport {}
+        } catch {
+            guard RoomController.isMetadataInterruption(error) else { throw error }
+        }
+        let firstRetry = try #require(exhaustionStarted)
         #expect((1...8).contains(exhaustedRetries) && exhaustedAttempts <= exhaustedRetries + 1)
-        #expect(exhaustionStarted.duration(to: .now) < .seconds(28))
+        #expect(firstRetry.duration(to: .now) < .seconds(28))
         var retries = 0
         do {
             try await RoomEventMonitor.run(

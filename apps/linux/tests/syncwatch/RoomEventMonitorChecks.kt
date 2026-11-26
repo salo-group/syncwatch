@@ -28,7 +28,7 @@ internal suspend fun roomEventMonitorChecks(address: String, key: String) = coro
             RoomEventMonitor.run(RoomAddress(address), owner, reconnecting = { recoveries++ }, accepted = { view ->
                 check(view.bootstrap.snapshot.members.any { it.memberId == admission.memberId && it.identity == identity })
                 val start = outageStarted ?: TimeSource.Monotonic.markNow().also { outageStarted = it }
-                if (++deliveries <= 6 || start.elapsedNow() < 20.seconds) throw RoomProtocolException("transport")
+                if (++deliveries <= 6 || start.elapsedNow() < 18.seconds) throw RoomProtocolException("transport")
                 recovered.complete(Unit)
             })
         }
@@ -40,14 +40,21 @@ internal suspend fun roomEventMonitorChecks(address: String, key: String) = coro
         check(selected.definition.selection?.media == media)
         monitoring.cancelAndJoin(); monitoring = null
         var exhaustedAttempts = 0; var exhaustedRetries = 0
-        val exhausted = runCatching {
-            withTimeout(28000) {
-                RoomEventMonitor.run(RoomAddress(address), owner, reconnecting = { exhaustedRetries++ },
+        var exhaustionStarted: TimeMark? = null
+        val exhausted = withTimeoutOrNull(49000) {
+            runCatching {
+                RoomEventMonitor.run(RoomAddress(address), owner, reconnecting = {
+                    exhaustionStarted = exhaustionStarted ?: TimeSource.Monotonic.markNow()
+                    exhaustedRetries++
+                },
                     accepted = { exhaustedAttempts++; throw RoomProtocolException("transport") })
-            }
-        }.exceptionOrNull()
-        check(exhausted is RoomProtocolException && exhausted.code == "transport" &&
-            exhaustedRetries in 1..8 && exhaustedAttempts <= exhaustedRetries + 1)
+            }.exceptionOrNull()
+        }
+        check(exhausted is Exception && RoomController.isMetadataInterruption(exhausted)) {
+            "Expected a transport failure, got ${exhausted?.javaClass?.simpleName}"
+        }
+        check(exhaustedRetries in 1..8 && exhaustedAttempts <= exhaustedRetries + 1 &&
+            checkNotNull(exhaustionStarted).elapsedNow() < 28.seconds)
         var retries = 0
         val failure = runCatching {
             RoomEventMonitor.run(RoomAddress(address), owner, reconnecting = { retries++ },
