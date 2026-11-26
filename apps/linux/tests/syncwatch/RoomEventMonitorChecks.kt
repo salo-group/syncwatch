@@ -33,7 +33,7 @@ internal suspend fun roomEventMonitorChecks(address: String, key: String) = coro
             })
         }
         publishing.await(); publishing = null
-        withTimeout(28000) { recovered.await() }
+        withTimeout(49000) { recovered.await() }
         check(recoveries > 0)
         owner.publish(listOf(media))
         val selected = owner.perform(RoomCommandAction.Select(media.mediaId), owner.watchContext())

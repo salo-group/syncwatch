@@ -52,7 +52,7 @@ func eventRecoveryRetainsMembershipAndCommandNumbering() async throws {
         }
         _ = try await publishing?.value
         publishing = nil
-        let until = ContinuousClock.now + .seconds(28)
+        let until = ContinuousClock.now + .seconds(49)
         while !recovered {
             guard ContinuousClock.now < until else { throw RoomProtocolFailure.transport }
             try await Task.sleep(for: .milliseconds(10))

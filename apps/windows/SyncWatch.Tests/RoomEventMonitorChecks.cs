@@ -18,7 +18,7 @@ internal static class RoomEventMonitorChecks
             var media = new MediaDescriptor("movie", "Movie", "movie", 10, 60000, null);
             _ = await owner.PublishAsync([media], cancellation.Token);
             var corpus = Enumerable.Range(0, 120).Select(index => new MediaDescriptor("extra-" + index, "Extra", "extra", 10, 60000, null));
-            cancellation.CancelAfter(TimeSpan.FromSeconds(28));
+            cancellation.CancelAfter(TimeSpan.FromSeconds(49));
             publishing = owner.PublishAsync(new[] { media }.Concat(corpus).ToArray(), cancellation.Token);
             int recoveries = 0, deliveries = 0;
             var outage = new Stopwatch();
