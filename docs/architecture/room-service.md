@@ -82,10 +82,12 @@ counter for its lifetime. `RoomEventMonitor` owns a separate, replaceable event
 client. It closes and joins the previous client before rebinding the same admitted
 member and credential; it never creates a new room, identity or invitation.
 
-Only transport interruption permits automatic rebinding. Recovery has at most
-five retries, with 500, 1000, 2000, 4000 and 8000 millisecond delays, and a 25 second
-budget after the first failure. Each connection bootstrap is additionally bounded
-to 20 seconds. An accepted connection resets the budget. Invalid metadata,
+Only transport interruption permits automatic rebinding. The retry delay starts
+at 500 milliseconds, doubles after each wait, and stops growing at 4 seconds.
+The 25-second window starts at the first failure and allows at most eight
+retries. Each connection bootstrap has a limit of 20 seconds or the remaining
+window, whichever is shorter. An accepted connection resets the window and
+the delay. Invalid metadata,
 identity/epoch/connection changes, authorization rejection and expired membership
 remain terminal. A failed recovery requires an explicit new connection decision.
 Before retrying a socket handshake, the retained HTTP membership refreshes its

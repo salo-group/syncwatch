@@ -11,16 +11,17 @@ import SyncWatchRoom
         address: RoomAddress, membership: RoomMembershipSession, authority: RoomAccountAuthority? = nil,
         reconnecting: () -> Void, accepted: (RoomCatalogView) throws -> Void
     ) async throws {
-        var failures = 0
+        let initialDelay: Duration = .milliseconds(500)
+        let maximumDelay: Duration = .seconds(4)
+        var retryDelay = initialDelay
         var deadline: ContinuousClock.Instant?
-        let delays: [Duration] = [.milliseconds(500), .seconds(1), .seconds(2), .seconds(4), .seconds(8)]
         while true {
             try Task.checkCancellation()
             let client = authority.map { RoomClient(authority: $0) } ?? RoomClient(address: address)
             do {
                 let allowance = deadline.map { min(.seconds(20), ContinuousClock.now.duration(to: $0)) } ?? .seconds(20)
                 guard allowance > .zero else { throw RoomProtocolFailure.transport }
-                let recovering = failures > 0
+                let recovering = deadline != nil
                 let connection = try await withThrowingTaskGroup(of: Connection.self) { group in
                     group.addTask {
                         let (stream, view) = try await membership.connectEvents(client, recovering: recovering)
@@ -35,7 +36,7 @@ import SyncWatchRoom
                 }
                 try Task.checkCancellation()
                 try accepted(connection.view)
-                failures = 0
+                retryDelay = initialDelay
                 deadline = nil
                 var previous = connection.view.bootstrap.snapshot
                 while true {
@@ -50,12 +51,12 @@ import SyncWatchRoom
             } catch {
                 await client.close()
                 try Task.checkCancellation()
-                guard RoomController.isMetadataInterruption(error), failures < delays.count else { throw error }
+                guard RoomController.isMetadataInterruption(error) else { throw error }
                 if deadline == nil { deadline = ContinuousClock.now + .seconds(25) }
-                guard let deadline, ContinuousClock.now + delays[failures] < deadline else { throw error }
+                guard let deadline, ContinuousClock.now + retryDelay < deadline else { throw error }
                 reconnecting()
-                try await Task.sleep(for: delays[failures])
-                failures += 1
+                try await Task.sleep(for: retryDelay)
+                retryDelay = min(retryDelay * 2, maximumDelay)
             }
         }
     }

@@ -28,7 +28,9 @@ func eventRecoveryRetainsMembershipAndCommandNumbering() async throws {
                 durationMs: 60000, fullHashSha256: nil)
         }
         publishing = Task { try await owner.publish([media] + corpus) }
+        var outageStarted: ContinuousClock.Instant?
         var deliveries = 0
+        var recovered = false
         var recoveries = 0
         monitoring = Task {
             try await RoomEventMonitor.run(
@@ -38,18 +40,24 @@ func eventRecoveryRetainsMembershipAndCommandNumbering() async throws {
                         view.bootstrap.snapshot.members.contains {
                             $0.memberID == admission.memberID && $0.identity == identity
                         })
+                    let now = ContinuousClock.now
+                    let start = outageStarted ?? now
+                    outageStarted = start
                     deliveries += 1
-                    if deliveries == 1 { throw RoomProtocolFailure.transport }
+                    guard deliveries > 6, start.duration(to: now) >= .seconds(20) else {
+                        throw RoomProtocolFailure.transport
+                    }
+                    recovered = true
                 })
         }
         _ = try await publishing?.value
         publishing = nil
-        let until = ContinuousClock.now + .seconds(10)
-        while deliveries < 2 {
+        let until = ContinuousClock.now + .seconds(28)
+        while !recovered {
             guard ContinuousClock.now < until else { throw RoomProtocolFailure.transport }
             try await Task.sleep(for: .milliseconds(10))
         }
-        #expect(recoveries == 1)
+        #expect(recoveries > 0)
         _ = try await owner.publish([media])
         let context = try await owner.watchContext()
         let selected = try await owner.perform(.select(mediaID: media.mediaID), expected: context)
@@ -59,6 +67,7 @@ func eventRecoveryRetainsMembershipAndCommandNumbering() async throws {
         monitoring = nil
         var exhaustedAttempts = 0
         var exhaustedRetries = 0
+        let exhaustionStarted = ContinuousClock.now
         do {
             try await RoomEventMonitor.run(
                 address: address, membership: owner,
@@ -69,7 +78,8 @@ func eventRecoveryRetainsMembershipAndCommandNumbering() async throws {
                 })
             Issue.record("Transport retries were not bounded")
         } catch RoomProtocolFailure.transport {}
-        #expect(exhaustedAttempts == 6 && exhaustedRetries == 5)
+        #expect((1...8).contains(exhaustedRetries) && exhaustedAttempts <= exhaustedRetries + 1)
+        #expect(exhaustionStarted.duration(to: .now) < .seconds(28))
         var retries = 0
         do {
             try await RoomEventMonitor.run(

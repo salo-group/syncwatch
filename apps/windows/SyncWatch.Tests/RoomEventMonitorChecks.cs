@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using SyncWatch;
 using SyncWatch.Domain;
 using SyncWatch.Room;
@@ -7,7 +8,7 @@ internal static class RoomEventMonitorChecks
     internal static async Task RunAsync(string address, string key)
     {
         await using var client = new RoomClient(new(address));
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(28));
         Task? monitoring = null, publishing = null;
         try
         {
@@ -18,15 +19,20 @@ internal static class RoomEventMonitorChecks
             _ = await owner.PublishAsync([media], cancellation.Token);
             var corpus = Enumerable.Range(0, 120).Select(index => new MediaDescriptor("extra-" + index, "Extra", "extra", 10, 60000, null));
             publishing = owner.PublishAsync(new[] { media }.Concat(corpus).ToArray(), cancellation.Token);
-            int deliveries = 0, recoveries = 0;
+            int recoveries = 0, deliveries = 0;
+            var outage = new Stopwatch();
+            var recovered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             monitoring = RoomEventMonitor.RunAsync(new(address), owner, () => recoveries++, view =>
             {
                 if (!view.Bootstrap.Snapshot.Members.Any(p => p.MemberId == admission.MemberId && p.Identity == identity)) throw new Exception("Recovery replaced identity");
-                if (++deliveries == 1) throw new RoomProtocolException("transport");
+                if (!outage.IsRunning) outage.Start();
+                if (++deliveries <= 6 || outage.Elapsed < TimeSpan.FromSeconds(20)) throw new RoomProtocolException("transport");
+                recovered.TrySetResult();
             }, cancellation.Token);
             await publishing; publishing = null;
-            while (deliveries < 2) await Task.Delay(10, cancellation.Token);
-            if (recoveries != 1) throw new Exception("Event transport was not rebound once");
+            Task completed = await Task.WhenAny(recovered.Task, monitoring).WaitAsync(cancellation.Token);
+            await completed;
+            if (recoveries == 0) throw new Exception("Event transport was not rebound");
             _ = await owner.PublishAsync([media], cancellation.Token);
             var context = await owner.WatchContextAsync(cancellation.Token);
             var selected = await owner.PerformAsync(new RoomCommandAction.Select(media.MediaId), context, cancellation.Token);
@@ -35,14 +41,16 @@ internal static class RoomEventMonitorChecks
             try { await monitoring; } catch (OperationCanceledException) { }
             monitoring = null;
             int exhaustedAttempts = 0, exhaustedRetries = 0;
+            using var exhaustionLimit = new CancellationTokenSource(TimeSpan.FromSeconds(28));
             try
             {
                 await RoomEventMonitor.RunAsync(new(address), owner, () => exhaustedRetries++,
-                    _ => { exhaustedAttempts++; throw new RoomProtocolException("transport"); }, CancellationToken.None);
+                    _ => { exhaustedAttempts++; throw new RoomProtocolException("transport"); }, exhaustionLimit.Token);
                 throw new Exception("Transport retries were not bounded");
             }
             catch (RoomProtocolException error) when (error.Message == "transport") { }
-            if (exhaustedAttempts != 6 || exhaustedRetries != 5) throw new Exception("Recovery exceeded its attempt budget");
+            if (exhaustedRetries is < 1 or > 8 || exhaustedAttempts > exhaustedRetries + 1)
+                throw new Exception("Recovery exceeded its attempt budget");
             int retries = 0;
             try
             {

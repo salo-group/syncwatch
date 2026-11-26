@@ -8,8 +8,9 @@ internal static class RoomEventMonitor
     internal static async Task RunAsync(RoomAddress address, RoomMembershipSession membership,
         Action reconnecting, Action<RoomCatalogView> accepted, CancellationToken cancellation, RoomAccountAuthority? authority = null)
     {
-        int[] delays = [500, 1000, 2000, 4000, 8000];
-        int failures = 0;
+        const int InitialDelayMs = 500;
+        const int MaximumDelayMs = 4000;
+        int retryDelay = InitialDelayMs;
         long? deadline = null;
         while (true)
         {
@@ -26,10 +27,10 @@ internal static class RoomEventMonitor
                     using (var bootstrap = CancellationTokenSource.CreateLinkedTokenSource(cancellation))
                     {
                         bootstrap.CancelAfter(TimeSpan.FromMilliseconds(allowance));
-                        (stream, first) = await membership.ConnectEventsAsync(client, failures > 0, bootstrap.Token);
+                        (stream, first) = await membership.ConnectEventsAsync(client, deadline is not null, bootstrap.Token);
                     }
                     cancellation.ThrowIfCancellationRequested();
-                    accepted(first); failures = 0; deadline = null;
+                    accepted(first); retryDelay = InitialDelayMs; deadline = null;
                     var previous = first.Bootstrap.Snapshot;
                     while (true)
                     {
@@ -43,10 +44,12 @@ internal static class RoomEventMonitor
                 catch (Exception error) { failure = error; }
             }
             cancellation.ThrowIfCancellationRequested();
-            if (!RoomController.IsMetadataInterruption(failure) || failures >= delays.Length) throw failure;
+            if (!RoomController.IsMetadataInterruption(failure)) throw failure;
             long until = deadline ??= Environment.TickCount64 + 25000;
-            if (Environment.TickCount64 + delays[failures] >= until) throw failure;
-            reconnecting(); await Task.Delay(delays[failures], cancellation); failures++;
+            if (Environment.TickCount64 + retryDelay >= until) throw failure;
+            reconnecting();
+            await Task.Delay(retryDelay, cancellation);
+            retryDelay = Math.Min(retryDelay * 2, MaximumDelayMs);
         }
     }
 }
