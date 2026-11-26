@@ -348,9 +348,9 @@ static int wait_audio_track(sw_playback *p, int selected, uint64_t deadline) {
 }
 
 /* VLC can report a paused clock before presenting the requested picture.
- * Prepare the decoder with audio disabled. If the AppKit surface has already
- * displayed video, prepare at the target to replace its previous picture. */
-static int prime_paused_video(sw_playback *p, int64_t target, int64_t duration, int from_target) {
+ * Seek before previewing so the first displayed picture is near the target.
+ * Disable the audio decoder during the preview. */
+static int prime_paused_video(sw_playback *p, int64_t target, int64_t duration) {
     uint64_t started = playback_monotonic_ms();
     if (started == UINT64_MAX) return SW_ENGINE;
     libvlc_media_t *media = p->api.libvlc_media_player_get_media(p->player);
@@ -367,8 +367,6 @@ static int prime_paused_video(sw_playback *p, int64_t target, int64_t duration, 
         p->api.libvlc_media_release(media);
         return SW_UNAVAILABLE;
     }
-    int64_t position = p->api.libvlc_media_player_get_time(p->player);
-    int slow_preview = from_target || duration - position <= (SW_PREROLL_MS + SW_RESTORE_MS) * previous_rate;
     uint64_t deadline = started + SW_PREROLL_MS;
     int prepared = 0;
     int running = 0;
@@ -383,13 +381,11 @@ static int prime_paused_video(sw_playback *p, int64_t target, int64_t duration, 
     if (previous_track >= 0 && (p->api.libvlc_audio_set_track(p->player, -1) ||
         !wait_audio_track(p, -1, deadline))) goto failed;
     if (p->api.libvlc_audio_get_track(p->player) >= 0 || playback_monotonic_ms() >= deadline) goto failed;
-    if (from_target) {
-        /* Leave enough media for the preview and pause before end of input.
-         * This lead-in stays within the shared seek tolerance. */
-        int64_t last_preview_start = duration - SW_PREVIEW_MEDIA_SPAN_MS;
-        p->api.libvlc_media_player_set_time(p->player, target < last_preview_start ? target : last_preview_start);
-    }
-    if (slow_preview && p->api.libvlc_media_player_set_rate(p->player, 1.f / SW_PREVIEW_RATE_DIVISOR)) goto failed;
+    /* Leave enough media for the preview and pause before end of input.
+     * This lead-in stays within the shared seek tolerance. */
+    int64_t last_preview_start = duration - SW_PREVIEW_MEDIA_SPAN_MS;
+    p->api.libvlc_media_player_set_time(p->player, target < last_preview_start ? target : last_preview_start);
+    if (p->api.libvlc_media_player_set_rate(p->player, 1.f / SW_PREVIEW_RATE_DIVISOR)) goto failed;
     p->api.libvlc_media_player_set_pause(p->player, 0);
     do {
         if (p->api.libvlc_media_player_get_state(p->player) == libvlc_Playing) running = 1;
@@ -411,19 +407,18 @@ static int prime_paused_video(sw_playback *p, int64_t target, int64_t duration, 
     if (playback_monotonic_ms() >= deadline) goto failed;
     /* Restore the rate request while paused, before the later track request
      * and before any user resume enters VLC's input queue. */
-    if (slow_preview && p->api.libvlc_media_player_set_rate(p->player, previous_rate)) goto failed;
+    if (p->api.libvlc_media_player_set_rate(p->player, previous_rate)) goto failed;
     if (previous_track >= 0 &&
         (p->api.libvlc_audio_set_track(p->player, previous_track) ||
          !wait_audio_track(p, previous_track, deadline))) goto failed;
     p->api.libvlc_media_release(media);
     if (!prepared || !valid_input(p) || playback_monotonic_ms() >= deadline) return SW_UNAVAILABLE;
-    if (!from_target) p->api.libvlc_media_player_set_time(p->player, target);
     p->played_video = 1;
     return SW_OK;
 failed:
     p->api.libvlc_media_release(media);
     release_input(p);
-    if (slow_preview) p->api.libvlc_media_player_set_rate(p->player, previous_rate);
+    p->api.libvlc_media_player_set_rate(p->player, previous_rate);
     p->failed = 1;
     return SW_ENGINE;
 }
@@ -433,14 +428,11 @@ int sw_playback_seek(sw_playback *p, uint64_t generation, int64_t target) {
     int64_t duration = p->api.libvlc_media_player_get_length(p->player);
     if (target < 0 || duration < 0 || target > duration || target > INT64_C(604800000)) return SW_INVALID;
     if (!p->api.libvlc_media_player_is_seekable(p->player)) return SW_UNAVAILABLE;
-    int from_target = p->output == SW_OUTPUT_APPKIT && p->played_video;
-    int prepare = target < duration && (from_target ? duration > SW_PREVIEW_MEDIA_SPAN_MS :
-        !p->played_video && target > 0 &&
-        duration - p->api.libvlc_media_player_get_time(p->player) > SW_PREVIEW_MEDIA_SPAN_MS);
-    if (p->output != SW_OUTPUT_HEADLESS && prepare &&
+    int prepare = p->played_video ? p->output == SW_OUTPUT_APPKIT : target > 0;
+    if (p->output != SW_OUTPUT_HEADLESS && prepare && target < duration && duration > SW_PREVIEW_MEDIA_SPAN_MS &&
         p->api.libvlc_media_player_get_state(p->player) == libvlc_Paused &&
         p->api.libvlc_video_get_track(p->player) >= 0)
-        return prime_paused_video(p, target, duration, from_target);
+        return prime_paused_video(p, target, duration);
     p->api.libvlc_media_player_set_time(p->player, target); return SW_OK;
 }
 int sw_playback_rate(sw_playback *p, uint64_t generation, double rate) {
