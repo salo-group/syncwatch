@@ -35,8 +35,11 @@ func admissionDoesNotWaitForEventBootstrap() async throws {
             return try await owner.watchContext()
         }
         waiting = queued
-        await Task.yield()
-        try #require(!waitFinished)
+        let queueDeadline = ContinuousClock.now + .seconds(2)
+        while owner.pendingOperations == 0 && ContinuousClock.now < queueDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        try #require(owner.pendingOperations == 1 && !waitFinished)
         queued.cancel()
         let cancellationDeadline = ContinuousClock.now + .seconds(2)
         while !waitFinished && ContinuousClock.now < cancellationDeadline {
@@ -47,6 +50,7 @@ func admissionDoesNotWaitForEventBootstrap() async throws {
             _ = try await queued.value
             Issue.record("A cancelled membership wait returned a snapshot")
         } catch is CancellationError {}
+        #expect(owner.pendingOperations == 0)
         waiting = nil
         var completed = false
         let task = Task {

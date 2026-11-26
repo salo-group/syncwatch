@@ -17,6 +17,7 @@ struct RoomWatchContext: Sendable {
     private var unresolved: RoomCommand?
     private var occupied = false
     private var waiters: [(id: UUID, continuation: CheckedContinuation<Void, Error>)] = []
+    var pendingOperations: Int { waiters.count }
 
     init(client: RoomClient, admission: RoomAdmission, identity: RoomIdentity) {
         self.client = client
