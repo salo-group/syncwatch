@@ -17,7 +17,8 @@ internal static class AdmissionIsolationChecks
         await using var client = new RoomClient(address); await using var events = new RoomClient(address);
         var owner = new RoomMembershipSession(client, admission, identity);
         using var stopping = new CancellationTokenSource();
-        Task? connecting = null; Task<RoomWatchContext>? reading = null;
+        using var queuedCancellation = CancellationTokenSource.CreateLinkedTokenSource(stopping.Token);
+        Task? connecting = null; Task<RoomWatchContext>? waiting = null, reading = null;
         try
         {
             connecting = owner.ConnectEventsAsync(events, false, stopping.Token);
@@ -27,6 +28,16 @@ internal static class AdmissionIsolationChecks
                 if (DateTime.UtcNow >= deadline) throw new TimeoutException("Event fixture did not hold the request");
                 await Task.Delay(10);
             }
+            waiting = owner.WatchContextAsync(queuedCancellation.Token);
+            if (waiting.IsCompleted) throw new Exception("A membership read bypassed the held event bootstrap");
+            await queuedCancellation.CancelAsync();
+            try
+            {
+                _ = await waiting.WaitAsync(TimeSpan.FromSeconds(2));
+                throw new Exception("A cancelled membership wait returned a snapshot");
+            }
+            catch (OperationCanceledException) when (waiting.IsCanceled) { }
+            waiting = null;
             reading = owner.AdmissionContextAsync(admission.Bootstrap, stopping.Token);
             if (await Task.WhenAny(reading, Task.Delay(2000)) != reading) throw new Exception("Admission waited for the held event bootstrap");
             var context = await reading;
@@ -53,6 +64,7 @@ internal static class AdmissionIsolationChecks
         {
             await stopping.CancelAsync(); await events.DisposeAsync();
             if (connecting is not null) { try { await connecting; } catch (Exception) when (stopping.IsCancellationRequested) { } }
+            if (waiting is not null) { try { await waiting; } catch (Exception) when (stopping.IsCancellationRequested) { } }
             if (reading is not null) { try { await reading; } catch (Exception) when (stopping.IsCancellationRequested) { } }
         }
     }

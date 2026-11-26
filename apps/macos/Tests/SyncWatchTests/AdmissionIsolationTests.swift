@@ -20,6 +20,7 @@ func admissionDoesNotWaitForEventBootstrap() async throws {
     let events = RoomClient(address: address)
     let owner = RoomMembershipSession(client: client, admission: admission, identity: identity)
     let connecting = Task { try await owner.connectEvents(events, recovering: false) }
+    var waiting: Task<RoomWatchContext, Error>?
     var reading: Task<RoomWatchContext, Error>?
     do {
         let held = try #require(fixture["held"] as? String)
@@ -28,6 +29,25 @@ func admissionDoesNotWaitForEventBootstrap() async throws {
             guard ContinuousClock.now < deadline else { throw RoomProtocolFailure.transport }
             try await Task.sleep(for: .milliseconds(10))
         }
+        var waitFinished = false
+        let queued = Task {
+            defer { waitFinished = true }
+            return try await owner.watchContext()
+        }
+        waiting = queued
+        await Task.yield()
+        try #require(!waitFinished)
+        queued.cancel()
+        let cancellationDeadline = ContinuousClock.now + .seconds(2)
+        while !waitFinished && ContinuousClock.now < cancellationDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        try #require(waitFinished, "A cancelled membership wait remained blocked by the event bootstrap")
+        do {
+            _ = try await queued.value
+            Issue.record("A cancelled membership wait returned a snapshot")
+        } catch is CancellationError {}
+        waiting = nil
         var completed = false
         let task = Task {
             defer { completed = true }
@@ -61,6 +81,8 @@ func admissionDoesNotWaitForEventBootstrap() async throws {
         connecting.cancel()
         await events.close()
         _ = await connecting.result
+        waiting?.cancel()
+        _ = await waiting?.result
         reading?.cancel()
         _ = await reading?.result
         await client.close()

@@ -18,6 +18,10 @@ internal suspend fun admissionIsolationChecks() = coroutineScope {
     try {
         connecting = async { owner.connectEvents(events, false) }
         withTimeout(3000) { while (!Files.exists(Path.of(fixture["held"] as String))) delay(10) }
+        val waiting = async(start = CoroutineStart.UNDISPATCHED) { owner.watchContext() }
+        check(!waiting.isCompleted) { "A membership read bypassed the held event bootstrap" }
+        withTimeout(2000) { waiting.cancelAndJoin() }
+        check(waiting.isCancelled) { "A cancelled membership wait returned a snapshot" }
         val task = async { owner.admissionContext(admission.bootstrap) }; reading = task
         val context = withTimeoutOrNull(2000) { task.await() }
         check(context != null) { "Admission waited for the held event bootstrap" }

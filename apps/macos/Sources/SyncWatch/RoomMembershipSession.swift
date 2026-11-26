@@ -16,7 +16,7 @@ struct RoomWatchContext: Sendable {
     private var number: UInt64 = 0
     private var unresolved: RoomCommand?
     private var occupied = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var waiters: [(id: UUID, continuation: CheckedContinuation<Void, Error>)] = []
 
     init(client: RoomClient, admission: RoomAdmission, identity: RoomIdentity) {
         self.client = client
@@ -220,13 +220,35 @@ struct RoomWatchContext: Sendable {
     }
 
     private func enter() async throws {
-        if occupied { await withCheckedContinuation { waiters.append($0) } } else { occupied = true }
+        try Task.checkCancellation()
+        if !occupied {
+            occupied = true
+            return
+        }
+        let id = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                if Task.isCancelled {
+                    continuation.resume(throwing: CancellationError())
+                } else {
+                    waiters.append((id, continuation))
+                }
+            }
+        } onCancel: {
+            Task { await self.cancelWaiter(id) }
+        }
         do { try Task.checkCancellation() } catch {
+            // A resumed waiter already owns the gate.
             leave()
             throw error
         }
     }
+    private func cancelWaiter(_ id: UUID) {
+        if let index = waiters.firstIndex(where: { $0.id == id }) {
+            waiters.remove(at: index).continuation.resume(throwing: CancellationError())
+        }
+    }
     private func leave() {
-        if waiters.isEmpty { occupied = false } else { waiters.removeFirst().resume() }
+        if waiters.isEmpty { occupied = false } else { waiters.removeFirst().continuation.resume() }
     }
 }

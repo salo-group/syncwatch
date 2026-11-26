@@ -94,7 +94,8 @@ native WebSocket API reports a generic failed handshake.
 
 Event bootstrap creation shares the retained membership lock with commands and
 catalog walks: attaching a stream replaces the server cursor and cannot race an
-in-flight publication. The socket bootstrap is validated, then an authoritative
+in-flight publication. A cancelled waiter leaves the queue without waiting for
+the current operation. The socket bootstrap is validated, then an authoritative
 HTTP snapshot establishes the latest sequence and complete catalog under the same
 lock. Before publishing a connected state, the retained membership validates the new
 bootstrap and complete catalog against its identity and monotonic sequence floor.
