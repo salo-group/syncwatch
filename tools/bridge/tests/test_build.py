@@ -99,3 +99,27 @@ class HelperBuildTests(unittest.TestCase):
             self.produce(mutate=True)
         self.assertFalse(self.output.exists())
         self.assertFalse(list(self.output.parent.glob("sw-helper-build-*")))
+
+    def test_old_stock_player_runtime_requires_rebuild(self):
+        report = self.runtime / "build-report.json"
+        receipt = json.loads(report.read_text())
+        library = "bin" if self.target == "windows-x64" else "lib"
+        entries = {
+            "module": library + "/syncplay/players/basePlayer.py",
+            "source": "configuration/syncplay/syncplay/players/__init__.py",
+        }
+        for kind, name in entries.items():
+            with self.subTest(name=name):
+                self.output = self.output.with_name("helper-" + kind)
+                entry = self.runtime / name
+                entry.parent.mkdir(parents=True, exist_ok=True)
+                entry.write_bytes(b"authored legacy runtime fixture")
+                report.unlink()
+                receipt["files"] = builder.inventory(self.runtime)
+                report.write_text(json.dumps(receipt))
+                try:
+                    with self.assertRaisesRegex(ValueError, "Rebuild the headless Syncplay runtime"):
+                        self.produce()
+                    self.assertFalse(self.output.exists())
+                finally:
+                    entry.unlink()

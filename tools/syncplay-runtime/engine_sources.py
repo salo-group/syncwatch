@@ -23,10 +23,11 @@ def assemble(sources, work):
     configure(source)
     generated = defaults(source)
     files = {name: data for name, data in sources["syncplay"].items()
-             if name.startswith("syncplay/") and name.endswith(".py") and "/ui/" not in name}
-    changed = {}
-    for name in ["syncplay/client.py", "syncplay/players/__init__.py"]:
-        files[name] = changed["configuration/syncplay/" + name] = (source / name).read_bytes()
+             if name.startswith("syncplay/") and name.endswith(".py")
+             and not name.startswith(("syncplay/ui/", "syncplay/players/"))}
+    client = "syncplay/client.py"
+    files[client] = (source / client).read_bytes()
+    changed = {"configuration/syncplay/" + client: files[client]}
     files["syncwatch_syncplay/defaults.json"] = encoded(generated)
     return files, changed
 

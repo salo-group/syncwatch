@@ -55,6 +55,8 @@ Run Swift only on macOS, C# only on Windows and Kotlin only on Linux. Use the co
 
 Build inputs come from the existing runtime receipt and pinned fastjsonschema Git submodule. No package installation or application dependency download occurs inside the helper builder. Its receipt retains every payload digest and original validator grant.
 
+Build the helper with the current headless runtime. Rebuild an earlier runtime that still contains stock player modules or their configured source copies.
+
 This is a development helper. Authenticated immutable installation/signing, physical media/device acceptance and normal room admission remain separate requirements. Compiled Kotlin command and application consumers exercise the owned source-built JVM/UI payload. Packaged application/runtime qualification and visible physical/provider acceptance remain separate. Process probes do not establish media agreement, room admission or six-direction playback acceptance.
 
 ## Account transport admission

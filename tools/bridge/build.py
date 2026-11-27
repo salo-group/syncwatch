@@ -24,6 +24,10 @@ def build(runtime, output):
     if (receipt["files"] != files or receipt["sourceBuiltHeadlessEngine"] is not True
             or receipt["sdk"]["native"]["target"] != sdk["target"]):
         raise ValueError("Owned source-built runtime receipt does not match")
+    stock_players = ("bin/syncplay/players/", "lib/syncplay/players/",
+                     "configuration/syncplay/syncplay/players/")
+    if any(name.startswith(stock_players) for name in files):
+        raise ValueError("Rebuild the headless Syncplay runtime with the current player selection")
     if output.exists():
         raise ValueError("Use a new helper output directory")
     output.parent.mkdir(parents=True, exist_ok=True)

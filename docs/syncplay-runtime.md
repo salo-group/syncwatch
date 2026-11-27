@@ -5,6 +5,9 @@ PyOpenSSL, cryptography and a source-built CPython interpreter. It has no Qt
 dependency. Native player state crosses the application bridge; synchronization
 and drift decisions remain in Syncplay.
 
+The first-party player adapter implements the engine's player interface.
+The runtime keeps the stock player modules only in the original source archive.
+
 The [source graph](../tools/syncplay-runtime/graph.json) defines the additional
 Git source authorities, original notice hashes, Rust crate locations and TLS
 configuration. The existing embedded interpreter and engine source components

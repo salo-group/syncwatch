@@ -1,6 +1,7 @@
 """Exercise actual public APIs using the owned embedded interpreter only."""
 
 import syncwatch_syncplay
+from importlib.util import find_spec
 import ssl
 import platform
 from pathlib import Path
@@ -28,6 +29,7 @@ from syncwatch_syncplay.reactor import install
 install()
 from syncwatch_syncplay.session import Session
 assert Session.ownsReactor is False
+assert find_spec("syncplay.players") is None
 
 from twisted.internet.error import ConnectionDone, ConnectionLost, TimeoutError, VerifyError
 from twisted.python.failure import Failure

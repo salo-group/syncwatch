@@ -8,13 +8,13 @@ The integration relies on a pinned internal Python API rather than a separately 
 
 | Upstream entry point in `3rdparty/syncplay` | Integration |
 |---|---|
-| `syncplay/client.py:SyncplayClient.__init__(playerClass, ui, config)` | Inject the player and noninteractive UI adapters |
-| `syncplay/players/basePlayer.py:BasePlayer` | Implement status requests, pause, position, speed, file opening, messages, startup, and cleanup |
+| `SyncplayClient.__init__(playerClass, ui, config)` and `initPlayer(player)` | Create a headless client and attach the native player |
+| `syncplay/players/basePlayer.py:BasePlayer` | Reference for status requests, pause, position, speed, file opening, messages, and cleanup |
 | `SyncplayClient.updatePlayerStatus(paused, position)` | Report actual native playback state in seconds |
 | `syncplay/protocols.py` | Reuse upstream transport, room, readiness, and playback-state behavior |
 | `syncplay/ui/consoleUI.py` and `UiManager` in `client.py` | Identify the required noninteractive UI callbacks |
 
-The helper does not launch the standard Syncplay UI or a separate VLC application. A custom BasePlayer adapter controls embedded libVLC directly. Drift correction remains in the upstream engine.
+The headless helper uses the SyncWatch player adapter to control embedded libVLC. Drift correction remains in the upstream engine.
 
 The headless helper needs complete upstream configuration, adapter callbacks, and a Python runtime without a GUI dependency. Python and its transitive sources are part of the helper's dependency graph.
 

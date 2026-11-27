@@ -1,10 +1,9 @@
 """Translate the upstream seconds API to the native player's millisecond port."""
 
 import math
-from syncplay.players.basePlayer import BasePlayer
 
 
-class BridgePlayer(BasePlayer):
+class BridgePlayer:
     speedSupported = True
     alertOSDSupported = True
     chatOSDSupported = False
