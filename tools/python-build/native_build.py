@@ -7,7 +7,8 @@ import shutil
 import subprocess
 import sys
 
-from configuration import unix_setup, windows_setup, relocatable_makefile, assert_unix_membership
+from binary_audit import require_bound_macos_symbols
+from configuration import unix_setup, windows_setup, unix_make, assert_unix_membership
 from build_metadata import BUILD_DATE, BUILD_TIME, SOURCE_DATE_EPOCH
 from source_profile import ROOT, materialize
 
@@ -92,14 +93,24 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
             environment["LDFLAGS"] = "-Wl,-rpath,'$$ORIGIN/../lib'"
         commands["configure"] = execute("configure", ["sh", (source / "configure").as_posix(), "--prefix=/syncwatch/runtime", "--enable-shared",
             "--without-ensurepip", "--without-static-libpython", "--with-pkg-config=no", "--without-readline", "--disable-test-modules"], build, logs, environment)
-        relocatable_makefile(build, target)
+        makefile = build / "Makefile"
+        configured = makefile.read_bytes()
         assert_unix_membership(build, profile)
-        commands["interpreter"] = execute("interpreter", ["make", "-j4", "python.exe" if target == "macos-arm64" else "python"], build, logs, environment)
+        commands["interpreter"] = execute("interpreter", unix_make("-j4", "python.exe" if target == "macos-arm64" else "python"),
+                                          build, logs, environment)
         assert_unix_membership(build, profile)
+        if makefile.read_bytes() != configured:
+            raise ValueError("The original CPython configure output changed during the make build")
+        for directory, name in [(source, "cpython"), (zlib, "zlib")]:
+            for relative, original in sources[name].items():
+                if (directory / relative).read_bytes() != original:
+                    raise ValueError(f"Original {name} input changed during the build: {relative}")
         suffix = "dylib" if target == "macos-arm64" else "so.1.0"
         paths = {"executable": build / ("python.exe" if target == "macos-arm64" else "python"),
                  "runtime": build / ("libpython3.12." + suffix), "library": build / ("libpython3.12." + suffix),
                  "config": build / "pyconfig.h", "extensions": []}
+        if target == "macos-arm64":
+            require_bound_macos_symbols(paths["runtime"])
     if not all(paths[name].is_file() for name in ["executable", "runtime", "library", "config"]):
         raise ValueError("Source-built interpreter outputs are incomplete")
     build_info = "Modules/getbuildinfo.c"

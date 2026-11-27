@@ -1,13 +1,16 @@
 import copy
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from configuration import unix_setup, windows_setup, relocatable_makefile
+import configuration
+from binary_audit import require_bound_macos_symbols
+from configuration import unix_setup, windows_setup
 from source_profile import ROOT, profile_data, read_sources, validate
 from runtime_package import inventory, verify
 
@@ -66,16 +69,36 @@ class RuntimeTests(unittest.TestCase):
             self.assertIsNotNone(tree.find(".//m:FreezeProjects[@Include='_freeze_module.vcxproj']", ns))
             self.assertIsNotNone(tree.find(".//m:FreezeProjects/m:BuildTarget", ns))
 
-    def test_mac_library_owns_static_dependencies_and_rejects_unresolved_symbols(self):
+    @unittest.skipIf(sys.platform == "win32", "Unix Make build")
+    def test_make_configures_native_link_inputs_without_rewriting_the_makefile(self):
         with tempfile.TemporaryDirectory() as tmp:
             build = Path(tmp)
-            (build / "Makefile").write_text('-Wl,-install_name,$(prefix)/lib/libpython$(LDVERSION).dylib\n'
-                '$(DTRACE_OBJS) $(SHLIBS) $(LIBC) $(LIBM);\n-undefined dynamic_lookup -Wl,-install_name,\n'
-                '-DVPATH=\'"$(VPATH)"\'\n')
-            relocatable_makefile(build, "macos-arm64")
-            text = (build / "Makefile").read_text()
-            self.assertIn("$(MODLIBS)", text); self.assertIn("-Wl,-undefined,error", text)
-            self.assertIn('@rpath/libpython', text); self.assertIn('"../cpython"', text)
+            makefile = build / "Makefile"
+            original = ("VPATH = /source/absolute\nSHLIBS = -lsystem\nMODLIBS = -lowned\n"
+                        "LDVERSION = 3.12\nreport:\n\t@printf '%s\\n' '$(VPATH)' '$(SHLIBS)'\n")
+            makefile.write_text(original, encoding="utf-8")
+            for platform, libraries in [
+                ("darwin", "-lsystem -lowned -Wl,-install_name,@rpath/libpython3.12.dylib"),
+                ("linux", "-lsystem"),
+            ]:
+                with self.subTest(platform=platform):
+                    result = subprocess.check_output(configuration.unix_make("MACHDEP=" + platform, "report"),
+                                                     cwd=build, text=True, timeout=10)
+                    self.assertEqual(result.splitlines(), ["../cpython", libraries])
+                    self.assertEqual(makefile.read_text(encoding="utf-8"), original)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS dynamic library audit")
+    def test_macos_library_audit_rejects_dynamic_lookup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            build = Path(tmp)
+            source = build / "fixture.c"
+            source.write_text("extern int missing(void);\nint fixture(void) { return missing(); }\n",
+                              encoding="utf-8")
+            library = build / "libfixture.dylib"
+            subprocess.run(["xcrun", "clang", "-dynamiclib", "-undefined", "dynamic_lookup",
+                            str(source), "-o", str(library)], check=True, timeout=30)
+            with self.assertRaisesRegex(ValueError, "without a declared macOS library"):
+                require_bound_macos_symbols(library)
 
     def test_missing_extra_and_corrupt_payload_fail_before_native_execution(self):
         sdk = {"target": "linux-x64"}

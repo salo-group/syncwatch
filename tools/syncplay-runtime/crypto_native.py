@@ -11,6 +11,7 @@ from cryptography_configuration import configure as configure_crypto
 from rust_graph import configure as configure_cargo, verify_metadata
 
 sys.path.insert(0, str(ROOT / "tools/python-build"))
+from configuration import unix_make
 from native_build import execute
 from runtime_package import write_files
 from source_profile import stdlib_archive
@@ -47,7 +48,7 @@ def python_sdk(work, profile, sources, source, native, openssl, target, environm
         for name in ["libssl", "libcrypto"]:
             shutil.copyfile(openssl / "lib" / (name + suffix), directory / (name + suffix))
         logs = work / "python-sdk-logs"; logs.mkdir()
-        execute("sysconfig", ["make", "pybuilddir.txt"], native["runtime"].parent, logs, environment)
+        execute("sysconfig", unix_make("pybuilddir.txt"), native["runtime"].parent, logs, environment)
         generated = list(native["runtime"].parent.glob("build/lib.*/_sysconfigdata_*.py"))
         if len(generated) != 1:
             raise ValueError("Source-built Python build configuration is missing")

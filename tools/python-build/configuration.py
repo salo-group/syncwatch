@@ -5,6 +5,11 @@ import re
 import xml.etree.ElementTree as ET
 
 NS = "http://schemas.microsoft.com/developer/msbuild/2003"
+UNIX_MAKEFILE = Path(__file__).resolve().with_name("unix-runtime.mk")
+
+
+def unix_make(*arguments):
+    return ["make", "-f", "Makefile", "-f", str(UNIX_MAKEFILE), *arguments]
 
 
 def unix_setup(source, build, zlib, library, profile, module_flags=None):
@@ -85,28 +90,6 @@ def windows_setup(source, profile):
     if tree.find(".//m:FreezeProjects[@Include='_freeze_module.vcxproj']", {"m": NS}) is None:
         raise ValueError("Windows source bootstrap must retain its original freeze project")
     tree.write(project, encoding="utf-8", xml_declaration=True)
-
-
-def relocatable_makefile(build, platform):
-    path = build / "Makefile"
-    text = path.read_text(encoding="utf-8")
-    if platform == "macos-arm64":
-        before = "-Wl,-install_name,$(prefix)/lib/libpython$(LDVERSION).dylib"
-        if text.count(before) != 1:
-            raise ValueError("Original macOS library identity configuration differs")
-        text = text.replace(before, "-Wl,-install_name,@rpath/libpython$(LDVERSION).dylib")
-        # Upstream's dylib rule omits static module dependencies. Link the
-        # selected zlib into the runtime itself and reject unresolved symbols.
-        before = "$(DTRACE_OBJS) $(SHLIBS) $(LIBC) $(LIBM);"
-        if text.count(before) != 1:
-            raise ValueError("Original macOS shared-library link rule differs")
-        text = text.replace(before, "$(DTRACE_OBJS) $(MODLIBS) $(SHLIBS) $(LIBC) $(LIBM);")
-        text = text.replace("-undefined dynamic_lookup -Wl,-install_name,", "-Wl,-undefined,error -Wl,-install_name,")
-    # Build paths are not the runtime's source identity or an import search path.
-    # The source-built bootstrap needs the real source tree. A relative path
-    # keeps its upstream lookup working without embedding a machine path.
-    text = text.replace('-DVPATH=\'"$(VPATH)"\'', '-DVPATH=\'"../cpython"\'')
-    path.write_text(text, encoding="utf-8", newline="\n")
 
 
 def assert_unix_membership(build, profile):

@@ -5,10 +5,18 @@ import subprocess
 from pathlib import Path
 
 
+def require_bound_macos_symbols(path):
+    symbols = subprocess.check_output(["nm", "-u", "-m", str(path)],
+                                      text=True, stderr=subprocess.STDOUT, timeout=30)
+    if "(dynamically looked up)" in symbols:
+        raise ValueError("CPython links symbols without a declared macOS library")
+
+
 def audit(paths, target, sdk, options):
     records = {}
     for path in [paths["runtime"], *paths["extensions"]]:
         if target == "macos-arm64":
+            require_bound_macos_symbols(path)
             command = ["otool", "-L", str(path)]
             allowed = {"@rpath/libpython3.12.dylib", "/usr/lib/libSystem.B.dylib",
                 "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation"}

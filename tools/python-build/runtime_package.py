@@ -8,6 +8,7 @@ import tempfile
 
 from binary_audit import audit
 from build_metadata import BUILD_INFO_SUFFIX
+from configuration import UNIX_MAKEFILE
 from source_profile import ROOT, digest, encoded, notices, original_sources, stdlib_archive
 
 sys.path.insert(0, str(ROOT / "tools/python-runtime"))
@@ -77,6 +78,7 @@ def package(payload, sources, profile, sdk, source, native, commands, options):
     if sdk["target"] != "windows-x64":
         for name in ["Makefile", "Modules/Setup.local"]:
             files["configuration/" + name] = (generated / name).read_bytes()
+        files["configuration/" + UNIX_MAKEFILE.name] = UNIX_MAKEFILE.read_bytes()
     files["configuration/generated-source-hashes.json"] = encoded({
         path.relative_to(generated).as_posix(): digest(path.read_bytes())
         for path in sorted((generated / "Python").rglob("*"))
@@ -115,6 +117,8 @@ def verify(payload, sources, profile, sdk, options):
     if found != report["files"]:
         raise ValueError("Runtime payload has missing, extra or changed files")
     expected = immutable_files(sources, profile)
+    if sdk["target"] != "windows-x64":
+        expected["configuration/" + UNIX_MAKEFILE.name] = UNIX_MAKEFILE.read_bytes()
     expected[layout(payload, sdk["target"])["stdlib"].relative_to(payload).as_posix()] = stdlib_archive(sources, profile)
     if any((payload / name).read_bytes() != data for name, data in expected.items()):
         raise ValueError("Runtime original headers, sources, stdlib or complete notices differ")

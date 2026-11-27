@@ -17,6 +17,8 @@ spec.loader.exec_module(base)
 layout, inventory, write_files = base.layout, base.inventory, base.write_files
 from native_probe import exercise_sdk
 from build_metadata import BUILD_INFO_SUFFIX
+from binary_audit import require_bound_macos_symbols
+from configuration import UNIX_MAKEFILE
 
 
 def native_files(payload, target):
@@ -29,6 +31,8 @@ def relocated_probe(payload, target, logs=None):
         owned = Path(temporary) / "runtime-\u03bc-\u0442\u0435\u0441\u0442"
         shutil.copytree(payload, owned)
         paths = layout(owned, target)
+        if target == "macos-arm64":
+            require_bound_macos_symbols(paths["runtime"])
         checks = (ROOT / "tools/syncplay-runtime/runtime_checks.py").read_text(encoding="utf-8")
         abi = exercise_sdk(paths, checks, build_info_suffix=BUILD_INFO_SUFFIX)
         captured = []
@@ -91,6 +95,9 @@ def verify(payload, sdk, options, source_identity, expected_originals, logs=None
     if any((payload / name).read_bytes() != value for name, value in expected_originals.items()):
         raise ValueError("Headless runtime original source or complete grant differs")
     target = sdk["native"]["target"]
+    if (target != "windows-x64"
+            and found.get("configuration/cpython/" + UNIX_MAKEFILE.name) != digest(UNIX_MAKEFILE.read_bytes())):
+        raise ValueError("Headless runtime Unix Make configuration differs")
     if audit(native_files(payload, target), target, sdk["native"], options) != report["nativeDependencies"]:
         raise ValueError("Headless runtime native imports differ")
     if proof_identity(relocated_probe(payload, target, logs)) != proof_identity(report["proof"]):

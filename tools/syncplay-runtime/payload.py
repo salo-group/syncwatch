@@ -12,6 +12,7 @@ from sdk_legal import rust_notices
 sys.path.insert(0, str(ROOT / "tools/python-build"))
 from runtime_package import layout, write_files
 from source_profile import notices, original_sources, stdlib_archive
+from configuration import UNIX_MAKEFILE
 
 
 def python_files(sources):
@@ -81,6 +82,7 @@ def assemble(payload, target, sources, core_sources, profile, native, engine_fil
     if target != "windows-x64":
         for name in ["Makefile", "Modules/Setup.local"]:
             files["configuration/cpython/" + name] = (core_source.parent / "build" / name).read_bytes()
+        files["configuration/cpython/" + UNIX_MAKEFILE.name] = UNIX_MAKEFILE.read_bytes()
     files["configuration/source-graph.json"] = (ROOT / "tools/syncplay-runtime/graph.json").read_bytes()
     files["configuration/python-profile.json"] = (ROOT / "tools/syncplay-runtime/python-profile.json").read_bytes()
     files["configuration/engine-profile.json"] = (ROOT / "tools/syncplay-runtime/engine-profile.json").read_bytes()
