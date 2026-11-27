@@ -32,7 +32,6 @@ def _check(root, classpath, home, compiler):
         sources += sorted((root / "packages/linux-library/tests").rglob("*.kt"))
         sources += sorted((root / "apps/linux/tests").rglob("*.kt"))
         sources += sorted((root / "packages/linux-room/tests").rglob("*.kt"))
-        sources.append(root / "tools/jvm/tests/DisplayRefreshChecks.kt")
         stdlib.javac(["--release", "21", "-g:none", "-proc:none", "-encoding", "UTF-8", "-cp",
                       os.pathsep.join(map(str, classpath)), "-d", str(classes),
                       *[str(path) for path in sources if path.suffix == ".java"]], work, home)
@@ -43,11 +42,6 @@ def _check(root, classpath, home, compiler):
                               "syncwatch.design.tests.PresentationChecksKt", str(root / "packages/design/tests/fixtures")], work, home)
         if "SYNCWATCH_DESIGN_PRESENTATIONS_OK" not in output:
             raise ValueError("Desktop UI first-party application/design consumer failed")
-        print(output.strip())
-        output = kotlin.java(["-Djava.awt.headless=true", "-cp", os.pathsep.join(map(str, [classes, *classpath])),
-                              "syncwatch.tests.DisplayRefreshChecksKt"], work, home)
-        if "SYNCWATCH_DISPLAY_REFRESH_OK" not in output:
-            raise ValueError("Display refresh fallback/frame scheduling consumer failed")
         print(output.strip())
         output = kotlin.java(["-Djava.awt.headless=true", "-cp", os.pathsep.join(map(str, [classes, *classpath])),
                               "syncwatch.bridge.PlayerCorrectionChecksKt", str(root / "contracts/fixtures/helper-player.json")], work, home)

@@ -36,11 +36,14 @@ int main(int argc, char **argv) {
         || setting("ALSA_PLUGIN_DIR", root, "Runtime/lib/alsa-lib", 0)
         || setting("PULSE_CLIENTCONFIG", root, "Media/share/pulse/client.conf", 0) || chdir(root)) goto failed;
     if (unsetenv("JAVA_TOOL_OPTIONS") || unsetenv("JDK_JAVA_OPTIONS") || unsetenv("_JAVA_OPTIONS") || unsetenv("CLASSPATH")) goto failed;
-    char **arguments = calloc((size_t)argc + 2, sizeof(*arguments));
+    char **arguments = calloc((size_t)argc + 3, sizeof(*arguments));
     if (!arguments) goto failed;
     arguments[0] = "Runtime/bin/java";
-    arguments[1] = "@launch.args";
-    for (int index = 1; index < argc; ++index) arguments[index + 1] = argv[index];
+    // An inactive XRandR output can stall Skiko's refresh-based frame limiter.
+    // Keep renderer selection while allowing the compositor to pace presentation.
+    arguments[1] = "-Dskiko.vsync.enabled=false";
+    arguments[2] = "@launch.args";
+    for (int index = 1; index < argc; ++index) arguments[index + 2] = argv[index];
     execv(arguments[0], arguments);
     free(arguments);
 failed:

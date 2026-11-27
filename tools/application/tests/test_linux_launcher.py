@@ -30,7 +30,8 @@ class LinuxLauncherTests(unittest.TestCase):
             result = subprocess.run([str(relocated / "SyncWatch"), "--state", "state with spaces"], cwd=root,
                                     env=os.environ | poisoned, capture_output=True, text=True, check=True, timeout=10)
             actual = json.loads(result.stdout)
-            self.assertEqual(actual["argv"], ["@launch.args", "--state", "state with spaces"])
+            self.assertEqual(actual["argv"], ["-Dskiko.vsync.enabled=false", "@launch.args",
+                                              "--state", "state with spaces"])
             self.assertEqual(actual["cwd"], str(relocated))
             for name in ("CLASSPATH", "JAVA_TOOL_OPTIONS", "JDK_JAVA_OPTIONS", "_JAVA_OPTIONS"):
                 self.assertNotIn(name, actual["env"])

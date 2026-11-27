@@ -44,14 +44,6 @@ OPT_INS = [
     "kotlinx.coroutines.InternalCoroutinesApi", "kotlinx.serialization.ExperimentalSerializationApi",
 ]
 GENERATOR = "skiko/buildSrc/src/main/kotlin/tasks/configuration/CommonTasksConfiguration.kt"
-DISPLAY = "skiko/src/awtMain/kotlin/org/jetbrains/skiko/Display.kt"
-DISPLAY_RATE = b"getLinuxDisplayRefreshRate(it.display, it.window)"
-DISPLAY_FALLBACK = (
-    b"Skiko Display.kt configuration: retain valid Linux refresh rates; use the upstream "
-    b"MinMainstreamMonitorRefreshRate when XRandR reports zero, negative, NaN or infinity.\n"
-    b"This prevents the frame limiter from waiting indefinitely after display disconnection.\n"
-    b"Original source bytes and the complete configured source accompany this artifact.\n"
-)
 
 
 def profile_data():
@@ -68,7 +60,7 @@ def profile_data():
                 or len(selected[name]) != len(set(selected[name])) or set(selected[name]) != code):
             raise ValueError("Desktop UI modules must cover the exact source and notice inventory once")
     if (profile["schemaVersion"] != 1 or profile["profile"] != "desktop-ui-jvm11-v1"
-            or profile.get("displayRefreshFallback") is not True
+            or set(profile["expectedJars"]) != {"linux-x64"}
             or profile["compilerVersion"] != kotlin.specification()["version"]
             or registry[COMPONENT]["sources"] != expected):
         raise ValueError("Desktop UI source/compiler graph differs from the reviewed profile")
@@ -88,25 +80,9 @@ def generated_version(files, profile):
     return text.encode()
 
 
-def configured_sources(files, profile):
-    if not profile.get("displayRefreshFallback"):
-        return {}
-    original = files["skiko"][DISPLAY]
-    if (digest(original) != profile["sources"]["skiko"]["files"][DISPLAY]
-            or original.count(DISPLAY_RATE) != 1):
-        raise ValueError("Review the original Skiko display refresh source before configuration")
-    configured = original.replace(DISPLAY_RATE, b"normalizeDisplayRefreshRate(" + DISPLAY_RATE + b")")
-    configured += (b"\n// SyncWatch configuration: disconnected/virtual outputs may have no usable refresh rate.\n"
-                   b"private fun normalizeDisplayRefreshRate(rate: Double): Double =\n"
-                   b"    rate.takeIf { it.isFinite() && it > 0.0 } ?: MinMainstreamMonitorRefreshRate\n")
-    return {"skiko/" + DISPLAY: configured}
-
-
 def support(files, profile):
     return ({"profile.json": encoded(profile), "CHANGES.txt": CHANGES,
              "generated/Version.kt": generated_version(files, profile)}
-            | ({"CONFIGURATION.txt": DISPLAY_FALLBACK} if profile.get("displayRefreshFallback") else {})
-            | {"configured/" + name: data for name, data in configured_sources(files, profile).items()}
             | {"originals/" + name + "/" + path: data
                for name, values in files.items() for path, data in values.items()})
 
@@ -126,8 +102,6 @@ def assemble(files, profile, payload, home, compiler):
                 path = work / name / filename
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(data)
-        for name, data in configured_sources(files, profile).items():
-            (work / name).write_bytes(data)
         version = work / "generated/Version.kt"
         version.parent.mkdir()
         version.write_bytes(generated_version(files, profile))
@@ -149,8 +123,7 @@ def assemble(files, profile, payload, home, compiler):
                 stdlib.javac(["--release", "11", "-g:none", "-proc:none", "-encoding", "UTF-8", "-cp",
                               os.pathsep.join(map(str, [classes, *classpath])), "-d", str(classes), *map(str, java)], work, home)
             entries = {path.relative_to(classes).as_posix(): path.read_bytes() for path in classes.rglob("*") if path.is_file()}
-            changes = CHANGES + (DISPLAY_FALLBACK if source == "skiko" and profile.get("displayRefreshFallback") else b"")
-            entries |= {"META-INF/CHANGES.txt": changes,
+            entries |= {"META-INF/CHANGES.txt": CHANGES,
                         "META-INF/UPSTREAM-NOTICES.txt": concurrency.source_notices(files, profile, source)}
             destination = payload / module["binary"]
             destination.write_bytes(jar_bytes(entries))
@@ -203,14 +176,16 @@ def probe(payload, profile, home, compiler):
 
 
 def main():
+    if jdk.current_target() != "linux-x64":
+        raise SystemExit("Desktop UI JVM builds require Linux x64")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("operation", choices=("build", "verify"))
-    parser.add_argument("--platform", choices=("linux-x64", "macos-arm64", "windows-x64"))
+    parser.add_argument("--platform", choices=("linux-x64",), default="linux-x64")
     args = parser.parse_args()
     profile = profile_data()
     home, compiler = jdk.home(), kotlin.home()
     archive = args.operation == "verify"
-    directory = ROOT / "artifacts/dependencies" / COMPONENT / (args.platform or jdk.current_target()) if archive else Path(os.environ["SYNCWATCH_DEPENDENCY_SOURCES"])
+    directory = ROOT / "artifacts/dependencies" / COMPONENT / args.platform if archive else Path(os.environ["SYNCWATCH_DEPENDENCY_SOURCES"])
     files = concurrency.read_sources(directory, profile, archive=archive)
     for name, source in profile["sources"].items():
         unheaded = {path for path, data in files[name].items() if path.endswith((".kt", ".java")) and stdlib_sources.apache_header(data) is None}
