@@ -19,6 +19,7 @@ import engine_sources
 import engine_package
 from idna_provenance import verify as verify_idna
 from source_files import digest, encoded
+from configuration import windows_modules
 
 
 def inputs(root, target, operation):
@@ -101,11 +102,12 @@ def main():
         root = ROOT / "artifacts/dependencies/syncplay-runtime" / native["target"]
         output = root / "payload"
     profile, core, sources, engines, source_identity = inputs(root, native["target"], args.operation)
+    expected_builtins = windows_modules(core["cpython"], profile)[1] if native["target"] == "windows-x64" else ()
     if args.operation == "build":
         def perform(work):
             commands, provenance = build(work, output, core, sources, engines, sdk)
             print("Verifying relocated native startup and real Syncplay TLS exchange", flush=True)
-            return engine_package.seal(output, identity, options, source_identity, commands, provenance, work)
+            return engine_package.seal(output, identity, options, source_identity, commands, provenance, work, expected_builtins)
         if args.work:
             args.work.mkdir(parents=True)  # Never overwrite an earlier outcome.
             report = perform(args.work.resolve())
@@ -117,7 +119,7 @@ def main():
             shutil.rmtree(work)
     else:
         originals = distribution.originals(sources, core, profile) | engine_sources.originals(engines)
-        report = engine_package.verify(output, identity, options, source_identity, originals, root / "acceptance")
+        report = engine_package.verify(output, identity, options, source_identity, originals, expected_builtins, root / "acceptance")
     print(json.dumps({"component": "syncplay-runtime", "target": native["target"],
         "sourceBuiltHeadlessEngine": True, "applicationProviderReady": False,
         "abi": report["proof"]["abi"]["cases"], "engine": report["proof"]["engine"]}, sort_keys=True))

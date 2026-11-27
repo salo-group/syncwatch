@@ -10,8 +10,9 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import configuration
 from configuration import unix_setup, windows_setup
-from source_profile import ROOT, digest, profile_data, read_sources, validate
-from runtime_package import inventory, verify
+from native_build import execute
+from source_profile import ROOT, digest, encoded, profile_data, read_sources, stdlib_archive, validate
+from runtime_package import immutable_files, inventory, verify, write_files
 
 
 class RuntimeTests(unittest.TestCase):
@@ -56,13 +57,13 @@ class RuntimeTests(unittest.TestCase):
                               "PCbuild/pythoncore.vcxproj", "PCbuild/pcbuild.proj", "Tools/freeze/makeconfig.py"]
             for name in original_files:
                 path = source / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(self.sources["cpython"][name])
-            modules, expected = windows_setup(source, build, self.profile)
+            modules, expected = windows_setup(self.sources["cpython"], build, self.profile)
             table = build / "config.c"
             subprocess.run([sys.executable, "-I", "-B", str(source / "Tools/freeze/makeconfig.py"),
                             str(source / "Modules/config.c.in"), str(table), *modules],
                            check=True, timeout=10)
-            actual = configuration.builtin_modules(table)
-            self.assertEqual(sorted(actual), sorted(expected))
+            actual = configuration.builtin_modules(table.read_bytes())
+            self.assertEqual(actual, expected)
             self.assertTrue({"_imp", "_string", "winreg", "_ast", "_tokenize", "zlib"} <= set(actual))
             self.assertNotIn("_random", actual)
             ns = {"m": "http://schemas.microsoft.com/developer/msbuild/2003"}
@@ -115,6 +116,35 @@ class RuntimeTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "missing, extra or changed"):
                         verify(root, self.sources, self.profile, sdk, [])
                     native.assert_not_called()
+
+    def test_windows_receipt_must_match_the_original_profile_modules(self):
+        sdk = {"target": "windows-x64"}
+        with tempfile.TemporaryDirectory() as temporary:
+            payload = Path(temporary)
+            files = immutable_files(self.sources, self.profile)
+            files.update({"configuration/" + name: data for name, data in configuration.build_recipe(sdk["target"]).items()})
+            files["configuration/config.c"] = b'    {"math", PyInit_math},\n'
+            files["bin/python312.zip"] = stdlib_archive(self.sources, self.profile)
+            write_files(payload, files)
+            write_files(payload, {"build-report.json": encoded({
+                "schemaVersion": 1, "sdk": sdk, "profileSha256": digest(encoded(self.profile)),
+                "pinnedRuntimeBuilt": True, "pinnedEmbeddingAbiVerified": True,
+                "syncplayRuntimeReady": False, "files": inventory(payload),
+            })})
+            with patch("runtime_package.audit") as audit, patch("runtime_package.relocated_probe") as native:
+                with self.assertRaisesRegex(ValueError, "built-in module table"):
+                    verify(payload, self.sources, self.profile, sdk, [])
+                audit.assert_not_called()
+                native.assert_not_called()
+
+    def test_native_build_failure_keeps_compiler_output_local(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            compiler = [sys.executable, "-B", "-c", "import sys; print(sys.argv[1]); sys.exit(2)", str(root)]
+            with self.assertRaisesRegex(ValueError, "compile exited with 2") as failure:
+                execute("compile", compiler, root, root, timeout=10)
+            self.assertNotIn(str(root), str(failure.exception))
+            self.assertIn(str(root), (root / "compile.log").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

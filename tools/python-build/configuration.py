@@ -32,28 +32,38 @@ def unix_setup(source, build, zlib, library, profile, module_flags=None):
     (build / UNIX_MAKEFILE.name).write_bytes(UNIX_MAKEFILE.read_bytes())
 
 
-def module_sources(source, profile):
-    bootstrap = (source / "Modules/Setup.bootstrap.in").read_text()
-    names = set(re.findall(r"^(?:@MODULE_[A-Z0-9_]+_TRUE@)?([a-zA-Z_][a-zA-Z0-9_]*) ", bootstrap, re.M))
-    files = set(re.findall(r"[a-zA-Z0-9_/]+\.c", "\n".join(l for l in bootstrap.splitlines() if not l.startswith("#"))))
-    files.update(Path(p).relative_to("Modules").as_posix() for values in profile["extensions"].values() for p in values)
-    names.update(profile["extensions"])
-    return names, files
-
-
 def builtin_modules(table):
-    return re.findall(r'^\s*\{"([a-zA-Z_][a-zA-Z0-9_]*)",', table.read_text(encoding="utf-8"), re.M)
+    return tuple(sorted(re.findall(r'^\s*\{"([a-zA-Z_][a-zA-Z0-9_]*)",', table.decode("utf-8"), re.M)))
 
 
-def windows_setup(source, build, profile):
-    names, files = module_sources(source, profile)
-    names.discard("posix"); names.discard("pwd")
+def windows_modules(cpython, profile):
+    bootstrap = cpython["Modules/Setup.bootstrap.in"].decode("utf-8")
+    names = set(re.findall(r"^(?:@MODULE_[A-Z0-9_]+_TRUE@)?([a-zA-Z_][a-zA-Z0-9_]*) ", bootstrap, re.M))
+    names.update(profile["extensions"])
+    names.difference_update(["posix", "pwd"])
     names.update(["nt", "gc", "msvcrt", "winreg", "zlib", "_imp", "_string", "_ast", "_tokenize"])
     # Socket/select remain separate native extension DLLs in the upstream build.
     names.difference_update(profile.get("windowsShared", ["_socket", "select"]))
+    standard = set(builtin_modules(cpython["Modules/config.c.in"]))
+    return sorted(names - standard), tuple(sorted(names | standard))
+
+
+def require_builtin_table(table, expected):
+    if not table.is_file() or builtin_modules(table.read_bytes()) != expected:
+        raise ValueError("CPython built-in module table differs from the pinned Windows profile")
+
+
+def builtin_probe(expected):
+    return f"\nassert sys.builtin_module_names == {expected!r}\n" if expected else ""
+
+
+def windows_setup(cpython, build, profile):
+    bootstrap = cpython["Modules/Setup.bootstrap.in"].decode("utf-8")
+    files = set(re.findall(r"[a-zA-Z0-9_/]+\.c", "\n".join(line for line in bootstrap.splitlines() if not line.startswith("#"))))
+    files.update(Path(path).relative_to("Modules").as_posix()
+                 for sources in profile["extensions"].values() for path in sources)
     files.update(["gcmodule.c", "getbuildinfo.c", "getpath.c", "main.c", "zlibmodule.c", "_io/winconsoleio.c"])
-    standard = set(builtin_modules(source / "Modules/config.c.in"))
-    project = ET.parse(source / "PCbuild/pythoncore.vcxproj")
+    project = ET.fromstring(cpython["PCbuild/pythoncore.vcxproj"])
     selection = ET.Element("Project", xmlns=NS)
     group = ET.SubElement(selection, "ItemGroup")
     for item in project.findall(".//m:ClCompile[@Include]", {"m": NS}):
@@ -64,7 +74,7 @@ def windows_setup(source, build, profile):
     build.mkdir(parents=True, exist_ok=True)
     ET.indent(selection, space="    ")
     ET.ElementTree(selection).write(build / "module-selection.props", encoding="utf-8", xml_declaration=True)
-    return sorted(names - standard), names | standard
+    return windows_modules(cpython, profile)
 
 
 def build_recipe(target):

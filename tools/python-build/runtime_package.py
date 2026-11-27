@@ -8,7 +8,7 @@ import tempfile
 
 from binary_audit import audit
 from build_metadata import BUILD_INFO_SUFFIX
-from configuration import build_configuration, build_recipe, builtin_modules
+from configuration import build_configuration, build_recipe, builtin_probe, require_builtin_table, windows_modules
 from source_profile import ROOT, digest, encoded, notices, original_sources, stdlib_archive
 
 sys.path.insert(0, str(ROOT / "tools/python-runtime"))
@@ -77,7 +77,8 @@ def package(payload, sources, profile, sdk, source, native, commands, options):
         for path in sorted((generated / "Python").rglob("*"))
         if path.is_file() and (path.suffix == ".h" or path.name == "deepfreeze.c")})
     write_files(payload, files)
-    proof = relocated_probe(payload, sdk["target"])
+    expected = expected_builtins(payload, sources, profile, target)
+    proof = relocated_probe(payload, target, expected)
     report = {"schemaVersion": 1, "profileSha256": digest(encoded(profile)), "sdk": sdk,
               "commands": commands, "files": inventory(payload), "proof": proof,
               "nativeDependencies": audit(native, sdk["target"], sdk, options),
@@ -87,16 +88,22 @@ def package(payload, sources, profile, sdk, source, native, commands, options):
     return report
 
 
-def relocated_probe(payload, target):
+def expected_builtins(payload, sources, profile, target):
+    if target != "windows-x64":
+        return ()
+    _, expected = windows_modules(sources["cpython"], profile)
+    require_builtin_table(payload / "configuration/config.c", expected)
+    return expected
+
+
+def relocated_probe(payload, target, expected):
     # Actual C startup links the relocated owned library, headers and stdlib.
     # The development Python only orchestrates the compiler and child processes.
     with tempfile.TemporaryDirectory(prefix="sw-owned-runtime-") as temporary:
         owned = Path(temporary) / "runtime-\u03bc-\u0442\u0435\u0441\u0442"
         shutil.copytree(payload, owned)
         checks = (ROOT / "tools/python-build/checks.py").read_text(encoding="utf-8")
-        if target == "windows-x64":
-            checks += f"\nassert sys.builtin_module_names == {tuple(sorted(builtin_modules(owned / 'configuration/config.c')))!r}\n"
-        return exercise_sdk(layout(owned, target), checks, build_info_suffix=BUILD_INFO_SUFFIX)
+        return exercise_sdk(layout(owned, target), checks + builtin_probe(expected), build_info_suffix=BUILD_INFO_SUFFIX)
 
 
 def verify(payload, sources, profile, sdk, options):
@@ -115,10 +122,11 @@ def verify(payload, sources, profile, sdk, options):
     expected[layout(payload, sdk["target"])["stdlib"].relative_to(payload).as_posix()] = stdlib_archive(sources, profile)
     if any((payload / name).read_bytes() != data for name, data in expected.items()):
         raise ValueError("Runtime original headers, sources, stdlib or complete notices differ")
+    builtins = expected_builtins(payload, sources, profile, sdk["target"])
     paths = layout(payload, sdk["target"])
     native = {"runtime": paths["runtime"], "extensions": sorted(paths["extensions"].glob("*.pyd"))}
     if audit(native, sdk["target"], sdk, options) != report["nativeDependencies"]:
         raise ValueError("Runtime native dependency inventory changed")
-    if relocated_probe(payload, sdk["target"]) != report["proof"]:
+    if relocated_probe(payload, sdk["target"], builtins) != report["proof"]:
         raise ValueError("Runtime relocated native startup proof changed")
     return report

@@ -18,7 +18,7 @@ layout, inventory, write_files = base.layout, base.inventory, base.write_files
 from native_probe import exercise_sdk
 from build_metadata import BUILD_INFO_SUFFIX
 from binary_audit import require_bound_macos_symbols
-from configuration import build_recipe, builtin_modules
+from configuration import build_recipe, builtin_probe, require_builtin_table
 
 
 def native_files(payload, target):
@@ -26,7 +26,7 @@ def native_files(payload, target):
     return sorted(p for p in payload.rglob("*") if p.is_file() and p.name.endswith(suffixes))
 
 
-def relocated_probe(payload, target, logs=None):
+def relocated_probe(payload, target, expected_builtins, logs=None):
     with tempfile.TemporaryDirectory(prefix="sw-engine-probe-") as temporary:
         owned = Path(temporary) / "runtime-\u03bc-\u0442\u0435\u0441\u0442"
         shutil.copytree(payload, owned)
@@ -34,9 +34,7 @@ def relocated_probe(payload, target, logs=None):
         if target == "macos-arm64":
             require_bound_macos_symbols(paths["runtime"])
         checks = (ROOT / "tools/syncplay-runtime/runtime_checks.py").read_text(encoding="utf-8")
-        if target == "windows-x64":
-            checks += f"\nassert sys.builtin_module_names == {tuple(sorted(builtin_modules(owned / 'configuration/cpython/config.c')))!r}\n"
-        abi = exercise_sdk(paths, checks, build_info_suffix=BUILD_INFO_SUFFIX)
+        abi = exercise_sdk(paths, checks + builtin_probe(expected_builtins), build_info_suffix=BUILD_INFO_SUFFIX)
         captured = []
         def output(name, data):
             if logs:
@@ -73,8 +71,11 @@ def proof_identity(proof):
     return result
 
 
-def seal(payload, sdk, options, source_identity, commands, provenance, work):
-    proof = relocated_probe(payload, sdk["native"]["target"], work / "acceptance")
+def seal(payload, sdk, options, source_identity, commands, provenance, work, expected_builtins):
+    target = sdk["native"]["target"]
+    if target == "windows-x64":
+        require_builtin_table(payload / "configuration/cpython/config.c", expected_builtins)
+    proof = relocated_probe(payload, target, expected_builtins, work / "acceptance")
     report = {"schemaVersion": 1, "sdk": sdk, "sources": source_identity,
               "commands": commands, "idnaProvenance": provenance, "files": inventory(payload),
               "nativeDependencies": audit(native_files(payload, sdk["native"]["target"]), sdk["native"]["target"], sdk["native"], options),
@@ -84,7 +85,7 @@ def seal(payload, sdk, options, source_identity, commands, provenance, work):
     return report
 
 
-def verify(payload, sdk, options, source_identity, expected_originals, logs=None):
+def verify(payload, sdk, options, source_identity, expected_originals, expected_builtins, logs=None):
     report = json.loads((payload / "build-report.json").read_text(encoding="utf-8"))
     if (report["schemaVersion"] != 1 or report["sdk"] != sdk or report["sources"] != source_identity
             or report["sourceBuiltHeadlessEngine"] is not True or report["applicationProviderReady"] is not False
@@ -99,8 +100,10 @@ def verify(payload, sdk, options, source_identity, expected_originals, logs=None
     target = sdk["native"]["target"]
     if any(found.get("configuration/cpython/" + name) != digest(data) for name, data in build_recipe(target).items()):
         raise ValueError("Headless runtime CPython build configuration differs")
+    if target == "windows-x64":
+        require_builtin_table(payload / "configuration/cpython/config.c", expected_builtins)
     if audit(native_files(payload, target), target, sdk["native"], options) != report["nativeDependencies"]:
         raise ValueError("Headless runtime native imports differ")
-    if proof_identity(relocated_probe(payload, target, logs)) != proof_identity(report["proof"]):
+    if proof_identity(relocated_probe(payload, target, expected_builtins, logs)) != proof_identity(report["proof"]):
         raise ValueError("Headless runtime actual consumer acceptance changed")
     return report

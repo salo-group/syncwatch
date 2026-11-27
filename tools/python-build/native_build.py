@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 from binary_audit import require_bound_macos_symbols
-from configuration import WINDOWS_TARGETS, assert_unix_membership, builtin_modules, unix_make, unix_setup, windows_setup
+from configuration import WINDOWS_TARGETS, assert_unix_membership, require_builtin_table, unix_make, unix_setup, windows_setup
 from build_metadata import BUILD_DATE, BUILD_TIME, SOURCE_DATE_EPOCH
 from source_profile import ROOT, digest, encoded, materialize
 
@@ -29,12 +29,16 @@ def sdk_identity():
 
 def execute(name, args, cwd, logs, env=None, timeout=1800):
     path = logs / (name + ".log")
-    with path.open("wb") as out:
-        result = subprocess.run(args, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
-                                stdout=out, stderr=subprocess.STDOUT, timeout=timeout)
+    try:
+        with path.open("wb") as out:
+            result = subprocess.run(args, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+                                    stdout=out, stderr=subprocess.STDOUT, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise ValueError(f"Native build step {name} timed out after {timeout}s. See the local {path.name}.") from None
+    except OSError as error:
+        raise ValueError(f"Native build step {name} could not start (OS error {error.errno}).") from None
     if result.returncode:
-        diagnostic = path.read_bytes()[-16000:].decode("utf-8", errors="replace")
-        raise ValueError("Native interpreter " + name + " failed:\n" + diagnostic)
+        raise ValueError(f"Native build step {name} exited with {result.returncode}. See the local {path.name}.")
     return {"tool": Path(args[0]).name, "commandSha256": digest(encoded(args)), "logSha256": checksum(path)}
 
 
@@ -49,13 +53,12 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
     environment.update(SOURCE_DATE_EPOCH=SOURCE_DATE_EPOCH, PYTHONHASHSEED="0", PYTHONDONTWRITEBYTECODE="1")
     target = sdk["target"]
     if target == "windows-x64":
-        modules, expected = windows_setup(source, build, profile)
+        modules, expected = windows_setup(sources["cpython"], build, profile)
         table = build / "config.c"
         commands["builtin-table"] = execute("builtin-table", [sys.executable, "-I", "-S", "-B",
             str(source / "Tools/freeze/makeconfig.py"), str(source / "Modules/config.c.in"), str(table), *modules],
             build, logs, environment, timeout=60)
-        if sorted(builtin_modules(table)) != sorted(expected):
-            raise ValueError("Generated CPython built-in table does not match the Windows profile")
+        require_builtin_table(table, expected)
         instance = next(v.split("=", 1)[1] for v in options if v.startswith("-DCMAKE_GENERATOR_INSTANCE="))
         msbuild = str(Path(instance) / "MSBuild/Current/Bin/MSBuild.exe")
         toolset = next(options[n + 1].split(",", 1)[0] for n, v in enumerate(options) if v == "-T")
