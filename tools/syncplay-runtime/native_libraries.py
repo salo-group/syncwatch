@@ -8,7 +8,7 @@ import sys
 from source_graph import ROOT
 
 sys.path.insert(0, str(ROOT / "tools/python-build"))
-from native_build import execute
+from native_build import checksum, execute
 
 
 def msvc_portable_environment(environment, work):
@@ -27,14 +27,24 @@ def openssl(source, work, native, perl, environment):
     prefix = stage / installation.split(":/")[-1].lstrip("/")
     flags = ["shared", "no-asm", "no-tests", "no-legacy", "no-comp", "no-engine", "no-module", "no-dso",
              "no-autoload-config", "--prefix=" + installation, "--openssldir=ssl", "--libdir=lib"]
+    # CreateProcess searches the parent's PATH, not the supplied child PATH.
+    # Resolve nmake from the identified MSVC SDK before spawning it.
+    make = env["SYNCWATCH_NMAKE"] if windows else shutil.which("make", path=env["PATH"])
+    if make is None:
+        raise ValueError("OpenSSL build tool is missing")
     if windows:
         env["CC"] = "cl"
         env = msvc_portable_environment(env, work)
+    else:
+        # OpenSSL includes the compiler command in its version information.
+        compiler = Path(env["CC"])
+        env["PATH"] = str(compiler.parent) + os.pathsep + env["PATH"]
+        selected = shutil.which(compiler.name, path=env["PATH"])
+        if selected is None or checksum(selected) != native["compilerSha256"]:
+            raise ValueError("OpenSSL compiler differs from the selected SDK")
+        env["CC"] = compiler.name
     configure = Path(os.path.relpath(source / "Configure", build)).as_posix()
     commands = {"configure": execute("configure", [str(perl), configure, target, *flags], build, logs, env)}
-    # CreateProcess searches the parent's PATH, not the supplied child PATH.
-    # Resolve nmake from the identified MSVC SDK before spawning it.
-    make = env["SYNCWATCH_NMAKE"] if windows else "make"
     commands["compile"] = execute("compile", [make, *([] if windows else ["-j4"]), "build_libs"], build, logs, env)
     commands["install"] = execute("install", [make, "DESTDIR=" + stage.as_posix(), "install_dev"], build, logs, env)
     if native["target"] == "macos-arm64":

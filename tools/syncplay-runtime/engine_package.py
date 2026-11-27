@@ -78,7 +78,7 @@ def seal(payload, sdk, options, source_identity, commands, provenance, work, exp
         require_builtin_table(payload / "configuration/cpython/config.c", expected_builtins)
     verify_cargo_configuration(payload, crypto_sources, commands["cryptography"])
     libraries = native_files(payload, target)
-    require_no_build_paths(libraries, work)
+    require_no_build_paths({*libraries, layout(payload, target)["library"]}, work)
     proof = relocated_probe(payload, target, expected_builtins, work / "acceptance")
     report = {"schemaVersion": 1, "sdk": sdk, "sources": source_identity,
               "commands": commands, "idnaProvenance": provenance, "files": inventory(payload),
