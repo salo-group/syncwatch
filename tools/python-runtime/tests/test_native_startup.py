@@ -60,9 +60,24 @@ class NativeStartupTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "diagnostic bounds"):
             native_probe.execute([sys.executable, "-I", "-S", "-c", "print('x' * 65537)"], Path.cwd())
 
+    def test_native_failures_redact_private_paths(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            private_file = Path.home() / "sdk" / "header.h"
+            args = [sys.executable, "-I", "-S", "-c", "import sys; print(*sys.argv[1:]); raise SystemExit(7)",
+                    str(root / "fixture.c"), private_file.as_posix()]
+            with self.assertRaisesRegex(ValueError, "exit 7") as failure:
+                native_probe.execute(args, root)
+            message = str(failure.exception)
+            self.assertNotIn(root.as_posix(), message.replace("\\", "/"))
+            self.assertNotIn(Path.home().as_posix(), message.replace("\\", "/"))
+            self.assertIn("fixture.c", message)
+            self.assertIn("header.h", message)
+
     def test_native_timeout_terminates_child(self):
-        with self.assertRaisesRegex(ValueError, "timed out"):
+        with self.assertRaisesRegex(ValueError, "timed out") as failure:
             native_probe.execute([sys.executable, "-I", "-S", "-c", "import time; time.sleep(30)"], Path.cwd(), timeout=0.05)
+        self.assertIsNone(failure.exception.__cause__)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -18,20 +19,39 @@ from toolchain import resolve as c_toolchain
 CASES = ("success", "wrong-thread", "foreign", "init-failure", "adjacent-config", "script-error", "finalize-error")
 
 
+def diagnostics(data, cwd):
+    message = data.decode("utf-8", errors="replace")
+    private = {}
+    for path, label in [(Path.home(), "[home]"), (Path(tempfile.gettempdir()), "[temp]"),
+                        (ROOT, "[source]"), (Path(cwd), "[fixture]")]:
+        for directory in {path.absolute(), path.resolve()}:
+            if directory == directory.parent:
+                continue
+            for name in {str(directory), directory.as_posix()}:
+                private[name] = label
+                private[name.replace("\\", "\\\\")] = label
+    flags = re.IGNORECASE if sys.platform == "win32" else 0
+    for name in sorted(private, key=len, reverse=True):
+        message = re.sub(re.escape(name), private[name], message, flags=flags)
+    return message
+
+
 def execute(args, cwd, environment=None, timeout=120):
     with tempfile.TemporaryFile() as output:
         try:
             result = subprocess.run(args, cwd=cwd, env=environment, stdin=subprocess.DEVNULL,
                                     stdout=output, stderr=subprocess.STDOUT, timeout=timeout)
-        except subprocess.TimeoutExpired as error:
+        except subprocess.TimeoutExpired:
             output.seek(0)
             data = output.read(8192)
-            raise ValueError("Native SDK command timed out:\n" + data.decode("utf-8", errors="replace")) from error
+            raise ValueError("Native SDK command timed out:\n" + diagnostics(data, cwd)) from None
+        except OSError as error:
+            raise ValueError(f"Native SDK command could not start (OS error {error.errno}).") from None
         output.seek(0)
         data = output.read(65537)
     if result.returncode or len(data) > 65536:
         raise ValueError("Native SDK command failed (exit " + str(result.returncode)
-                         + ") or exceeded diagnostic bounds:\n" + data[:8192].decode("utf-8", errors="replace"))
+                         + ") or exceeded diagnostic bounds:\n" + diagnostics(data[:8192], cwd))
     return data
 
 
