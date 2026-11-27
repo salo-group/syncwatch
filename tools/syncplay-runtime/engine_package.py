@@ -19,6 +19,7 @@ from native_probe import exercise_sdk
 from build_metadata import BUILD_INFO_SUFFIX
 from binary_audit import require_bound_macos_symbols
 from configuration import build_recipe, builtin_probe, require_builtin_table
+from rust_graph import verify_configuration as verify_cargo_configuration
 
 
 def native_files(payload, target):
@@ -71,10 +72,11 @@ def proof_identity(proof):
     return result
 
 
-def seal(payload, sdk, options, source_identity, commands, provenance, work, expected_builtins):
+def seal(payload, sdk, options, source_identity, commands, provenance, work, expected_builtins, crypto_sources):
     target = sdk["native"]["target"]
     if target == "windows-x64":
         require_builtin_table(payload / "configuration/cpython/config.c", expected_builtins)
+    verify_cargo_configuration(payload, crypto_sources, commands["cryptography"])
     proof = relocated_probe(payload, target, expected_builtins, work / "acceptance")
     report = {"schemaVersion": 1, "sdk": sdk, "sources": source_identity,
               "commands": commands, "idnaProvenance": provenance, "files": inventory(payload),
@@ -85,7 +87,7 @@ def seal(payload, sdk, options, source_identity, commands, provenance, work, exp
     return report
 
 
-def verify(payload, sdk, options, source_identity, expected_originals, expected_builtins, logs=None):
+def verify(payload, sdk, options, source_identity, expected_originals, expected_builtins, crypto_sources, logs=None):
     report = json.loads((payload / "build-report.json").read_text(encoding="utf-8"))
     if (report["schemaVersion"] != 1 or report["sdk"] != sdk or report["sources"] != source_identity
             or report["sourceBuiltHeadlessEngine"] is not True or report["applicationProviderReady"] is not False
@@ -102,6 +104,7 @@ def verify(payload, sdk, options, source_identity, expected_originals, expected_
         raise ValueError("Headless runtime CPython build configuration differs")
     if target == "windows-x64":
         require_builtin_table(payload / "configuration/cpython/config.c", expected_builtins)
+    verify_cargo_configuration(payload, crypto_sources, report["commands"]["cryptography"])
     if audit(native_files(payload, target), target, sdk["native"], options) != report["nativeDependencies"]:
         raise ValueError("Headless runtime native imports differ")
     if proof_identity(relocated_probe(payload, target, expected_builtins, logs)) != proof_identity(report["proof"]):

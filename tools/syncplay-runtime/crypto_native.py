@@ -35,7 +35,7 @@ def python_sdk(work, profile, sources, source, native, openssl, target, environm
     if target == "linux-x64":
         # The linker resolves -lpython3.12 through its unversioned SDK name;
         # the application's loaded SONAME remains libpython3.12.so.1.0.
-        shutil.copyfile(native["library"], sdk / "lib/libpython3.12.so")
+        os.link(directory / native["runtime"].name, libraries / "libpython3.12.so")
     for path in native["extensions"]:
         shutil.copyfile(path, directory / path.name)
     if windows:
@@ -60,6 +60,12 @@ def python_sdk(work, profile, sources, source, native, openssl, target, environm
         if len(generated) != 1:
             raise ValueError("Source-built Python build configuration is missing")
         shutil.copyfile(generated[0], directory / generated[0].name)
+    cross_libraries = libraries / PYTHON_INSTALL_DIR
+    cross_libraries.mkdir()
+    names = ["python312.lib", "python3.lib"] if windows else [
+        "libpython3.12.so" if target == "linux-x64" else native["runtime"].name]
+    for name in names:
+        os.link(libraries / name, cross_libraries / name)
     return sdk, directory
 
 
@@ -82,7 +88,7 @@ def cffi(source, work, python, ffi, cmake, options, native, environment):
 
 def cryptography(paths, work, python, core, openssl, backend, rust, native, environment):
     sdk, directory = python
-    root = configure_cargo(work, paths)
+    root = configure_cargo(work)
     windows = native["target"] == "windows-x64"
     libraries = sdk / ("libs" if windows else "lib")
     config = work / "pyo3-config.txt"
@@ -111,9 +117,10 @@ def cryptography(paths, work, python, core, openssl, backend, rust, native, envi
     env["CARGO_ENCODED_RUSTFLAGS"] = "\x1f".join(flags)
     suffix = ".exe" if windows else ""
     cargo = rust / ("bin/cargo" + suffix)
-    graph = verify_metadata(cargo, root, paths, env)
     logs = work / "cryptography-logs"; logs.mkdir()
-    command = execute("compile", [str(cargo), "build", "--offline", "--locked", "--release", "-p", "cryptography-rust"],
+    graph = verify_metadata(cargo, root, paths, env, logs)
+    command = execute("compile", [str(cargo), "build", "--offline", "--locked", "--release", "--jobs", "4",
+                                  "-p", "cryptography-rust"],
                       root, logs, env)
     name = {"macos-arm64": "libcryptography_rust.dylib", "linux-x64": "libcryptography_rust.so",
             "windows-x64": "cryptography_rust.dll"}[native["target"]]

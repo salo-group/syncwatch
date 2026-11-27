@@ -17,6 +17,7 @@ import build_sdk
 import payload as distribution
 import engine_sources
 import engine_package
+from rust_graph import packaged_configuration
 from idna_provenance import verify as verify_idna
 from source_files import digest, encoded
 from configuration import windows_modules
@@ -57,10 +58,7 @@ def build(work, output, core, sources, engines, sdk):
                 raise ValueError(f"Original runtime input changed during the build: {name}/{path}")
     engine_files, changes = engine_sources.assemble(engines, work)
     layout = distribution.assemble(output, native["target"], sources, core, profile, compiled, engine_files, source)
-    extras = engine_sources.originals(engines) | changes
-    cargo = work / "rust-build"
-    for name in ["Cargo.toml", "Cargo.lock", ".cargo/config.toml"]:
-        extras["configuration/cryptography/" + name] = (cargo / name).read_bytes()
+    extras = engine_sources.originals(engines) | changes | packaged_configuration(work)
     extras["configuration/idna-provenance.json"] = encoded(provenance)
     distribution.write_files(output, extras)
     shutil.copyfile(backend, layout["extensions"] / backend.name)
@@ -107,7 +105,8 @@ def main():
         def perform(work):
             commands, provenance = build(work, output, core, sources, engines, sdk)
             print("Verifying relocated native startup and real Syncplay TLS exchange", flush=True)
-            return engine_package.seal(output, identity, options, source_identity, commands, provenance, work, expected_builtins)
+            return engine_package.seal(output, identity, options, source_identity, commands, provenance, work,
+                                       expected_builtins, sources["cryptography"])
         if args.work:
             args.work.mkdir(parents=True)  # Never overwrite an earlier outcome.
             report = perform(args.work.resolve())
@@ -119,7 +118,8 @@ def main():
             shutil.rmtree(work)
     else:
         originals = distribution.originals(sources, core, profile) | engine_sources.originals(engines)
-        report = engine_package.verify(output, identity, options, source_identity, originals, expected_builtins, root / "acceptance")
+        report = engine_package.verify(output, identity, options, source_identity, originals,
+                                       expected_builtins, sources["cryptography"], root / "acceptance")
     print(json.dumps({"component": "syncplay-runtime", "target": native["target"],
         "sourceBuiltHeadlessEngine": True, "applicationProviderReady": False,
         "abi": report["proof"]["abi"]["cases"], "engine": report["proof"]["engine"]}, sort_keys=True))
