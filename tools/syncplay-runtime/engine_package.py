@@ -17,7 +17,7 @@ spec.loader.exec_module(base)
 layout, inventory, write_files = base.layout, base.inventory, base.write_files
 from native_probe import exercise_sdk
 from build_metadata import BUILD_INFO_SUFFIX
-from binary_audit import require_bound_macos_symbols
+from binary_audit import require_bound_macos_symbols, require_no_build_paths
 from configuration import build_recipe, builtin_probe, require_builtin_table
 from rust_graph import verify_configuration as verify_cargo_configuration
 
@@ -77,10 +77,12 @@ def seal(payload, sdk, options, source_identity, commands, provenance, work, exp
     if target == "windows-x64":
         require_builtin_table(payload / "configuration/cpython/config.c", expected_builtins)
     verify_cargo_configuration(payload, crypto_sources, commands["cryptography"])
+    libraries = native_files(payload, target)
+    require_no_build_paths(libraries, work)
     proof = relocated_probe(payload, target, expected_builtins, work / "acceptance")
     report = {"schemaVersion": 1, "sdk": sdk, "sources": source_identity,
               "commands": commands, "idnaProvenance": provenance, "files": inventory(payload),
-              "nativeDependencies": audit(native_files(payload, sdk["native"]["target"]), sdk["native"]["target"], sdk["native"], options),
+              "nativeDependencies": audit(libraries, target, sdk["native"], options),
               "proof": proof, "sourceBuiltHeadlessEngine": True, "applicationProviderReady": False,
               "compilerStandardSupportSdkBoundary": True}
     write_files(payload, {"build-report.json": encoded(report)})

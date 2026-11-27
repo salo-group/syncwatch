@@ -6,7 +6,7 @@ import shutil
 import sys
 import tempfile
 
-from binary_audit import audit
+from binary_audit import audit, require_no_build_paths
 from build_metadata import BUILD_INFO_SUFFIX
 from configuration import build_configuration, build_recipe, builtin_probe, require_builtin_table, windows_modules
 from source_profile import ROOT, digest, encoded, notices, original_sources, stdlib_archive
@@ -61,6 +61,7 @@ def write_files(payload, files):
 
 def package(payload, sources, profile, sdk, source, native, commands, options):
     paths = layout(payload, sdk["target"])
+    require_no_build_paths({native["runtime"], native["library"], *native["extensions"]}, source.parent)
     files = immutable_files(sources, profile)
     files[paths["stdlib"].relative_to(payload).as_posix()] = stdlib_archive(sources, profile)
     files[paths["runtime"].relative_to(payload).as_posix()] = native["runtime"].read_bytes()

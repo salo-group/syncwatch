@@ -6,6 +6,7 @@ import shutil
 import sys
 
 from source_graph import ROOT
+from native_libraries import msvc_portable_environment
 from rust_graph import configure as configure_cargo, verify_metadata
 
 sys.path.insert(0, str(ROOT / "tools/python-build"))
@@ -81,6 +82,8 @@ def cffi(source, work, python, ffi, cmake, options, native, environment):
         "-DSYNCWATCH_PYTHON_LIBRARY=" + library.as_posix()]
     if ffi is not None:
         arguments += ["-DSYNCWATCH_FFI_INCLUDE=" + (ffi / "include").as_posix(), "-DSYNCWATCH_FFI_LIBRARY=" + (ffi / "lib/libffi.a").as_posix()]
+    if native["target"] == "windows-x64":
+        environment = msvc_portable_environment(environment, work)
     commands = {"configure": execute("configure", arguments, work, logs, environment)}
     commands["compile"] = execute("compile", [cmake, "--build", str(build), "--config", "Release", "--parallel", "4"], work, logs, environment)
     return Path((build / "library-Release.txt").read_text()), commands
@@ -115,6 +118,8 @@ def cryptography(paths, work, python, core, openssl, backend, rust, native, envi
     elif not windows:
         flags += ["-C", "link-arg=-Wl,-rpath,$ORIGIN/../../.."]
     env["CARGO_ENCODED_RUSTFLAGS"] = "\x1f".join(flags)
+    if windows:
+        env = msvc_portable_environment(env, work)
     suffix = ".exe" if windows else ""
     cargo = rust / ("bin/cargo" + suffix)
     logs = work / "cryptography-logs"; logs.mkdir()

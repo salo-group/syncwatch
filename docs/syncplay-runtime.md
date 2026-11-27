@@ -17,12 +17,21 @@ declared original repository and package directory. A matching package version
 alone does not establish source identity. Python packaging backends, wheels,
 registry downloads and installed Python packages are not runtime sources.
 
+A SyncWatch Cargo workspace selects the original cryptography library and
+records the resolved lockfile. The original manifests, lockfiles and Rust
+build scripts remain unchanged. The workspace and lock are checked against
+the pinned source graph when restoring a package. The build uses an owned
+Python SDK with the versioned headers and ABI libraries required by PyO3.
+
 TLS must validate both the certificate chain and endpoint identity. The selected
 minimum is TLS 1.2. A missing TLS capability, declined STARTTLS request, invalid
 certificate or malformed negotiation must terminate the connection before a
 Syncplay Hello, password or room name is sent. Reconnection cannot downgrade the
 transport. The pinned certifi bundle supplies application trust roots; machine
 trust stores and arbitrary environment variables do not add trust roots.
+The OpenSSL build disables automatic loading of machine configuration.
+Its compiled paths are independent of the private installation staging
+directory. Native packaging rejects libraries that contain the build path.
 
 ## Source and license distribution
 

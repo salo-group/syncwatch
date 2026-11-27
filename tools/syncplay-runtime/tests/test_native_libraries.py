@@ -27,3 +27,10 @@ class OpenSSLRecipeTests(unittest.TestCase):
                     self.assertNotIn(str(work), " ".join(configure))
                     self.assertIn("DESTDIR=" + (work / "openssl-stage").as_posix(), by_step["install"])
                     self.assertTrue(prefix.is_relative_to(work / "openssl-stage"))
+                    compiler_env = execute.call_args_list[1].args[4]
+                    if target == "windows-x64":
+                        self.assertIn(f"/pathmap:{work}=syncwatch-build", compiler_env["_CL_"])
+                        self.assertIn("/PDBALTPATH:%_PDB%", compiler_env["_LINK_"])
+                    else:
+                        self.assertNotIn("_CL_", compiler_env)
+                        self.assertNotIn("_LINK_", compiler_env)

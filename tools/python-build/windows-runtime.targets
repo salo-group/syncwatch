@@ -10,7 +10,7 @@
             <PreprocessorDefinitions>Z_PREFIX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
         </ClCompile>
     </ItemDefinitionGroup>
-    <ItemDefinitionGroup Condition="'$(MSBuildProjectName)' == 'pythoncore' Or '$(MSBuildProjectName)' == '_socket' Or '$(MSBuildProjectName)' == 'select'">
+    <ItemDefinitionGroup>
         <ClCompile>
             <AdditionalOptions>/experimental:deterministic "/pathmap:$(SyncWatchPythonSource)=cpython-source" "/pathmap:$(SyncWatchBuildRoot)=syncwatch-build" %(AdditionalOptions)</AdditionalOptions>
         </ClCompile>

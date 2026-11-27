@@ -11,18 +11,25 @@ sys.path.insert(0, str(ROOT / "tools/python-build"))
 from native_build import execute
 
 
+def msvc_portable_environment(environment, work):
+    return dict(environment, _CL_=f'/experimental:deterministic "/pathmap:{work}=syncwatch-build"',
+                _LINK_="/Brepro /PDBALTPATH:%_PDB%")
+
+
 def openssl(source, work, native, perl, environment):
     build, stage, logs = (work / n for n in ["openssl-build", "openssl-stage", "openssl-logs"])
     build.mkdir(); logs.mkdir()
     env = dict(environment, PERL5LIB=str(source / "external/perl/Text-Template-1.56/lib"))
     target = {"macos-arm64": "darwin64-arm64-cc", "linux-x64": "linux-x86_64", "windows-x64": "VC-WIN64A"}[native["target"]]
     windows = native["target"] == "windows-x64"
+    # A logical prefix keeps build-machine paths out of runtime settings.
     installation = "C:/SyncWatch/OpenSSL" if windows else "/syncwatch/openssl"
     prefix = stage / installation.split(":/")[-1].lstrip("/")
     flags = ["shared", "no-asm", "no-tests", "no-legacy", "no-comp", "no-engine", "no-module", "no-dso",
              "no-autoload-config", "--prefix=" + installation, "--openssldir=ssl", "--libdir=lib"]
     if windows:
         env["CC"] = "cl"
+        env = msvc_portable_environment(env, work)
     configure = Path(os.path.relpath(source / "Configure", build)).as_posix()
     commands = {"configure": execute("configure", [str(perl), configure, target, *flags], build, logs, env)}
     # CreateProcess searches the parent's PATH, not the supplied child PATH.

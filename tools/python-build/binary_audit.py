@@ -12,6 +12,16 @@ def require_bound_macos_symbols(path):
         raise ValueError("CPython links symbols without a declared macOS library")
 
 
+def require_no_build_paths(files, work):
+    root = work.resolve()
+    markers = {value.encode(encoding) for value in {str(root), root.as_posix()}
+               for encoding in ("utf-8", "utf-16-le")}
+    for file in files:
+        data = file.read_bytes()
+        if any(marker in data for marker in markers):
+            raise ValueError("Native runtime records its private build directory in " + file.name)
+
+
 def audit(paths, target, sdk, options):
     records = {}
     for path in [paths["runtime"], *paths["extensions"]]:
