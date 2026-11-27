@@ -27,6 +27,7 @@ typedef struct {
     int64_t deadline;
     size_t bytes;
     unsigned packets;
+    unsigned expired_cues;
     bool read_limit;
     bool failed;
 } fixture_reader;
@@ -93,10 +94,13 @@ static bool cue_is_active(AVFormatContext *format, fixture_reader *reader, AVPac
         }
         reader->packets++;
         bool selected = packet->stream_index == track && packet->pts != AV_NOPTS_VALUE;
-        bool found = selected && packet->pts == cue && packet->duration > target - cue;
+        bool matches = selected && packet->pts == cue;
+        bool found = matches && packet->duration > target - cue;
         bool done = selected && packet->pts >= cue;
         if (found)
             *caption_bytes = packet->size;
+        if (matches && !found)
+            reader->expired_cues++;
         av_packet_unref(packet);
         if (done)
             return found;
@@ -223,10 +227,10 @@ cleanup:
     }
     printf("{\"activeStartMs\":%" PRId64 ",\"captionBytes\":%d,\"sourceBytes\":%zu,"
            "\"peakHeapBytes\":%zu,\"heapLimited\":%s,\"readLimited\":%s,\"workLimited\":%s,"
-           "\"pinnedInputStable\":%s,\"packets\":%u}\n",
+           "\"pinnedInputStable\":%s,\"packets\":%u,\"expiredSelectedCues\":%u}\n",
            active, caption_bytes, reader.bytes, memory.peak_bytes,
            memory.refused ? "true" : "false", reader.read_limit ? "true" : "false",
-           work_limit ? "true" : "false", stable ? "true" : "false", reader.packets);
+           work_limit ? "true" : "false", stable ? "true" : "false", reader.packets, reader.expired_cues);
     bool limited = reader.read_limit || work_limit || memory.refused;
     return stable && (limited || (parsed && !reader.failed)) ? 0 : 1;
 }

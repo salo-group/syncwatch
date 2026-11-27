@@ -45,7 +45,7 @@ class NativeBuild:
         if self.windows:
             result = subprocess.run(["taskkill.exe", "/PID", str(process.pid), "/T", "/F"],
                                     capture_output=True, text=True, timeout=15, check=False)
-            if result.returncode and process.poll() is None:
+            if result.returncode:
                 raise RuntimeError("Could not stop the subtitle build process tree")
         else:
             try:
@@ -61,8 +61,10 @@ class NativeBuild:
         trace = self.directory / "command.log"
         try:
             with trace.open("wb") as log:
+                flags = subprocess.CREATE_NEW_PROCESS_GROUP if self.windows else 0
                 process = subprocess.Popen(command, cwd=self.directory, env=self.env, stdin=subprocess.DEVNULL,
-                                           stdout=log, stderr=subprocess.STDOUT, start_new_session=not self.windows)
+                                           stdout=log, stderr=subprocess.STDOUT, start_new_session=not self.windows,
+                                           creationflags=flags)
                 try:
                     status = process.wait(timeout=timeout)
                 except (subprocess.TimeoutExpired, KeyboardInterrupt):
@@ -144,12 +146,12 @@ class NativeBuild:
 
 
 def observe(build, path, track, position, limit, expected_start, expected_bytes, *,
-            refused=False, read_limited=False, min_packets=0):
+            refused=False, read_limited=False, min_expired_cues=0):
     result = json.loads(build.program("subtitle-probe", path, track, position, limit))
     if (result["activeStartMs"] != expected_start or result["captionBytes"] != expected_bytes
             or not 0 < result["peakHeapBytes"] <= limit or result["sourceBytes"] > 512 * 1024
             or result["heapLimited"] != refused or result["readLimited"] != read_limited or result["workLimited"]
-            or result["packets"] < min_packets
+            or result["expiredSelectedCues"] < min_expired_cues
             or not result["pinnedInputStable"]):
         raise ValueError(f"Unexpected subtitle probe result: {result}")
     return result
@@ -175,7 +177,7 @@ def verify(sources, indexed_fixture, jobs):
         observations = {
             "overlapping": observe(build, indexed_fixture, 0, 200000, HEAP_LIMIT, 20, 32),
             "otherTrack": observe(build, indexed_fixture, 1, 200000, HEAP_LIMIT, 183180, 32),
-            "expired": observe(build, indexed_fixture, 0, 225000, HEAP_LIMIT, -1, 0, min_packets=1),
+            "expired": observe(build, indexed_fixture, 0, 225000, HEAP_LIMIT, -1, 0, min_expired_cues=1),
             "memoryLimit": observe(build, indexed_fixture, 0, 200000, 16384, -1, 0, refused=True),
             "compressed": observe(build, compressed, 0, 1000, HEAP_LIMIT, 0, 84),
             "missingCues": observe(build, missing_cues, 0, 200000, HEAP_LIMIT, -1, 0, read_limited=True),
@@ -197,5 +199,14 @@ def main():
                      indent=2, sort_keys=True))
 
 
+def cancel_build(_signal, _frame):
+    raise KeyboardInterrupt
+
+
 if __name__ == "__main__":
-    main()
+    if os.name != "nt":
+        signal.signal(signal.SIGTERM, cancel_build)
+    try:
+        main()
+    except KeyboardInterrupt:
+        raise SystemExit(130) from None
