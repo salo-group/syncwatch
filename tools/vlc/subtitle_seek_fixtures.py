@@ -35,6 +35,16 @@ def _unsigned(tag, value, width=None):
     return _element(tag, value.to_bytes(width or max(1, (value.bit_length() + 7) // 8), "big"))
 
 
+def without_cues(original):
+    """Author a seekless copy with the original media blocks."""
+    root = list(_elements(original, 0, len(original)))
+    segment = next(e for e in root if e[0] == 0x18538067)
+    children = _elements(original, segment[2], segment[3])
+    body = b"".join(original[start:end] for tag, start, _, end in children
+                    if tag not in (0x114d9b74, 0x1c53bb6b))
+    return original[:segment[1]] + _element(0x18538067, body) + original[segment[3]:]
+
+
 def compressed_cues(original, packet_bytes, count=1, *, laces=1, additional_bytes=0,
                     compressed=True, place_in_video_cluster=False):
     """Keep authored A/V blocks; rebuild exact seek offsets around compressed ASS cues."""

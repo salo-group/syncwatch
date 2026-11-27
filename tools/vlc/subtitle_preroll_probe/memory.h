@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+enum { SW_SUBTITLE_HEAP_LIMIT = 4 * 1024 * 1024 };
+
 typedef struct {
     size_t peak_bytes;
     bool refused;

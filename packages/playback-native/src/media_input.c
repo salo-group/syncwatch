@@ -4,6 +4,7 @@
 #define _DARWIN_C_SOURCE
 #endif
 #include "../include/syncwatch_media_input.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
@@ -170,6 +171,22 @@ int sw_media_input_version(sw_media_input *input, sw_input_version *version) {
 int sw_media_input_descriptor(sw_media_input *input) {
     sw_input_version version;
     return sw_media_input_version(input, &version) == SW_INPUT_OK ? input->descriptor : -1;
+}
+int sw_media_input_extent(sw_media_input *input, uint64_t *size, uint64_t *position) {
+    if (!size || !position) return SW_INPUT_INVALID;
+    *size = *position = 0;
+    sw_input_version version;
+    int status = sw_media_input_version(input, &version);
+    if (status != SW_INPUT_OK) return status;
+#ifdef _WIN32
+    int64_t offset = _lseeki64(input->descriptor, 0, SEEK_CUR);
+#else
+    off_t offset = lseek(input->descriptor, 0, SEEK_CUR);
+#endif
+    if (offset < 0) return SW_INPUT_UNAVAILABLE;
+    *size = version.words[3];
+    *position = (uint64_t)offset;
+    return SW_INPUT_OK;
 }
 int sw_media_input_read_at(sw_media_input *input, uint64_t offset,
     unsigned char *buffer, size_t capacity, size_t *count) {

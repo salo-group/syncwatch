@@ -5,8 +5,8 @@ import argparse
 import json
 import os
 from pathlib import Path
-import platform
 import shlex
+import signal
 import subprocess
 import sys
 import tempfile
@@ -14,10 +14,12 @@ import tempfile
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE.parents[1] / "native"))
 
 from fixtures import embedded_tracks
+from native_context import BuildContext
 from source_profile import ROOT, materialize, profile_data, read_snapshot
-from subtitle_seek_fixtures import compressed_cues
+from subtitle_seek_fixtures import compressed_cues, without_cues
 
 
 HEAP_LIMIT = 4 * 1024 * 1024
@@ -28,40 +30,52 @@ CRT_ALLOCATIONS = {
     "aligned_alloc", "aligned_free", "aligned_malloc", "aligned_realloc", "calloc", "free", "malloc", "memalign",
     "posix_memalign", "pvalloc", "realloc", "reallocarray", "strdup", "strndup", "valloc",
 }
-WINDOWS_BINDINGS = {"aligned_malloc", "aligned_realloc", "aligned_free"}
+WINDOWS_BINDINGS = ("aligned_malloc", "aligned_realloc", "aligned_free")
 
 
 class NativeBuild:
-    def __init__(self, directory):
+    def __init__(self, directory, epoch):
         self.directory = directory
-        self.host = platform.system()
-        self.compiler = "cc"
-        self.shell = None
-        self.env = dict(os.environ, LC_ALL="C")
-        if self.host == "Windows":
-            msys = Path(os.environ["SYNCWATCH_MSYS_ROOT"])
-            self.shell = msys / "usr/bin/bash.exe"
-            self.compiler = "gcc"
-            self.env.update(MSYSTEM="UCRT64", MSYS2_PATH_TYPE="minimal", CHERE_INVOKING="1")
-            self.env["PATH"] = os.pathsep.join([str(msys / "ucrt64/bin"), str(msys / "usr/bin"), self.env["PATH"]])
-        elif self.host == "Darwin":
-            self.env["MACOSX_DEPLOYMENT_TARGET"] = "13.0"
-        elif self.host != "Linux":
-            raise ValueError("Unsupported subtitle probe host")
+        self.context = BuildContext(directory, epoch, autotools=False)
+        self.windows = self.context.target == "windows-x64"
+        self.compiler = self.context.env["CC"]
+        self.env = self.context.env
+
+    def terminate(self, process):
+        if self.windows:
+            result = subprocess.run(["taskkill.exe", "/PID", str(process.pid), "/T", "/F"],
+                                    capture_output=True, text=True, timeout=15, check=False)
+            if result.returncode and process.poll() is None:
+                raise RuntimeError("Could not stop the subtitle build process tree")
+        else:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        process.wait(timeout=15)
 
     def run(self, arguments, timeout=60):
         command = [str(a) for a in arguments]
-        if self.shell:
-            command = [str(self.shell), "--noprofile", "--norc", "-c", shlex.join(command)]
-        with (self.directory / "command.log").open("wb") as log:
-            result = subprocess.run(command, cwd=self.directory, env=self.env, stdin=subprocess.DEVNULL,
-                                    stdout=log, stderr=subprocess.STDOUT, timeout=timeout, check=False)
-        if result.returncode:
-            print((self.directory / "command.log").read_text(errors="replace")[-4000:], file=sys.stderr)
-            result.check_returncode()
+        if self.windows:
+            command = [self.context.shell, "--noprofile", "--norc", "-c", shlex.join(command)]
+        trace = self.directory / "command.log"
+        try:
+            with trace.open("wb") as log:
+                process = subprocess.Popen(command, cwd=self.directory, env=self.env, stdin=subprocess.DEVNULL,
+                                           stdout=log, stderr=subprocess.STDOUT, start_new_session=not self.windows)
+                try:
+                    status = process.wait(timeout=timeout)
+                except (subprocess.TimeoutExpired, KeyboardInterrupt):
+                    self.terminate(process)
+                    raise
+            if status:
+                raise subprocess.CalledProcessError(status, command)
+        except (subprocess.SubprocessError, KeyboardInterrupt, RuntimeError):
+            print(trace.read_text(errors="replace")[-4000:], file=sys.stderr)
+            raise
 
     def program(self, name, *arguments):
-        executable = self.directory / (name + (".exe" if self.shell else ""))
+        executable = self.directory / (name + (".exe" if self.windows else ""))
         return subprocess.check_output([str(executable), *map(str, arguments)], cwd=self.directory,
                                        env=self.env, stdin=subprocess.DEVNULL, text=True, timeout=10).strip()
 
@@ -91,19 +105,20 @@ class NativeBuild:
                   "--disable-swscale", "--disable-swresample", "--disable-pthreads", "--disable-w32threads",
                   "--disable-os2threads", "--enable-demuxer=matroska", "--enable-zlib", "--pkg-config=false",
                   "--malloc-prefix=sw_subtitle_", "--extra-cflags=-I../zlib",
-                  "--extra-ldflags=-L.", "--extra-libs=-lswsubtitle"], 300)
+                  "--extra-ldflags=-L.", "--extra-libs=-lswsubtitle"], 420)
         config = (self.directory / "config.h").read_text()
         required = {"CONFIG_ZLIB": 1, "HAVE_PTHREADS": 0, "HAVE_W32THREADS": 0, "HAVE_OS2THREADS": 0,
-                    "HAVE_POSIX_MEMALIGN": 0 if self.shell else 1, "HAVE_ALIGNED_MALLOC": 1 if self.shell else 0}
+                    "HAVE_POSIX_MEMALIGN": 0 if self.windows else 1,
+                    "HAVE_ALIGNED_MALLOC": 1 if self.windows else 0}
         for name, value in required.items():
             if f"#define {name} {value}" not in config.splitlines():
                 raise ValueError(f"FFmpeg configured an unexpected subtitle allocator or thread model: {name}")
         self.run(["make", f"-j{jobs}", *ARCHIVES], 600)
         self.audit_allocations()
         platform_libraries = []
-        if self.shell:
-            for symbol in ("_aligned_malloc", "_aligned_realloc", "_aligned_free"):
-                platform_libraries += ["-Wl,--wrap=" + symbol, "-Wl,--wrap=__imp_" + symbol]
+        if self.windows:
+            for symbol in WINDOWS_BINDINGS:
+                platform_libraries += ["-Wl,--wrap=_" + symbol, "-Wl,--wrap=__imp__" + symbol]
             platform_libraries.append("-lbcrypt")
         self.compile("probe.c", "-I../ffmpeg", "-I.", "-I" + (MEDIA_INPUT / "include").as_posix(),
                      (MEDIA_INPUT / "src/media_input.c").as_posix(), *ARCHIVES, "libz.a", "libswsubtitle.a",
@@ -111,27 +126,30 @@ class NativeBuild:
 
     def audit_allocations(self):
         found = set()
+        nm = self.context.tool("nm")
         for archive in [*ARCHIVES, "libz.a"]:
-            symbols = subprocess.check_output(["nm", "-A", "-u", archive], cwd=self.directory, env=self.env,
+            symbols = subprocess.check_output([nm, "-A", "-u", archive], cwd=self.directory, env=self.env,
                                               text=True, timeout=10)
             for line in symbols.splitlines():
                 if not line.strip():
                     continue
                 reference = line.split()[-1].removeprefix("__imp_").lstrip("_")
                 if reference in CRT_ALLOCATIONS:
-                    if not (self.shell and reference in WINDOWS_BINDINGS and archive == ARCHIVES[-1]
+                    if not (self.windows and reference in WINDOWS_BINDINGS and archive == ARCHIVES[-1]
                             and (":mem.o:" in line or "(mem.o)" in line)):
                         raise ValueError(f"Unbudgeted parser allocation in {archive}: {reference}")
                     found.add(reference)
-        if self.shell and found != WINDOWS_BINDINGS:
+        if self.windows and found != set(WINDOWS_BINDINGS):
             raise ValueError("Unexpected Windows parser allocator bindings")
 
 
-def observe(build, path, track, position, limit, expected_start, expected_bytes, *, refused=False):
+def observe(build, path, track, position, limit, expected_start, expected_bytes, *,
+            refused=False, read_limited=False, min_packets=0):
     result = json.loads(build.program("subtitle-probe", path, track, position, limit))
     if (result["activeStartMs"] != expected_start or result["captionBytes"] != expected_bytes
             or not 0 < result["peakHeapBytes"] <= limit or result["sourceBytes"] > 512 * 1024
-            or result["heapLimited"] != refused or result["readLimited"] or result["workLimited"]
+            or result["heapLimited"] != refused or result["readLimited"] != read_limited or result["workLimited"]
+            or result["packets"] < min_packets
             or not result["pinnedInputStable"]):
         raise ValueError(f"Unexpected subtitle probe result: {result}")
     return result
@@ -146,24 +164,26 @@ def verify(sources, indexed_fixture, jobs):
             data = read_snapshot(sources / (name + ".tar"), specification)
             materialize(scope / name, data, specification, profile["sourceDateEpoch"])
             del data
-        build = NativeBuild(scope / "build")
-        build.directory.mkdir()
-        build.env["SOURCE_DATE_EPOCH"] = str(profile["sourceDateEpoch"])
+        build = NativeBuild(scope / "build", profile["sourceDateEpoch"])
         build.compression()
         build.ffmpeg(jobs)
         media = embedded_tracks(scope)
         compressed = scope / "compressed-caption.mkv"
         compressed.write_bytes(compressed_cues(media.read_bytes(), 64, place_in_video_cluster=True))
+        missing_cues = scope / "missing-cues.mkv"
+        missing_cues.write_bytes(without_cues(indexed_fixture.read_bytes()))
         observations = {
             "overlapping": observe(build, indexed_fixture, 0, 200000, HEAP_LIMIT, 20, 32),
             "otherTrack": observe(build, indexed_fixture, 1, 200000, HEAP_LIMIT, 183180, 32),
-            "expired": observe(build, indexed_fixture, 0, 225000, HEAP_LIMIT, -1, 0),
+            "expired": observe(build, indexed_fixture, 0, 225000, HEAP_LIMIT, -1, 0, min_packets=1),
             "memoryLimit": observe(build, indexed_fixture, 0, 200000, 16384, -1, 0, refused=True),
             "compressed": observe(build, compressed, 0, 1000, HEAP_LIMIT, 0, 84),
+            "missingCues": observe(build, missing_cues, 0, 200000, HEAP_LIMIT, -1, 0, read_limited=True),
         }
         for name, specification in originals.items():
             read_snapshot(scope / name, specification)
-        return {"nativeOS": build.host, "originalFiles": {name: len(spec["files"]) for name, spec in originals.items()},
+        return {"target": build.context.target,
+                "originalFiles": {name: len(spec["files"]) for name, spec in originals.items()},
                 "observations": observations}
 
 

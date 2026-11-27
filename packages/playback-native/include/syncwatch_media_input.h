@@ -21,6 +21,8 @@ typedef struct sw_input_version { uint64_t words[8]; } sw_input_version;
  * borrower of its descriptor has stopped. No threads or callbacks are created. */
 SW_INPUT_API int sw_media_input_open(const char *absolute_utf8_path, sw_media_input **);
 SW_INPUT_API int sw_media_input_version(sw_media_input *, sw_input_version *);
+/* Observe the validated file size and the playback descriptor's current position. */
+SW_INPUT_API int sw_media_input_extent(sw_media_input *, uint64_t *size, uint64_t *position);
 /* A borrowed descriptor: never seek, write or close it from a client. */
 SW_INPUT_API int sw_media_input_descriptor(sw_media_input *);
 /* Bounded positional reads do not change the borrowed descriptor's position. */

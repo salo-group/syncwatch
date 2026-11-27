@@ -17,15 +17,7 @@
 #include <libavutil/mem.h>
 #include <libavutil/time.h>
 
-#ifdef _WIN32
-#include <io.h>
-#define descriptor_position _lseeki64
-#else
-#include <unistd.h>
-#define descriptor_position lseek
-#endif
-
-enum { READ_LIMIT = 512 * 1024, HEAP_LIMIT = 4 * 1024 * 1024 };
+enum { READ_LIMIT = 512 * 1024 };
 enum { MAX_PACKETS = 800, MAX_CUES = 8, TIME_LIMIT_US = 1500000, IO_BUFFER_SIZE = 4096 };
 
 typedef struct {
@@ -92,8 +84,13 @@ static int64_t seek_fixture(void *opaque, int64_t offset, int whence) {
 
 static bool cue_is_active(AVFormatContext *format, fixture_reader *reader, AVPacket *packet,
                           int track, int64_t cue, int64_t target, int *caption_bytes) {
-    while (!expired(reader) && !reader->read_limit && reader->packets < MAX_PACKETS &&
-           av_read_frame(format, packet) >= 0) {
+    while (!expired(reader) && !reader->read_limit && reader->packets < MAX_PACKETS) {
+        int status = av_read_frame(format, packet);
+        if (status < 0) {
+            if (status != AVERROR_EOF && status != AVERROR_EXIT)
+                reader->failed = true;
+            return false;
+        }
         reader->packets++;
         bool selected = packet->stream_index == track && packet->pts != AV_NOPTS_VALUE;
         bool found = selected && packet->pts == cue && packet->duration > target - cue;
@@ -114,8 +111,10 @@ static int64_t find_active_cue(AVFormatContext *format, fixture_reader *reader, 
     const AVRational milliseconds = {1, 1000};
     int64_t target = av_rescale_q(target_ms, milliseconds, captions->time_base);
     /* The first video seek loads deferred Cues through the public demuxer API. */
-    if (av_seek_frame(format, video, 0, AVSEEK_FLAG_BACKWARD) < 0)
+    if (av_seek_frame(format, video, 0, AVSEEK_FLAG_BACKWARD) < 0) {
+        reader->failed = true;
         return -1;
+    }
     int index = av_index_search_timestamp(captions, target, AVSEEK_FLAG_BACKWARD);
     int64_t candidates[MAX_CUES];
     int count = 0;
@@ -125,10 +124,12 @@ static int64_t find_active_cue(AVFormatContext *format, fixture_reader *reader, 
             break;
         candidates[count++] = entry->timestamp;
     }
-    for (int i = 0; i < count && !reader->read_limit && !expired(reader); i++) {
+    for (int i = 0; i < count && !reader->read_limit && !reader->failed && !expired(reader); i++) {
         int64_t where = av_rescale_q(candidates[i], captions->time_base, pictures->time_base);
-        if (av_seek_frame(format, video, where, AVSEEK_FLAG_BACKWARD) < 0)
+        if (av_seek_frame(format, video, where, AVSEEK_FLAG_BACKWARD) < 0) {
+            reader->failed = true;
             break;
+        }
         if (cue_is_active(format, reader, packet, track, candidates[i], target, caption_bytes))
             return av_rescale_q(candidates[i], captions->time_base, milliseconds);
     }
@@ -143,10 +144,10 @@ static bool number(const char *text, unsigned long long max, unsigned long long 
 }
 
 int main(int argc, char **argv) {
-    unsigned long long ordinal, target_ms, limit = HEAP_LIMIT;
+    unsigned long long ordinal, target_ms, limit = SW_SUBTITLE_HEAP_LIMIT;
     if ((argc != 4 && argc != 5) || !number(argv[2], 65535, &ordinal) ||
         !number(argv[3], INT32_MAX, &target_ms) ||
-        (argc == 5 && !number(argv[4], HEAP_LIMIT, &limit)) ||
+        (argc == 5 && !number(argv[4], SW_SUBTITLE_HEAP_LIMIT, &limit)) ||
         !sw_subtitle_memory_begin((size_t)limit))
         return 2;
     fixture_reader reader = {.deadline = av_gettime_relative() + TIME_LIMIT_US};
@@ -155,17 +156,14 @@ int main(int argc, char **argv) {
     AVPacket *packet = NULL;
     int64_t active = -1;
     int caption_bytes = 0;
-    bool parsed = false, stable = false;
-    int64_t initial_position = -1;
-    sw_input_version version;
+    bool parsed = false, stable = false, have_extent = false;
+    uint64_t size, initial_position;
     if (sw_media_input_open(argv[1], &reader.input) != SW_INPUT_OK ||
-        sw_media_input_version(reader.input, &version) != SW_INPUT_OK ||
-        !version.words[3] || version.words[3] > INT64_MAX)
+        sw_media_input_extent(reader.input, &size, &initial_position) != SW_INPUT_OK ||
+        !size || size > INT64_MAX)
         goto cleanup;
-    reader.size = (int64_t)version.words[3];
-    int descriptor = sw_media_input_descriptor(reader.input);
-    if (descriptor < 0 || (initial_position = descriptor_position(descriptor, 0, SEEK_CUR)) < 0)
-        goto cleanup;
+    have_extent = true;
+    reader.size = (int64_t)size;
     format = avformat_alloc_context();
     if (!format)
         goto cleanup;
@@ -207,9 +205,10 @@ cleanup:
         av_freep(&io->buffer);
         avio_context_free(&io);
     }
-    if (reader.input && initial_position >= 0 && !reader.failed) {
-        int current = sw_media_input_descriptor(reader.input);
-        stable = current >= 0 && descriptor_position(current, 0, SEEK_CUR) == initial_position;
+    if (have_extent) {
+        uint64_t current_size, current_position;
+        stable = sw_media_input_extent(reader.input, &current_size, &current_position) == SW_INPUT_OK &&
+                 current_size == size && current_position == initial_position;
     }
     sw_media_input_close(reader.input);
     sw_subtitle_memory_result memory;
@@ -218,7 +217,7 @@ cleanup:
         return 1;
     }
     bool work_limit = expired(&reader) || reader.packets >= MAX_PACKETS;
-    if (!stable || reader.read_limit || work_limit || memory.refused) {
+    if (!stable || reader.failed || reader.read_limit || work_limit || memory.refused) {
         active = -1;
         caption_bytes = 0;
     }
@@ -228,5 +227,6 @@ cleanup:
            active, caption_bytes, reader.bytes, memory.peak_bytes,
            memory.refused ? "true" : "false", reader.read_limit ? "true" : "false",
            work_limit ? "true" : "false", stable ? "true" : "false", reader.packets);
-    return stable && (parsed || reader.read_limit || work_limit || memory.refused) ? 0 : 1;
+    bool limited = reader.read_limit || work_limit || memory.refused;
+    return stable && (limited || (parsed && !reader.failed)) ? 0 : 1;
 }

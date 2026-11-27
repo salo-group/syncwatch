@@ -43,6 +43,14 @@ int main(void) {
     assert(uncompress(output, &length, compressed, sizeof(compressed)) == Z_MEM_ERROR);
     assert(sw_subtitle_memory_finish(&result));
     assert(result.refused);
+    stream = (z_stream){0};
+    assert(sw_subtitle_memory_begin(SW_SUBTITLE_HEAP_LIMIT));
+    void *retained = sw_subtitle_malloc(SW_SUBTITLE_HEAP_LIMIT - 4096);
+    assert(retained);
+    assert(inflateInit(&stream) == Z_MEM_ERROR);
+    sw_subtitle_free(retained);
+    assert(sw_subtitle_memory_finish(&result));
+    assert(result.refused && result.peak_bytes <= SW_SUBTITLE_HEAP_LIMIT);
     puts("Subtitle inflate allocation checks passed");
     return 0;
 }

@@ -6,23 +6,23 @@
 #include <stdio.h>
 #include <string.h>
 
-static void refuses_aggregate_and_preserves_realloc(void) {
-    const size_t limit = 4096;
+static void refuses_aggregate_and_preserves_realloc(size_t limit) {
+    const size_t first_size = limit / 2 + limit / 16;
     sw_subtitle_memory_result result;
     assert(sw_subtitle_memory_begin(limit));
-    unsigned char *first = sw_subtitle_malloc(2304);
+    unsigned char *first = sw_subtitle_malloc(first_size);
     assert(first);
-    memset(first, 0x35, 2304);
+    memset(first, 0x35, first_size);
     assert(!sw_subtitle_memory_begin(limit));
-    assert(!sw_subtitle_malloc(2048));
-    assert(!sw_subtitle_realloc(first, 2048));
-    for (size_t index = 0; index < 2304; index++)
+    assert(!sw_subtitle_malloc(limit / 2));
+    assert(!sw_subtitle_realloc(first, limit / 2));
+    for (size_t index = 0; index < first_size; index++)
         assert(first[index] == 0x35);
     assert(!sw_subtitle_memory_finish(&result));
     sw_subtitle_free(first);
     assert(sw_subtitle_memory_finish(&result));
     assert(result.refused);
-    assert(result.peak_bytes > 2304 && result.peak_bytes <= limit);
+    assert(result.peak_bytes > first_size && result.peak_bytes <= limit);
 }
 
 static void frees_and_reuses_the_budget(void) {
@@ -64,7 +64,8 @@ static void handles_alignment_and_overflow(void) {
 }
 
 int main(void) {
-    refuses_aggregate_and_preserves_realloc();
+    refuses_aggregate_and_preserves_realloc(4096);
+    refuses_aggregate_and_preserves_realloc(SW_SUBTITLE_HEAP_LIMIT);
     frees_and_reuses_the_budget();
     handles_alignment_and_overflow();
     puts("Subtitle allocation budget checks passed");
