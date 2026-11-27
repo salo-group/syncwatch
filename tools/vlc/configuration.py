@@ -16,19 +16,6 @@ def pulse_version(original, profile):
     return (version + "\n").encode()
 
 
-def decoder_flush(original):
-    """A decoder reset releases dated and undated pictures from the old input."""
-    decoder = original
-    for owner in [b"p_vout", b"p_owner->p_vout"]:
-        before = b"vout_Flush( " + owner + b", VLC_TICK_INVALID+1 );"
-        if decoder.count(before) != 1:
-            raise ValueError("Review the pinned VLC decoder reset before configuring complete picture flushes")
-        decoder = decoder.replace(before,
-            b"/* SyncWatch modified 2026-10-30: also release undated pre-seek pictures. */\n"
-            b"            vout_Flush( " + owner + b", INT64_MIN );")
-    return decoder
-
-
 def avformat_clock(original):
     """Sparse subtitle cues are not the audio/video clock driving slave input."""
     before = b"""        if( p_sys->tracks[i].p_es != NULL )
@@ -67,7 +54,6 @@ def vlc_files(original, profile):
             b"    { VLC_CODEC_" + fourcc + b", AV_CODEC_ID_" + name + b" },")
     return {"lib/media_player.c": player, "modules/codec/avcodec/fourcc.c": codecs,
             "modules/demux/avformat/demux.c": avformat_clock(original["modules/demux/avformat/demux.c"]),
-            "src/input/decoder.c": decoder_flush(original["src/input/decoder.c"]),
             "src/revision.txt": (profile["sources"]["vlc"]["revision"] + "\n").encode()}
 
 

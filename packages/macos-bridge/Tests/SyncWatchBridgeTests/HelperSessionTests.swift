@@ -176,13 +176,40 @@ private actor SessionPlayer: PlaybackPort {
     private(set) var seeks = 0
     private(set) var closes = 0
     private var ended = false
-    init(_ scope: PlaybackScope) { self.scope = scope }
+    private var delayPause = false
+    private var pendingPause: Bool?
+    private var delaySeek = false
+    private var pendingSeek: Int64?
+    private var bufferNextObservation = false
+    private let videoOutputs: Int
+    init(_ scope: PlaybackScope, videoOutputs: Int = 0) {
+        self.scope = scope
+        self.videoOutputs = videoOutputs
+    }
     func observe(_ scope: PlaybackScope) throws -> PlaybackObservation {
         try self.scope.check(clientRunID: scope.clientRunID, mediaGeneration: scope.mediaGeneration)
+        defer {
+            if let pendingSeek {
+                self.pendingSeek = nil
+                position = pendingSeek
+                sequence += 1
+            }
+            if let pendingPause {
+                self.pendingPause = nil
+                setPaused(pendingPause, scope: scope)
+            }
+        }
+        if bufferNextObservation {
+            bufferNextObservation = false
+            return try PlaybackObservation(
+                scope: scope, sequence: sequence, status: .loading, positionMs: 0,
+                durationMs: nil, paused: true, rate: 1, seekable: false, buffering: true, ended: false,
+                width: 0, height: 0, videoOutputs: 0, volume: nil, muted: false)
+        }
         return try PlaybackObservation(
             scope: scope, sequence: sequence, status: .ready, positionMs: position,
             durationMs: 60000, paused: paused, rate: 1, seekable: !ended, buffering: false, ended: ended,
-            width: 0, height: 0, videoOutputs: 0, volume: nil, muted: false)
+            width: 0, height: 0, videoOutputs: videoOutputs, volume: nil, muted: false)
     }
     func finishMedia() {
         sequence += 1
@@ -191,14 +218,35 @@ private actor SessionPlayer: PlaybackPort {
         position = 60000
     }
     func setPaused(_ paused: Bool, scope: PlaybackScope) {
+        if delayPause {
+            delayPause = false
+            pendingPause = paused
+            return
+        }
         if self.paused != paused { sequence += 1 }
         self.paused = paused
     }
+    func delayNextPause() { delayPause = true }
+    func delayNextSeek(buffering: Bool) {
+        delaySeek = true
+        bufferNextObservation = buffering
+    }
+    private var rejectSeek = false
+    func rejectNextSeek() { rejectSeek = true }
     func seek(to positionMs: Int64, scope: PlaybackScope) throws {
         try Task.checkCancellation()
+        seeks += 1
+        if rejectSeek {
+            rejectSeek = false
+            throw HelperSessionFailure.unavailable
+        }
+        if delaySeek {
+            delaySeek = false
+            pendingSeek = positionMs
+            return
+        }
         sequence += 1
         position = positionMs
-        seeks += 1
     }
     func load(_ localFile: URL, scope: PlaybackScope) throws { throw HelperSessionFailure.unavailable }
     func setRate(_ rate: Double, scope: PlaybackScope) throws { throw HelperSessionFailure.unavailable }
@@ -219,6 +267,76 @@ private actor SessionPlayer: PlaybackPort {
         if ContinuousClock.now >= end { throw HelperSessionFailure.timeout }
         try await Task.sleep(for: .milliseconds(10))
     }
+}
+
+@Test(arguments: [(0, false), (1, false), (1, true)])
+@MainActor func userPauseRefreshesOnlyVisibleVideo(_ scenario: (outputs: Int, refreshRejected: Bool)) async throws {
+    let outputs = scenario.outputs
+    let native = try PlaybackScope.fresh().replacingMedia()
+    let player = SessionPlayer(native, videoOutputs: outputs)
+    let peer = SessionPeer()
+    let session = try HelperSession(
+        transport: peer, player: player, nativeScope: native,
+        endpoint: SyncplayEndpoint(host: "localhost", port: 8999, room: "room", username: "Viewer"),
+        media: SharedMedia(handle: "media-1", name: "Movie.mkv", durationMs: 60000, fileSizeBytes: 1234),
+        revision: sessionRevision)
+    do {
+        try session.start()
+        try await eventually { session.state.playbackReady }
+        try session.pause(false)
+        try await eventually { try await peer.userMatches(position: 1200, paused: false) }
+        if scenario.refreshRejected { await player.rejectNextSeek() }
+        try session.pause(true)
+        try await eventually { try await peer.userMatches(position: 1200, paused: true) }
+        if outputs == 1 { try await eventually { await player.seeks == 1 } }
+        try session.pause(false)
+        try await eventually { try await peer.userCount() == 3 }
+        await peer.gateUserWrite()
+        try session.pause(true)
+        try await eventually { await peer.userWriteHeld }
+        try session.pause(false)
+        await peer.releaseUserWrite()
+        try await eventually { try await peer.userCount() == 5 }
+        await session.close()
+        #expect(await player.seeks == outputs)
+    } catch {
+        await session.close()
+        throw error
+    }
+}
+
+@Test(arguments: [true, false]) func pauseCorrectionWaitsForNativeReadback(_ paused: Bool) async throws {
+    let native = try PlaybackScope.fresh().replacingMedia()
+    let wire = try PlaybackScope(clientRunID: "helper-run", mediaGeneration: 7)
+    let player = SessionPlayer(native)
+    await player.setPaused(!paused, scope: native)
+    await player.delayNextPause()
+    let frame =
+        Data(
+            """
+            {"v":1,"id":"cmd-1","type":"player.setPaused","clientRunId":"helper-run","mediaGeneration":7,"payload":{"paused":\(paused)}}
+            """.utf8) + Data([10])
+    let command = try PlayerCorrection.decode(frame, wireScope: wire)
+    let actual = try await command.apply(to: player, nativeScope: native, authorizedHandle: "media-1")
+    let reply = try HelperJSON.object(command.result(actual, nativeScope: native))
+    #expect((reply["payload"] as? [String: Any])?["paused"] as? Bool == paused)
+}
+
+@Test(arguments: [false, true]) func seekCorrectionWaitsForNativePosition(_ buffering: Bool) async throws {
+    let native = try PlaybackScope.fresh().replacingMedia()
+    let wire = try PlaybackScope(clientRunID: "helper-run", mediaGeneration: 7)
+    let player = SessionPlayer(native)
+    await player.delayNextSeek(buffering: buffering)
+    let frame =
+        Data(
+            """
+            {"v":1,"id":"cmd-1","type":"player.setPosition","clientRunId":"helper-run","mediaGeneration":7,"payload":{"positionMs":36000}}
+            """.utf8) + Data([10])
+    let command = try PlayerCorrection.decode(frame, wireScope: wire)
+    let actual = try await command.apply(to: player, nativeScope: native, authorizedHandle: "media-1")
+    let reply = try HelperJSON.object(command.result(actual, nativeScope: native))
+    #expect((reply["payload"] as? [String: Any])?["positionMs"] as? Int64 == 36_000)
+    #expect(await player.seeks == 1)
 }
 
 @Test @MainActor func sessionPublicationReplayAndFailure() async throws {

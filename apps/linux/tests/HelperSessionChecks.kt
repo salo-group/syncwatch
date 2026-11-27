@@ -116,7 +116,7 @@ private class SessionPeer : HelperTransport {
     @Synchronized fun userCount() = sent.count { it["origin"] == "user" }
 }
 
-private class SessionPlayer(private val scope: PlaybackScope) : PlaybackPort {
+private class SessionPlayer(private val scope: PlaybackScope, private val videoOutputs: Int = 0) : PlaybackPort {
     private var sequence = 1uL
     @Volatile var paused = false
         private set
@@ -125,16 +125,52 @@ private class SessionPlayer(private val scope: PlaybackScope) : PlaybackPort {
     var seeks = 0
         private set
     private var ended = false
+    private var delayPause = false
+    private var pendingPause: Boolean? = null
+    private var delaySeek = false
+    private var pendingSeek: Long? = null
+    private var bufferNextObservation = false
     fun finishMedia() { sequence++; ended = true; paused = true; position = 60000 }
     var closes = 0
         private set
     override suspend fun observe(scope: PlaybackScope): PlaybackObservation {
         this.scope.check(scope)
-        return PlaybackObservation(scope, sequence, PlaybackStatus.ready, position, 60000, paused, 1.0,
-            !ended, false, ended, 0, 0, 0, null, false)
+        val observation = if (bufferNextObservation) {
+            bufferNextObservation = false
+            PlaybackObservation(scope, sequence, PlaybackStatus.loading, 0, null, true, 1.0,
+                false, true, false, 0, 0, 0, null, false)
+        } else PlaybackObservation(scope, sequence, PlaybackStatus.ready, position, 60000, paused, 1.0,
+            !ended, false, ended, 0, 0, videoOutputs, null, false)
+        pendingSeek?.let { pendingSeek = null; position = it; sequence++ }
+        pendingPause?.let { pendingPause = null; setPaused(it, scope) }
+        return observation
     }
-    override suspend fun setPaused(paused: Boolean, scope: PlaybackScope) { if (this.paused != paused) sequence++; this.paused = paused }
-    override suspend fun seek(positionMs: Long, scope: PlaybackScope) { sequence++; position = positionMs; seeks++ }
+    override suspend fun setPaused(paused: Boolean, scope: PlaybackScope) {
+        if (delayPause) { delayPause = false; pendingPause = paused; return }
+        if (this.paused != paused) sequence++
+        this.paused = paused
+    }
+    fun delayNextPause() { delayPause = true }
+    fun delayNextSeek(buffering: Boolean) {
+        delaySeek = true
+        bufferNextObservation = buffering
+    }
+    private var rejectSeek = false
+    fun rejectNextSeek() { rejectSeek = true }
+    override suspend fun seek(positionMs: Long, scope: PlaybackScope) {
+        seeks++
+        if (rejectSeek) {
+            rejectSeek = false
+            error("Paused picture unavailable")
+        }
+        if (delaySeek) {
+            delaySeek = false
+            pendingSeek = positionMs
+            return
+        }
+        sequence++
+        position = positionMs
+    }
     override suspend fun load(localFile: Path, scope: PlaybackScope): Unit = error("Unexpected load")
     override suspend fun setRate(rate: Double, scope: PlaybackScope): Unit = error("Unexpected rate")
     override suspend fun setVolume(volume: Double, muted: Boolean, scope: PlaybackScope): Unit = error("Unexpected volume")
@@ -294,9 +330,59 @@ private suspend fun admissionChecks(owner: CoroutineScope) {
     check(SyncplayAdmission("A".repeat(64), "member-run").toString() == "[redacted]")
 }
 
+private suspend fun pauseCorrectionWaitsForNativeReadback(paused: Boolean) {
+    val native = PlaybackScope.fresh().replacingMedia()
+    val wire = PlaybackScope("helper-run", 7)
+    val player = SessionPlayer(native)
+    player.setPaused(!paused, native)
+    player.delayNextPause()
+    val frame = ("""{"v":1,"id":"cmd-1","type":"player.setPaused","clientRunId":"helper-run","mediaGeneration":7,"payload":{"paused":$paused}}""" + "\n").toByteArray()
+    val command = PlayerCorrection.decode(frame, wire)
+    val actual = command.apply(player, native, "media-1")
+    val reply = PlayerCorrection.frameValue(command.result(actual, native))
+    check(Json.`object`(reply["payload"])["paused"] == paused) { "Correction acknowledged the previous pause state" }
+}
+
+private suspend fun seekCorrectionWaitsForNativePosition(buffering: Boolean) {
+    val native = PlaybackScope.fresh().replacingMedia()
+    val wire = PlaybackScope("helper-run", 7)
+    val player = SessionPlayer(native)
+    player.delayNextSeek(buffering)
+    val frame = ("""{"v":1,"id":"cmd-1","type":"player.setPosition","clientRunId":"helper-run","mediaGeneration":7,"payload":{"positionMs":36000}}""" + "\n").toByteArray()
+    val command = PlayerCorrection.decode(frame, wire)
+    val actual = command.apply(player, native, "media-1")
+    val reply = PlayerCorrection.frameValue(command.result(actual, native))
+    check(Json.`object`(reply["payload"])["positionMs"] == 36000L) { "Correction acknowledged the previous position" }
+    check(player.seeks == 1)
+}
+
+private suspend fun userPauseRefreshesOnlyVisibleVideo(owner: CoroutineScope, outputs: Int, refreshRejected: Boolean = false) {
+    val native = PlaybackScope.fresh().replacingMedia()
+    val player = SessionPlayer(native, outputs)
+    val peer = SessionPeer()
+    val session = HelperSession(peer, player, native, SyncplayEndpoint("localhost", 8999, "room", "Viewer"),
+        SharedMedia("media-1", "Movie.mkv", 60000, 1234), SESSION_REVISION, owner)
+    try {
+        session.start(); eventually { session.state.playbackReady }
+        session.pause(false); eventually { peer.userMatches(1200, false) }
+        if (refreshRejected) player.rejectNextSeek()
+        session.pause(true); eventually { peer.userMatches(1200, true) }
+        if (outputs == 1) eventually { player.seeks == 1 }
+        session.pause(false); eventually { peer.userCount() == 3 }
+        peer.gateUserWrite(); session.pause(true); eventually { peer.userWriteHeld }
+        session.pause(false); peer.releaseUserWrite()
+        eventually { peer.userCount() == 5 }
+    } finally { session.close() }
+    check(player.seeks == outputs && peer.userMatches(1200, false))
+}
+
 internal fun helperSessionChecks() {
     Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
         runBlocking(dispatcher) {
+            for (outputs in 0..1) userPauseRefreshesOnlyVisibleVideo(this, outputs)
+            userPauseRefreshesOnlyVisibleVideo(this, 1, refreshRejected = true)
+            for (paused in listOf(true, false)) pauseCorrectionWaitsForNativeReadback(paused)
+            for (buffering in listOf(false, true)) seekCorrectionWaitsForNativePosition(buffering)
             admissionChecks(this)
             stationaryHandshake(this)
             for (beforeAck in listOf(false, true)) readinessPulse(this, beforeAck)

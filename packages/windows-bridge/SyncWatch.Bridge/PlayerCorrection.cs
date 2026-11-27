@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -75,9 +76,25 @@ public sealed class PlayerCorrection
                 if (MediaHandle != authorizedHandle) throw new PlayerCorrectionException("unauthorizedHandle");
                 break; // The selection owner already loaded this file; never reopen or rewind.
         }
-        var observation = await player.ObserveAsync(nativeScope, cancellation).ConfigureAwait(false);
-        Validate(observation, nativeScope);
-        return observation;
+        var wait = Stopwatch.StartNew();
+        while (true)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            var observation = await player.ObserveAsync(nativeScope, cancellation).ConfigureAwait(false);
+            observation.Validate();
+            nativeScope.Check(observation.Scope.ClientRunId, observation.Scope.MediaGeneration);
+            bool reachedTarget = (Kind, observation.Status) switch
+            {
+                (CorrectionKind.Pause, PlaybackStatus.Ready) => observation.Paused == Paused,
+                (CorrectionKind.Seek, PlaybackStatus.Ready) => Math.Abs(observation.PositionMs - PositionMs) <= 250,
+                (CorrectionKind.Pause or CorrectionKind.Seek, PlaybackStatus.Loading) => false,
+                (_, PlaybackStatus.Ready) => true,
+                _ => throw new PlayerCorrectionException("unavailable")
+            };
+            if (reachedTarget) return observation;
+            if (wait.Elapsed >= TimeSpan.FromSeconds(2)) throw new PlayerCorrectionException("unavailable");
+            await Task.Delay(20, cancellation).ConfigureAwait(false);
+        }
     }
 
     public byte[] Result(PlaybackObservation observation, PlaybackScope nativeScope)

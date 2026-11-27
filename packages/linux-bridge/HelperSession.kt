@@ -235,7 +235,8 @@ class HelperSession(
     }
     private suspend fun user(sequence: Long, intent: Intent) {
         setDeadline(2)
-        val pause = when (intent) { is Intent.Pause -> intent.value; is Intent.PlayFrom -> false; Intent.Toggle -> !player.observe(nativeScope).paused; else -> null }
+        val wasPlaying = (intent == Intent.Toggle || intent is Intent.Pause && intent.value) && !player.observe(nativeScope).paused
+        val pause = when (intent) { is Intent.Pause -> intent.value; is Intent.PlayFrom -> false; Intent.Toggle -> wasPlaying; else -> null }
         val position = when (intent) { is Intent.Seek -> intent.positionMs; is Intent.PlayFrom -> intent.positionMs; else -> null }
         if (position != null) player.seek(position, nativeScope)
         if (pause != null) player.setPaused(pause, nativeScope)
@@ -246,14 +247,30 @@ class HelperSession(
                 if ((pause == null || pause == actual.paused) && (position == null || kotlin.math.abs(position - actual.positionMs) <= 250)) {
                     if (!fence.canPublish(sequence, nativeScope)) return
                     send(commands.userObservation(nextId(), sequence, actual, nativeScope))
-                    fence.didPublish(sequence, actual); observationHigh = actual.sequence; return
+                    fence.didPublish(sequence, actual); observationHigh = actual.sequence
+                    if (pause == true && wasPlaying && actual.seekable && !actual.ended
+                        && actual.videoOutputs > 0 && actual.positionMs < media.durationMs
+                        && fence.issuedSequence == sequence) {
+                        try {
+                            player.seek(actual.positionMs, nativeScope)
+                        } catch (failure: Exception) {
+                            checkOpen()
+                            val settled = player.observe(nativeScope)
+                            checkOpen(); validate(settled)
+                            if (!settled.paused || settled.ended || kotlin.math.abs(settled.positionMs - actual.positionMs) > 250)
+                                throw failure
+                        }
+                    }
+                    return
                 }
                 delay(20)
             }
         } finally { deadline = null }
     }
     private suspend fun correct(command: PlayerCorrection) {
-        val task = scope.async { command.apply(player, nativeScope, media.handle) }
+        // The playback port serializes native calls. Its readback can proceed
+        // independently of display updates while the owner keeps the fence.
+        val task = scope.async(Dispatchers.IO) { command.apply(player, nativeScope, media.handle) }
         applying = task; setDeadline(2)
         try {
             val actual = task.await(); checkOpen()

@@ -1,4 +1,4 @@
-"""Keep the configured subtitle aliases narrow, reproducible and source-disclosed."""
+"""Check the declared VLC source configuration."""
 
 import copy
 from pathlib import Path
@@ -6,7 +6,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from configuration import avformat_clock, decoder_flush, vlc_files
+from configuration import avformat_clock, vlc_files
 
 
 class ConfigurationChecks(unittest.TestCase):
@@ -57,14 +57,11 @@ class ConfigurationChecks(unittest.TestCase):
             with self.subTest(content=content), self.assertRaises(ValueError):
                 vlc_files(self.original | {key: content}, self.profile)
 
-    def test_decoder_reset_includes_undated_pictures_and_retains_original_notice(self):
-        original = self.original["src/input/decoder.c"]
-        result = decoder_flush(original)
-        self.assertTrue(result.startswith(b"/* Original LGPL grant remains here. */"))
-        self.assertEqual(result.count(b", INT64_MIN );"), 2)
-        self.assertNotIn(b"VLC_TICK_INVALID+1", result)
-        self.assertEqual(self.original["src/input/decoder.c"], original)
-        self.assertEqual(vlc_files(self.original, self.profile)["src/input/decoder.c"], result)
+    def test_configuration_keeps_original_decoder(self):
+        before = self.original["src/input/decoder.c"]
+        configured = vlc_files(self.original, self.profile)
+        self.assertNotIn("src/input/decoder.c", configured)
+        self.assertEqual(self.original["src/input/decoder.c"], before)
 
     def test_avformat_clock_uses_media_tracks_and_rejects_source_drift(self):
         original = self.original["modules/demux/avformat/demux.c"]
@@ -76,16 +73,6 @@ class ConfigurationChecks(unittest.TestCase):
         for source in [configured, original + original, original.replace(b"i_ts_max = __MAX", b"changed = __MAX")]:
             with self.subTest(source=source), self.assertRaises(ValueError):
                 avformat_clock(source)
-
-    def test_decoder_reset_drift_or_duplicate_calls_fail_closed(self):
-        original = self.original["src/input/decoder.c"]
-        for owner in [b"p_vout", b"p_owner->p_vout"]:
-            call = b"vout_Flush( " + owner + b", VLC_TICK_INVALID+1 );"
-            for content in [original.replace(call, b"changed();"), original + call]:
-                with self.subTest(owner=owner, content=content), self.assertRaises(ValueError):
-                    decoder_flush(content)
-        with self.assertRaises(ValueError):
-            decoder_flush(decoder_flush(original))
 
 
 if __name__ == "__main__":

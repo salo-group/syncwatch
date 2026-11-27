@@ -47,11 +47,37 @@ class Controller:
     def request(self, kind, payload):
         if self.closing:
             return
+        identifier = "cmd-" + str(self.sequence + 1)
+        message = self.message(kind, copy.deepcopy(payload), id=identifier, afterUserAction=self.user_sequence)
+        self.registry.validate("helper-ipc", message)
+        if self._repeats_pending_target(kind, payload):
+            return
         if len(self.pending) >= self.capacity:
             raise ContractError("queueFull")
         self.sequence += 1
-        identifier = "cmd-" + str(self.sequence)
-        message = self.message(kind, payload, id=identifier, afterUserAction=self.user_sequence)
+        self.pending[identifier] = (message, None)
+        self._send_next_correction()
+
+    def _repeats_pending_target(self, kind, payload):
+        if kind not in {"player.setPosition", "player.setPaused"}:
+            return False
+        for message, _ in reversed(self.pending.values()):
+            if message["afterUserAction"] != self.user_sequence or message["type"] == "player.openFile":
+                break
+            if message["type"] == kind:
+                return message["payload"] == payload
+        return False
+
+    def _send_next_correction(self):
+        # The desktop applies corrections serially. Start the reply budget
+        # only after dispatch, so a queued command cannot expire behind its
+        # predecessor. The same cap covers queued and dispatched corrections.
+        if self.closing or not self.pending:
+            return
+        identifier = next(iter(self.pending))
+        message, deadline = self.pending[identifier]
+        if deadline is not None:
+            return
         self.pending[identifier] = (message, self.clock() + self.timeout)
         self.emit(message)
 
@@ -76,16 +102,16 @@ class Controller:
                 if previous != value:
                     raise ContractError("conflict")
                 return
-            if pending is None or value["type"] not in {"player.result", "bridge.error"}:
+            if pending is None or pending[1] is None or value["type"] not in {"player.result", "bridge.error"}:
                 raise ContractError("invalidState")
             del self.pending[value["replyTo"]]
             if value["type"] == "bridge.error":
-                if value["payload"]["code"] == "cancelled" and pending[0]["afterUserAction"] < self.user_sequence:
-                    self.remember_result(value)
-                    return
-                raise ContractError("unavailable")
-            self.engine.player_result(value["payload"])
+                if value["payload"]["code"] != "cancelled" or pending[0]["afterUserAction"] >= self.user_sequence:
+                    raise ContractError("unavailable")
+            else:
+                self.engine.player_result(value["payload"])
             self.remember_result(value)
+            self._send_next_correction()
             return
         kind = value["type"]
         if kind == "player.state":
@@ -95,6 +121,9 @@ class Controller:
                 if value["actionSequence"] <= self.user_sequence:
                     raise ContractError("duplicate")
                 self.user_sequence = value["actionSequence"]
+                # Keep the dispatched request for its correlated reply. All
+                # queued requests precede this newer, published user action.
+                self.pending = {key: item for key, item in self.pending.items() if item[1] is not None}
             self.engine.observe(value["payload"], user_initiated=value.get("origin") == "user")
             return
         fresh, result = self.replay.admit(value)
@@ -167,7 +196,8 @@ class Controller:
             return
         if self.context is None and now >= self.deadline:
             raise ContractError("timeout")
-        if any(now >= deadline for _, deadline in self.pending.values()):
+        active = next(iter(self.pending.values()), None)
+        if active is not None and active[1] is not None and now >= active[1]:
             raise ContractError("timeout")
         if self.engine is not None and not self.closing:
             self.engine.tick()
