@@ -51,16 +51,16 @@ def build(work, output, core, sources, engines, sdk):
     backend, cffi_commands = crypto_native.cffi(paths["cffi"], work, python, ffi, cmake, options, native, env)
     print("Building cryptography from the offline Git-only Cargo graph", flush=True)
     extension, crypto_commands = crypto_native.cryptography(paths, work, python, compiled, openssl, backend, rust, native, env)
+    for name in specifications():
+        for path, original in sources[name].items():
+            if (paths[name] / path).read_bytes() != original:
+                raise ValueError(f"Original runtime input changed during the build: {name}/{path}")
     engine_files, changes = engine_sources.assemble(engines, work)
     layout = distribution.assemble(output, native["target"], sources, core, profile, compiled, engine_files, source)
     extras = engine_sources.originals(engines) | changes
-    for name, spec in specifications().items():
-        # Preserve exact original inputs separately from every modified build
-        # configuration, including Cargo workspace and cryptography build glue.
-        for path, original in sources[name].items():
-            configured = paths[name] / path
-            if configured.is_file() and configured.read_bytes() != original:
-                extras["configuration/dependencies/" + Path(spec["path"]).name + "/" + path] = configured.read_bytes()
+    cargo = work / "rust-build"
+    for name in ["Cargo.toml", "Cargo.lock", ".cargo/config.toml"]:
+        extras["configuration/cryptography/" + name] = (cargo / name).read_bytes()
     extras["configuration/idna-provenance.json"] = encoded(provenance)
     distribution.write_files(output, extras)
     shutil.copyfile(backend, layout["extensions"] / backend.name)
