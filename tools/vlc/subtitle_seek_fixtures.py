@@ -35,7 +35,8 @@ def _unsigned(tag, value, width=None):
     return _element(tag, value.to_bytes(width or max(1, (value.bit_length() + 7) // 8), "big"))
 
 
-def compressed_cues(original, packet_bytes, count=1, *, laces=1, additional_bytes=0, compressed=True):
+def compressed_cues(original, packet_bytes, count=1, *, laces=1, additional_bytes=0,
+                    compressed=True, place_in_video_cluster=False):
     """Keep authored A/V blocks; rebuild exact seek offsets around compressed ASS cues."""
     root = list(_elements(original, 0, len(original)))
     segment = next(e for e in root if e[0] == 0x18538067)
@@ -84,8 +85,17 @@ def compressed_cues(original, packet_bytes, count=1, *, laces=1, additional_byte
         _unsigned(0xee, 1) + _element(0xa5, b"S" * additional_bytes))) if additional_bytes else b""
     group = _element(0xa0, block + _unsigned(0x9b, 7900) + additions)
     stamp = _unsigned(0xe7, 0)
-    cue_cluster = _element(0x1f43b675, stamp + group * count)
-    clusters.insert(0, (0, cue_cluster))
+    cue_offset = len(stamp)
+    if place_in_video_cluster:
+        timestamp, cluster = clusters[0]
+        if timestamp != 0:
+            raise ValueError("First authored video cluster must start at zero")
+        _, _, start, end = next(_elements(cluster, 0, len(cluster)))
+        cue_offset = end - start
+        clusters[0] = (0, _element(0x1f43b675, cluster[start:end] + group * count))
+    else:
+        cue_cluster = _element(0x1f43b675, stamp + group * count)
+        clusters.insert(0, (0, cue_cluster))
 
     def seek_head(position):
         return _element(0x114d9b74, _element(0x4dbb,
@@ -97,9 +107,9 @@ def compressed_cues(original, packet_bytes, count=1, *, laces=1, additional_byte
         if index == 0:
             for ordinal in range(count):
                 fields = _unsigned(0xf7, 6) + _unsigned(0xf1, position)
-                fields += _unsigned(0xf0, len(stamp) + ordinal * len(group)) + _unsigned(0xb2, 7900)
+                fields += _unsigned(0xf0, cue_offset + ordinal * len(group)) + _unsigned(0xb2, 7900)
                 cues.append(_element(0xbb, _unsigned(0xb3, 0) + _element(0xb7, fields)))
-        else:
+        if index or place_in_video_cluster:
             fields = _unsigned(0xf7, 1) + _unsigned(0xf1, position)
             cues.append(_element(0xbb, _unsigned(0xb3, timestamp) + _element(0xb7, fields)))
         position += len(cluster)
