@@ -32,6 +32,7 @@ def inputs(root, target, operation):
     sources = read_sources({n: locate(s) for n, s in specifications().items()})
     engines = engine_sources.read_sources({n: locate(s) for n, s in engine_sources.specifications().items()})
     identity = {"graph": digest(encoded(graph_data())), "python": digest(encoded(profile)),
+                "nativeBuildRecipe": digest(Path(native_libraries.__file__).read_bytes()),
                 "inputs": {n: digest(encoded(s["files"])) for n, s in specifications().items()},
                 "engine": {n: digest(encoded(s["files"])) for n, s in engine_sources.specifications().items()}}
     return profile, core, sources, engines, identity
