@@ -1,0 +1,9 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Target Name="SyncWatchBuildMetadata" BeforeTargets="ClCompile">
+        <ItemGroup>
+            <ClCompile Condition="'%(Filename)%(Extension)' == 'getbuildinfo.c'">
+                <PreprocessorDefinitions>DATE=&quot;$(SyncWatchBuildDate)&quot;;TIME=&quot;$(SyncWatchBuildTime)&quot;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            </ClCompile>
+        </ItemGroup>
+    </Target>
+</Project>

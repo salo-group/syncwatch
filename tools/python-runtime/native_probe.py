@@ -35,7 +35,7 @@ def execute(args, cwd, environment=None, timeout=120):
     return data
 
 
-def fixture(root, sdk, profile, extra_checks=""):
+def fixture(root, sdk, profile, extra_checks="", build_info_suffix=""):
     owned = root / "modules-\u03bc-\u0442\u0435\u0441\u0442"
     owned.mkdir()
     (owned / "sw_native_fixture.py").write_text('VALUE = "SyncWatch \\u03bc \\u0442\\u0435\\u0441\\u0442"\n', encoding="utf-8")
@@ -59,6 +59,7 @@ def fixture(root, sdk, profile, extra_checks=""):
                "static const wchar_t *fixture_adjacent = " + literal(str(root / "owned-helper")) + ";\n"
                "static const wchar_t *fixture_runtime_wide = " + literal(str(sdk["runtime"])) + ";\n"
                "static const char *fixture_runtime = " + json.dumps(str(sdk["runtime"]), ensure_ascii=True) + ";\n"
+               "static const char *fixture_build_info_suffix = " + json.dumps(build_info_suffix, ensure_ascii=True) + ";\n"
                "static const unsigned char fixture_check_bytes[] = {" +
                ",".join(str(byte) for byte in checks.encode("utf-8") + b"\0") + "};\n"
                "#define fixture_checks ((const char *)fixture_check_bytes)\n")
@@ -77,7 +78,8 @@ def fixture(root, sdk, profile, extra_checks=""):
     return environment
 
 
-def exercise_sdk(sdk, extra_checks="", selected_cases=CASES, on_output=None, case_timeout=30):
+def exercise_sdk(sdk, extra_checks="", selected_cases=CASES, on_output=None, case_timeout=30,
+                 *, build_info_suffix=""):
     if not selected_cases or any(name not in CASES for name in selected_cases):
         raise ValueError("Unknown native startup verification case")
     profile = json.loads(PROFILE.read_text(encoding="utf-8"))
@@ -87,7 +89,7 @@ def exercise_sdk(sdk, extra_checks="", selected_cases=CASES, on_output=None, cas
     with tempfile.TemporaryDirectory(prefix="sw-native-python-") as temporary:
         root = Path(temporary) / "startup-\u03bc-\u0442\u0435\u0441\u0442"
         root.mkdir()
-        environment = fixture(root, sdk, profile, extra_checks)
+        environment = fixture(root, sdk, profile, extra_checks, build_info_suffix)
         build = root / "build"
         execute([cmake, "-S", (ROOT / "tools/python-runtime/native").as_posix(), "-B", build.as_posix(), *options,
                  "-DCMAKE_BUILD_TYPE=Release", "-DSYNCWATCH_ROOT=" + ROOT.as_posix(), "-DSYNCWATCH_FIXTURE=" + root.as_posix(),

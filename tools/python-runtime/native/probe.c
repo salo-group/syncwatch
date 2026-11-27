@@ -122,6 +122,11 @@ int main(int argc, char **argv)
     CHECK(argc == 2);
     CHECK(owned_library() == 0);
     CHECK(strncmp(Py_GetVersion(), PY_VERSION " ", strlen(PY_VERSION) + 1) == 0);
+    const char *build_info = Py_GetBuildInfo();
+    size_t build_info_size = strlen(build_info);
+    size_t suffix_size = strlen(fixture_build_info_suffix);
+    CHECK(build_info_size >= suffix_size &&
+          strcmp(build_info + build_info_size - suffix_size, fixture_build_info_suffix) == 0);
     if (strcmp(argv[1], "foreign") == 0) {
         PyPreConfig preconfig;
         PyConfig config;

@@ -16,6 +16,7 @@ base = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(base)
 layout, inventory, write_files = base.layout, base.inventory, base.write_files
 from native_probe import exercise_sdk
+from build_metadata import BUILD_INFO_SUFFIX
 
 
 def native_files(payload, target):
@@ -29,7 +30,7 @@ def relocated_probe(payload, target, logs=None):
         shutil.copytree(payload, owned)
         paths = layout(owned, target)
         checks = (ROOT / "tools/syncplay-runtime/runtime_checks.py").read_text(encoding="utf-8")
-        abi = exercise_sdk(paths, checks)
+        abi = exercise_sdk(paths, checks, build_info_suffix=BUILD_INFO_SUFFIX)
         captured = []
         def output(name, data):
             if logs:

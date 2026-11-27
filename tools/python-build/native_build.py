@@ -8,11 +8,11 @@ import subprocess
 import sys
 
 from configuration import unix_setup, windows_setup, relocatable_makefile, assert_unix_membership
+from build_metadata import BUILD_DATE, BUILD_TIME, SOURCE_DATE_EPOCH
 from source_profile import ROOT, materialize
 
 sys.path.insert(0, str(ROOT / "tools/compression"))
 from toolchain import resolve, checksum, output
-
 
 def sdk_identity():
     cmake, options, identity = resolve()
@@ -43,13 +43,9 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
     logs.mkdir(parents=True)
     materialize(source, sources["cpython"], profile["source"]["executables"])
     materialize(zlib, sources["zlib"], profile["zlib"]["executables"])
-    # These upstream-supported metadata macros contain no build wall clock.
-    path = source / "Modules/getbuildinfo.c"
-    path.write_bytes(b'/* SyncWatch stable build metadata; original algorithm follows unchanged. */\n'
-                     b'#define DATE "Nov 14 2023"\n#define TIME "22:13:20"\n' + path.read_bytes())
     commands = {}
     environment = os.environ.copy()
-    environment.update(SOURCE_DATE_EPOCH="1700000000", PYTHONHASHSEED="0", PYTHONDONTWRITEBYTECODE="1")
+    environment.update(SOURCE_DATE_EPOCH=SOURCE_DATE_EPOCH, PYTHONHASHSEED="0", PYTHONDONTWRITEBYTECODE="1")
     target = sdk["target"]
     if target == "windows-x64":
         windows_setup(source, profile)
@@ -61,7 +57,9 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
             "/p:IncludeExtensions=false", "/p:IncludeTests=false", "/p:IncludeTest=false", "/p:IncludeExternals=true",
             "/p:IncludeSSL=false", "/p:IncludeTkinter=false", "/p:IncludeCTypes=false", "/p:KillPython=false",
             '/p:PythonForBuild="' + sys.executable + '"', "/p:zlibDir=" + str(zlib) + "\\",
-            "/p:PreferredToolArchitecture=x64"]
+            "/p:PreferredToolArchitecture=x64",
+            "/p:ForceImportAfterCppTargets=" + str(ROOT / "tools/python-build/build_metadata.targets"),
+            "/p:SyncWatchBuildDate=" + BUILD_DATE, "/p:SyncWatchBuildTime=" + BUILD_TIME]
         properties.extend(dependencies.get("msbuildProperties", []))
         projects = [("interpreter", "pcbuild.proj"),
                     *((name.removeprefix("_"), name + ".vcxproj") for name in profile.get("windowsShared", ["_socket", "select"]))]
@@ -104,4 +102,7 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
                  "config": build / "pyconfig.h", "extensions": []}
     if not all(paths[name].is_file() for name in ["executable", "runtime", "library", "config"]):
         raise ValueError("Source-built interpreter outputs are incomplete")
+    build_info = "Modules/getbuildinfo.c"
+    if (source / build_info).read_bytes() != sources["cpython"][build_info]:
+        raise ValueError("CPython build information source changed during the build")
     return source, paths, commands

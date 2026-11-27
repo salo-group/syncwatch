@@ -7,6 +7,7 @@ import sys
 import tempfile
 
 from binary_audit import audit
+from build_metadata import BUILD_INFO_SUFFIX
 from source_profile import ROOT, digest, encoded, notices, original_sources, stdlib_archive
 
 sys.path.insert(0, str(ROOT / "tools/python-runtime"))
@@ -97,7 +98,9 @@ def relocated_probe(payload, target):
     with tempfile.TemporaryDirectory(prefix="sw-owned-runtime-") as temporary:
         owned = Path(temporary) / "runtime-\u03bc-\u0442\u0435\u0441\u0442"
         shutil.copytree(payload, owned)
-        return exercise_sdk(layout(owned, target), (ROOT / "tools/python-build/checks.py").read_text(encoding="utf-8"))
+        return exercise_sdk(layout(owned, target),
+                            (ROOT / "tools/python-build/checks.py").read_text(encoding="utf-8"),
+                            build_info_suffix=BUILD_INFO_SUFFIX)
 
 
 def verify(payload, sources, profile, sdk, options):
