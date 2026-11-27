@@ -48,7 +48,11 @@ def python_sdk(work, profile, sources, source, native, openssl, target, environm
         for name in ["libssl", "libcrypto"]:
             shutil.copyfile(openssl / "lib" / (name + suffix), directory / (name + suffix))
         logs = work / "python-sdk-logs"; logs.mkdir()
+        makefile = native["runtime"].parent / "Makefile"
+        configured = makefile.read_bytes()
         execute("sysconfig", unix_make("pybuilddir.txt"), native["runtime"].parent, logs, environment)
+        if makefile.read_bytes() != configured or native["runtime"].read_bytes() != (directory / native["runtime"].name).read_bytes():
+            raise ValueError("CPython sysconfig generation changed its Makefile or native runtime")
         generated = list(native["runtime"].parent.glob("build/lib.*/_sysconfigdata_*.py"))
         if len(generated) != 1:
             raise ValueError("Source-built Python build configuration is missing")

@@ -146,6 +146,10 @@
           "run": "python3 tools/python-runtime/generate_policy.py --check\npython3 tools/python-runtime/native_probe.py --report artifacts/python-startup/native-sdk.json"
         },
         {
+          "name": "Reject unresolved CPython imports",
+          "run": "python3 -B -m unittest discover -s tools/python-build/tests -p test_binary_audit.py -v"
+        },
+        {
           "name": "Owned bootstrap stdlib native fixture",
           "run": "python3 tools/python-stdlib/stdlib_probe.py --report artifacts/python-stdlib/native.json"
         },

@@ -88,14 +88,16 @@ def original_sources(sources, profile):
         if item.find("m:ModName", namespace) is not None:
             path = item.get("Include").replace("\\", "/").removeprefix("../")
             selected[path] = cpython[path]
-    # Parse declarations from unchanged inputs before any configuration edits.
+    # Parse declarations from the pinned original inputs.
     import re
     bootstrap = cpython["Modules/Setup.bootstrap.in"].decode()
     modules = set(re.findall(r"[a-zA-Z0-9_/]+\.c", "\n".join(l for l in bootstrap.splitlines() if not l.startswith("#"))))
     modules.update(Path(p).relative_to("Modules").as_posix() for values in profile["extensions"].values() for p in values)
     modules.update(["gcmodule.c", "getbuildinfo.c", "getpath.c", "getpath.py", "getpath_noop.c", "main.c", "zlibmodule.c", "_io/winconsoleio.c"])
     for name, data in cpython.items():
-        if (name in profile["source"]["notices"] or name in ["configure", "Makefile.pre.in", "pyconfig.h.in"]
+        if (name in profile["source"]["notices"] or name in [
+                "configure", "Makefile.pre.in", "pyconfig.h.in", "Modules/makesetup", "Modules/Setup",
+                "Modules/Setup.bootstrap.in", "Modules/Setup.stdlib.in", "Modules/config.c.in", "Tools/freeze/makeconfig.py"]
                 or name.startswith("Programs/") or name.startswith(("Modules/_sre/", "Modules/_io/"))
                 or name in ["Modules/" + item for item in modules]):
             selected[name] = data

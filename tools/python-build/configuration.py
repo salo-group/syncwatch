@@ -4,12 +4,15 @@ from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
 
+from source_profile import digest, encoded
+
 NS = "http://schemas.microsoft.com/developer/msbuild/2003"
 UNIX_MAKEFILE = Path(__file__).resolve().with_name("unix-runtime.mk")
+WINDOWS_TARGETS = Path(__file__).resolve().with_name("windows-runtime.targets")
 
 
 def unix_make(*arguments):
-    return ["make", "-f", "Makefile", "-f", str(UNIX_MAKEFILE), *arguments]
+    return ["make", "-f", "Makefile", "-f", UNIX_MAKEFILE.name, *arguments]
 
 
 def unix_setup(source, build, zlib, library, profile, module_flags=None):
@@ -26,6 +29,7 @@ def unix_setup(source, build, zlib, library, profile, module_flags=None):
     path = build / "Modules/Setup.local"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    (build / UNIX_MAKEFILE.name).write_bytes(UNIX_MAKEFILE.read_bytes())
 
 
 def module_sources(source, profile):
@@ -37,59 +41,47 @@ def module_sources(source, profile):
     return names, files
 
 
-def windows_setup(source, profile):
+def builtin_modules(table):
+    return re.findall(r'^\s*\{"([a-zA-Z_][a-zA-Z0-9_]*)",', table.read_text(encoding="utf-8"), re.M)
+
+
+def windows_setup(source, build, profile):
     names, files = module_sources(source, profile)
     names.discard("posix"); names.discard("pwd")
     names.update(["nt", "gc", "msvcrt", "winreg", "zlib", "_imp", "_string", "_ast", "_tokenize"])
     # Socket/select remain separate native extension DLLs in the upstream build.
     names.difference_update(profile.get("windowsShared", ["_socket", "select"]))
     files.update(["gcmodule.c", "getbuildinfo.c", "getpath.c", "main.c", "zlibmodule.c", "_io/winconsoleio.c"])
-    config = (source / "PC/config.c").read_text(encoding="utf-8")
-    mapping = dict(re.findall(r'\{"([a-zA-Z0-9_]+)", (PyInit_[a-zA-Z0-9_]+)\}', config))
-    for name, function in mapping.items():
-        if name not in names:
-            config = re.sub(r"^extern PyObject\* " + function + r"\(void\);\n", "", config, flags=re.M)
-            config = re.sub(r'^    \{"' + name + r'", ' + function + r'\},[^\n]*\n', "", config, flags=re.M)
-    marker = "/* Configured by SyncWatch embedded-core-v1; original algorithms unchanged. */\n"
-    (source / "PC/config.c").write_text(marker + config, encoding="utf-8", newline="\n")
-    ET.register_namespace("", NS)
-    project = source / "PCbuild/pythoncore.vcxproj"
-    tree = ET.parse(project)
-    for group in tree.getroot():
-        for item in list(group):
-            value = item.get("Include", "").replace("\\", "/")
-            if item.tag.rsplit("}", 1)[-1] == "ClCompile" and value.startswith("../Modules/") and value[11:] not in files:
-                group.remove(item)
-    flags = tree.find("m:ItemDefinitionGroup/m:ClCompile/m:PreprocessorDefinitions", {"m": NS})
-    if flags is None:
-        raise ValueError("Original Windows core compile configuration is missing")
-    flags.text = "Z_PREFIX;" + flags.text
-    tree.write(project, encoding="utf-8", xml_declaration=True)
-    # Deterministic SDK compilation and stable embedded PDB names. These flags
-    # configure build metadata; original interpreter/extension algorithms stay intact.
-    for name in ["pythoncore", "_socket", "select"]:
-        project = source / "PCbuild" / (name + ".vcxproj")
-        tree = ET.parse(project)
-        group = ET.SubElement(tree.getroot(), "{" + NS + "}ItemDefinitionGroup")
-        compile_options = ET.SubElement(ET.SubElement(group, "{" + NS + "}ClCompile"), "{" + NS + "}AdditionalOptions")
-        compile_options.text = ('/experimental:deterministic "/pathmap:' + str(source) + '=cpython-source" '
-                                '"/pathmap:' + str(source.parent) + '=syncwatch-build" %(AdditionalOptions)')
-        link_options = ET.SubElement(ET.SubElement(group, "{" + NS + "}Link"), "{" + NS + "}AdditionalOptions")
-        link_options.text = "/Brepro /PDBALTPATH:$(TargetName).pdb %(AdditionalOptions)"
-        tree.write(project, encoding="utf-8", xml_declaration=True)
-    project = source / "PCbuild/pcbuild.proj"
-    tree = ET.parse(project)
-    for group in tree.getroot():
-        for item in list(group):
-            kind, value = item.tag.rsplit("}", 1)[-1], item.get("Include")
-            if kind == "Projects" and value is not None and value not in ["pythoncore.vcxproj", "python3dll.vcxproj"]:
-                group.remove(item)
-            elif kind == "Projects2" and value is not None and value != "python.vcxproj;pythonw.vcxproj":
-                group.remove(item)
-    # Exact matching above deliberately retains FreezeProjects and its metadata.
-    if tree.find(".//m:FreezeProjects[@Include='_freeze_module.vcxproj']", {"m": NS}) is None:
-        raise ValueError("Windows source bootstrap must retain its original freeze project")
-    tree.write(project, encoding="utf-8", xml_declaration=True)
+    standard = set(builtin_modules(source / "Modules/config.c.in"))
+    project = ET.parse(source / "PCbuild/pythoncore.vcxproj")
+    selection = ET.Element("Project", xmlns=NS)
+    group = ET.SubElement(selection, "ItemGroup")
+    for item in project.findall(".//m:ClCompile[@Include]", {"m": NS}):
+        include = item.get("Include")
+        path = include.replace("\\", "/")
+        if path.startswith("../Modules/") and path.removeprefix("../Modules/") not in files:
+            ET.SubElement(group, "ClCompile", Remove=include)
+    build.mkdir(parents=True, exist_ok=True)
+    ET.indent(selection, space="    ")
+    ET.ElementTree(selection).write(build / "module-selection.props", encoding="utf-8", xml_declaration=True)
+    return sorted(names - standard), names | standard
+
+
+def build_recipe(target):
+    paths = ([WINDOWS_TARGETS, WINDOWS_TARGETS.with_name("build_metadata.targets")]
+             if target == "windows-x64" else [UNIX_MAKEFILE])
+    return {path.name: path.read_bytes() for path in paths}
+
+
+def build_configuration(build, target):
+    recipe = build_recipe(target)
+    if target == "windows-x64":
+        return recipe | {name: (build / name).read_bytes() for name in ["config.c", "module-selection.props"]}
+    if (build / UNIX_MAKEFILE.name).read_bytes() != recipe[UNIX_MAKEFILE.name]:
+        raise ValueError("CPython loaded a different Unix Make configuration")
+    # Configure output contains build-machine paths. Retain its identities.
+    hashes = {name: digest((build / name).read_bytes()) for name in ["Makefile", "Modules/Setup.local"]}
+    return recipe | {"generated-build-digests.json": encoded(hashes)}
 
 
 def assert_unix_membership(build, profile):

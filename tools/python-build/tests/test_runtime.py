@@ -9,9 +9,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import configuration
-from binary_audit import require_bound_macos_symbols
 from configuration import unix_setup, windows_setup
-from source_profile import ROOT, profile_data, read_sources, validate
+from source_profile import ROOT, digest, profile_data, read_sources, validate
 from runtime_package import inventory, verify
 
 
@@ -49,25 +48,29 @@ class RuntimeTests(unittest.TestCase):
             self.assertIn("_ssl", disabled); self.assertIn("_ctypes", disabled)
             self.assertNotIn("array", disabled)
 
-    def test_windows_keeps_import_bootstrap_and_freeze_dependencies(self):
+    def test_windows_selects_modules_with_the_original_generator_and_project_files(self):
         import xml.etree.ElementTree as ET
         with tempfile.TemporaryDirectory() as tmp:
-            source = Path(tmp)
-            for name in ["Modules/Setup.bootstrap.in", "PC/config.c", "PCbuild/pythoncore.vcxproj", "PCbuild/pcbuild.proj",
-                         "PCbuild/_socket.vcxproj", "PCbuild/select.vcxproj"]:
+            source, build = Path(tmp) / "source", Path(tmp) / "build"
+            original_files = ["Modules/Setup.bootstrap.in", "Modules/config.c.in", "PC/config.c",
+                              "PCbuild/pythoncore.vcxproj", "PCbuild/pcbuild.proj", "Tools/freeze/makeconfig.py"]
+            for name in original_files:
                 path = source / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(self.sources["cpython"][name])
-            windows_setup(source, self.profile)
-            config = (source / "PC/config.c").read_text()
-            self.assertIn('{"_imp", PyInit__imp}', config)
-            self.assertIn('{"_string", PyInit__string}', config)
-            self.assertIn('{"winreg", PyInit_winreg}', config)
-            self.assertIn('{"_ast", PyInit__ast}', config)
-            self.assertIn('{"_tokenize", PyInit__tokenize}', config)
-            self.assertNotIn('{"_random",', config)
+            modules, expected = windows_setup(source, build, self.profile)
+            table = build / "config.c"
+            subprocess.run([sys.executable, "-I", "-B", str(source / "Tools/freeze/makeconfig.py"),
+                            str(source / "Modules/config.c.in"), str(table), *modules],
+                           check=True, timeout=10)
+            actual = configuration.builtin_modules(table)
+            self.assertEqual(sorted(actual), sorted(expected))
+            self.assertTrue({"_imp", "_string", "winreg", "_ast", "_tokenize", "zlib"} <= set(actual))
+            self.assertNotIn("_random", actual)
             ns = {"m": "http://schemas.microsoft.com/developer/msbuild/2003"}
-            tree = ET.parse(source / "PCbuild/pcbuild.proj")
-            self.assertIsNotNone(tree.find(".//m:FreezeProjects[@Include='_freeze_module.vcxproj']", ns))
-            self.assertIsNotNone(tree.find(".//m:FreezeProjects/m:BuildTarget", ns))
+            excluded = {item.get("Remove") for item in ET.parse(build / "module-selection.props").findall(".//m:ClCompile", ns)}
+            self.assertIn("..\\Modules\\_randommodule.c", excluded)
+            self.assertNotIn("..\\Modules\\zlibmodule.c", excluded)
+            for name in original_files:
+                self.assertEqual((source / name).read_bytes(), self.sources["cpython"][name])
 
     @unittest.skipIf(sys.platform == "win32", "Unix Make build")
     def test_make_configures_native_link_inputs_without_rewriting_the_makefile(self):
@@ -77,6 +80,7 @@ class RuntimeTests(unittest.TestCase):
             original = ("VPATH = /source/absolute\nSHLIBS = -lsystem\nMODLIBS = -lowned\n"
                         "LDVERSION = 3.12\nreport:\n\t@printf '%s\\n' '$(VPATH)' '$(SHLIBS)'\n")
             makefile.write_text(original, encoding="utf-8")
+            (build / configuration.UNIX_MAKEFILE.name).write_bytes(configuration.UNIX_MAKEFILE.read_bytes())
             for platform, libraries in [
                 ("darwin", "-lsystem -lowned -Wl,-install_name,@rpath/libpython3.12.dylib"),
                 ("linux", "-lsystem"),
@@ -86,19 +90,13 @@ class RuntimeTests(unittest.TestCase):
                                                      cwd=build, text=True, timeout=10)
                     self.assertEqual(result.splitlines(), ["../cpython", libraries])
                     self.assertEqual(makefile.read_text(encoding="utf-8"), original)
-
-    @unittest.skipUnless(sys.platform == "darwin", "macOS dynamic library audit")
-    def test_macos_library_audit_rejects_dynamic_lookup(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            build = Path(tmp)
-            source = build / "fixture.c"
-            source.write_text("extern int missing(void);\nint fixture(void) { return missing(); }\n",
-                              encoding="utf-8")
-            library = build / "libfixture.dylib"
-            subprocess.run(["xcrun", "clang", "-dynamiclib", "-undefined", "dynamic_lookup",
-                            str(source), "-o", str(library)], check=True, timeout=30)
-            with self.assertRaisesRegex(ValueError, "without a declared macOS library"):
-                require_bound_macos_symbols(library)
+            setup = build / "Modules/Setup.local"
+            setup.parent.mkdir()
+            setup.write_text("zlib zlibmodule.c -I/source/absolute\n", encoding="utf-8")
+            packaged = configuration.build_configuration(build, "macos-arm64")
+            self.assertEqual(set(packaged), {"unix-runtime.mk", "generated-build-digests.json"})
+            self.assertEqual(json.loads(packaged["generated-build-digests.json"])["Makefile"],
+                             digest(makefile.read_bytes()))
 
     def test_missing_extra_and_corrupt_payload_fail_before_native_execution(self):
         sdk = {"target": "linux-x64"}

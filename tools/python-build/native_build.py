@@ -8,9 +8,9 @@ import subprocess
 import sys
 
 from binary_audit import require_bound_macos_symbols
-from configuration import unix_setup, windows_setup, unix_make, assert_unix_membership
+from configuration import WINDOWS_TARGETS, assert_unix_membership, builtin_modules, unix_make, unix_setup, windows_setup
 from build_metadata import BUILD_DATE, BUILD_TIME, SOURCE_DATE_EPOCH
-from source_profile import ROOT, materialize
+from source_profile import ROOT, digest, encoded, materialize
 
 sys.path.insert(0, str(ROOT / "tools/compression"))
 from toolchain import resolve, checksum, output
@@ -35,7 +35,7 @@ def execute(name, args, cwd, logs, env=None, timeout=1800):
     if result.returncode:
         diagnostic = path.read_bytes()[-16000:].decode("utf-8", errors="replace")
         raise ValueError("Native interpreter " + name + " failed:\n" + diagnostic)
-    return {"command": args, "logSha256": checksum(path)}
+    return {"tool": Path(args[0]).name, "commandSha256": digest(encoded(args)), "logSha256": checksum(path)}
 
 
 def build_native(work, sources, profile, cmake, options, sdk, dependencies=None):
@@ -49,7 +49,13 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
     environment.update(SOURCE_DATE_EPOCH=SOURCE_DATE_EPOCH, PYTHONHASHSEED="0", PYTHONDONTWRITEBYTECODE="1")
     target = sdk["target"]
     if target == "windows-x64":
-        windows_setup(source, profile)
+        modules, expected = windows_setup(source, build, profile)
+        table = build / "config.c"
+        commands["builtin-table"] = execute("builtin-table", [sys.executable, "-I", "-S", "-B",
+            str(source / "Tools/freeze/makeconfig.py"), str(source / "Modules/config.c.in"), str(table), *modules],
+            build, logs, environment, timeout=60)
+        if sorted(builtin_modules(table)) != sorted(expected):
+            raise ValueError("Generated CPython built-in table does not match the Windows profile")
         instance = next(v.split("=", 1)[1] for v in options if v.startswith("-DCMAKE_GENERATOR_INSTANCE="))
         msbuild = str(Path(instance) / "MSBuild/Current/Bin/MSBuild.exe")
         toolset = next(options[n + 1].split(",", 1)[0] for n, v in enumerate(options) if v == "-T")
@@ -59,13 +65,19 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
             "/p:IncludeSSL=false", "/p:IncludeTkinter=false", "/p:IncludeCTypes=false", "/p:KillPython=false",
             '/p:PythonForBuild="' + sys.executable + '"', "/p:zlibDir=" + str(zlib) + "\\",
             "/p:PreferredToolArchitecture=x64",
-            "/p:ForceImportAfterCppTargets=" + str(ROOT / "tools/python-build/build_metadata.targets"),
-            "/p:SyncWatchBuildDate=" + BUILD_DATE, "/p:SyncWatchBuildTime=" + BUILD_TIME]
+            "/p:ForceImportAfterCppTargets=" + str(WINDOWS_TARGETS),
+            "/p:SyncWatchBuildDate=" + BUILD_DATE, "/p:SyncWatchBuildTime=" + BUILD_TIME,
+            "/p:SyncWatchModuleSelection=" + str(build / "module-selection.props"),
+            "/p:SyncWatchBuiltinTable=" + str(table), "/p:SyncWatchPythonSource=" + str(source),
+            "/p:SyncWatchBuildRoot=" + str(work)]
         properties.extend(dependencies.get("msbuildProperties", []))
-        projects = [("interpreter", "pcbuild.proj"),
+        projects = [("freeze", "_freeze_module.vcxproj"), ("core", "pythoncore.vcxproj"),
+                    ("stable-abi", "python3dll.vcxproj"), ("interpreter", "python.vcxproj"),
+                    ("windowed-interpreter", "pythonw.vcxproj"),
                     *((name.removeprefix("_"), name + ".vcxproj") for name in profile.get("windowsShared", ["_socket", "select"]))]
         for name, project in projects:
-            commands[name] = execute(name, [msbuild, str(source / "PCbuild" / project), "/m:4", "/nologo", "/v:minimal", *properties], source, logs, environment)
+            commands[name] = execute(name, [msbuild, str(source / "PCbuild" / project), "/m:4", "/nr:false",
+                                           "/nologo", "/v:minimal", *properties], source, logs, environment)
         native = source / "PCbuild/amd64"
         paths = {"executable": native / "python.exe", "runtime": native / "python312.dll",
                  "library": native / "python312.lib", "config": source / "PC/pyconfig.h",
@@ -98,13 +110,8 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
         assert_unix_membership(build, profile)
         commands["interpreter"] = execute("interpreter", unix_make("-j4", "python.exe" if target == "macos-arm64" else "python"),
                                           build, logs, environment)
-        assert_unix_membership(build, profile)
         if makefile.read_bytes() != configured:
             raise ValueError("The original CPython configure output changed during the make build")
-        for directory, name in [(source, "cpython"), (zlib, "zlib")]:
-            for relative, original in sources[name].items():
-                if (directory / relative).read_bytes() != original:
-                    raise ValueError(f"Original {name} input changed during the build: {relative}")
         suffix = "dylib" if target == "macos-arm64" else "so.1.0"
         paths = {"executable": build / ("python.exe" if target == "macos-arm64" else "python"),
                  "runtime": build / ("libpython3.12." + suffix), "library": build / ("libpython3.12." + suffix),
@@ -113,7 +120,8 @@ def build_native(work, sources, profile, cmake, options, sdk, dependencies=None)
             require_bound_macos_symbols(paths["runtime"])
     if not all(paths[name].is_file() for name in ["executable", "runtime", "library", "config"]):
         raise ValueError("Source-built interpreter outputs are incomplete")
-    build_info = "Modules/getbuildinfo.c"
-    if (source / build_info).read_bytes() != sources["cpython"][build_info]:
-        raise ValueError("CPython build information source changed during the build")
+    for directory, name in [(source, "cpython"), (zlib, "zlib")]:
+        for relative, original in sources[name].items():
+            if (directory / relative).read_bytes() != original:
+                raise ValueError(f"Original {name} input changed during the build: {relative}")
     return source, paths, commands

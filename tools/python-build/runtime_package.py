@@ -8,7 +8,7 @@ import tempfile
 
 from binary_audit import audit
 from build_metadata import BUILD_INFO_SUFFIX
-from configuration import UNIX_MAKEFILE
+from configuration import build_configuration, build_recipe, builtin_modules
 from source_profile import ROOT, digest, encoded, notices, original_sources, stdlib_archive
 
 sys.path.insert(0, str(ROOT / "tools/python-runtime"))
@@ -68,17 +68,10 @@ def package(payload, sources, profile, sdk, source, native, commands, options):
     files["include/pyconfig.h"] = native["config"].read_bytes()
     for path in native["extensions"]:
         files["bin/" + path.name] = path.read_bytes()
-    # Configuration derivatives are separate from unchanged source originals.
-    for name in ["Modules/getbuildinfo.c", "PC/config.c", "PCbuild/pythoncore.vcxproj",
-                 "PCbuild/pcbuild.proj", "PCbuild/_socket.vcxproj", "PCbuild/select.vcxproj"]:
-        data = (source / name).read_bytes()
-        if data != sources["cpython"][name]:
-            files["configuration/" + name] = data
-    generated = source if sdk["target"] == "windows-x64" else source.parent / "build"
-    if sdk["target"] != "windows-x64":
-        for name in ["Makefile", "Modules/Setup.local"]:
-            files["configuration/" + name] = (generated / name).read_bytes()
-        files["configuration/" + UNIX_MAKEFILE.name] = UNIX_MAKEFILE.read_bytes()
+    build = source.parent / "build"
+    target = sdk["target"]
+    files.update({"configuration/" + name: data for name, data in build_configuration(build, target).items()})
+    generated = source if target == "windows-x64" else build
     files["configuration/generated-source-hashes.json"] = encoded({
         path.relative_to(generated).as_posix(): digest(path.read_bytes())
         for path in sorted((generated / "Python").rglob("*"))
@@ -100,9 +93,10 @@ def relocated_probe(payload, target):
     with tempfile.TemporaryDirectory(prefix="sw-owned-runtime-") as temporary:
         owned = Path(temporary) / "runtime-\u03bc-\u0442\u0435\u0441\u0442"
         shutil.copytree(payload, owned)
-        return exercise_sdk(layout(owned, target),
-                            (ROOT / "tools/python-build/checks.py").read_text(encoding="utf-8"),
-                            build_info_suffix=BUILD_INFO_SUFFIX)
+        checks = (ROOT / "tools/python-build/checks.py").read_text(encoding="utf-8")
+        if target == "windows-x64":
+            checks += f"\nassert sys.builtin_module_names == {tuple(sorted(builtin_modules(owned / 'configuration/config.c')))!r}\n"
+        return exercise_sdk(layout(owned, target), checks, build_info_suffix=BUILD_INFO_SUFFIX)
 
 
 def verify(payload, sources, profile, sdk, options):
@@ -117,8 +111,7 @@ def verify(payload, sources, profile, sdk, options):
     if found != report["files"]:
         raise ValueError("Runtime payload has missing, extra or changed files")
     expected = immutable_files(sources, profile)
-    if sdk["target"] != "windows-x64":
-        expected["configuration/" + UNIX_MAKEFILE.name] = UNIX_MAKEFILE.read_bytes()
+    expected.update({"configuration/" + name: data for name, data in build_recipe(sdk["target"]).items()})
     expected[layout(payload, sdk["target"])["stdlib"].relative_to(payload).as_posix()] = stdlib_archive(sources, profile)
     if any((payload / name).read_bytes() != data for name, data in expected.items()):
         raise ValueError("Runtime original headers, sources, stdlib or complete notices differ")

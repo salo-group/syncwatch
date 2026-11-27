@@ -12,7 +12,7 @@ from sdk_legal import rust_notices
 sys.path.insert(0, str(ROOT / "tools/python-build"))
 from runtime_package import layout, write_files
 from source_profile import notices, original_sources, stdlib_archive
-from configuration import UNIX_MAKEFILE
+from configuration import build_configuration
 
 
 def python_files(sources):
@@ -76,13 +76,8 @@ def assemble(payload, target, sources, core_sources, profile, native, engine_fil
         files[package_dir + path.name] = path.read_bytes()
     for path in sorted((ROOT / "packages/syncplay-engine/syncwatch_syncplay").glob("*.py")):
         files[package_dir + "syncwatch_syncplay/" + path.name] = path.read_bytes()
-    for name, original in core_sources["cpython"].items():
-        if (core_source / name).read_bytes() != original:
-            files["configuration/cpython/" + name] = (core_source / name).read_bytes()
-    if target != "windows-x64":
-        for name in ["Makefile", "Modules/Setup.local"]:
-            files["configuration/cpython/" + name] = (core_source.parent / "build" / name).read_bytes()
-        files["configuration/cpython/" + UNIX_MAKEFILE.name] = UNIX_MAKEFILE.read_bytes()
+    files.update({"configuration/cpython/" + name: data
+                  for name, data in build_configuration(core_source.parent / "build", target).items()})
     files["configuration/source-graph.json"] = (ROOT / "tools/syncplay-runtime/graph.json").read_bytes()
     files["configuration/python-profile.json"] = (ROOT / "tools/syncplay-runtime/python-profile.json").read_bytes()
     files["configuration/engine-profile.json"] = (ROOT / "tools/syncplay-runtime/engine-profile.json").read_bytes()

@@ -1,0 +1,21 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="$(MSBuildThisFileDirectory)build_metadata.targets" />
+    <Import Project="$(SyncWatchModuleSelection)" Condition="'$(MSBuildProjectName)' == 'pythoncore'" />
+    <ItemGroup Condition="'$(MSBuildProjectName)' == 'pythoncore'">
+        <ClCompile Remove="..\PC\config.c" />
+        <ClCompile Include="$(SyncWatchBuiltinTable)" />
+    </ItemGroup>
+    <ItemDefinitionGroup Condition="'$(MSBuildProjectName)' == 'pythoncore'">
+        <ClCompile>
+            <PreprocessorDefinitions>Z_PREFIX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+        </ClCompile>
+    </ItemDefinitionGroup>
+    <ItemDefinitionGroup Condition="'$(MSBuildProjectName)' == 'pythoncore' Or '$(MSBuildProjectName)' == '_socket' Or '$(MSBuildProjectName)' == 'select'">
+        <ClCompile>
+            <AdditionalOptions>/experimental:deterministic "/pathmap:$(SyncWatchPythonSource)=cpython-source" "/pathmap:$(SyncWatchBuildRoot)=syncwatch-build" %(AdditionalOptions)</AdditionalOptions>
+        </ClCompile>
+        <Link>
+            <AdditionalOptions>/Brepro /PDBALTPATH:$(TargetName).pdb %(AdditionalOptions)</AdditionalOptions>
+        </Link>
+    </ItemDefinitionGroup>
+</Project>
